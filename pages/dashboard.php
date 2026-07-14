@@ -1,5 +1,5 @@
 <?php
-$base = '.'; $pageTitle = 'Dashboard'; $activeMenu = 'dashboard';
+$base = '..'; $pageTitle = 'Dashboard'; $activeMenu = 'dashboard';
 
 $today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
 $hour  = (int) $today->format('H');
@@ -55,7 +55,7 @@ $gallery = [
     ['title' => 'Catur Laras Jagongan UMKM',                   'show' => 'Catur Laras',       'time' => '18:45', 'date' => '7 Jul 2026', 'live' => false],
 ];
 
-include __DIR__ . '/includes/header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 <div class="page-head">
   <div>
@@ -82,7 +82,7 @@ include __DIR__ . '/includes/header.php';
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-calendar-line"></i>Daily Agenda Hari Ini</div>
-      <a class="link-btn" href="<?= $base ?>/agenda/">Lihat Semua</a>
+      <a class="link-btn" href="<?= $base ?>/pages/agenda.php">Lihat Semua</a>
     </div>
     <?php foreach ($agenda as $a): ?>
     <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-color);">
@@ -114,7 +114,7 @@ include __DIR__ . '/includes/header.php';
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-checkbox-circle-line"></i>Checklist Perangkat</div>
-      <a class="link-btn" href="<?= $base ?>/checklist/">Lihat Semua</a>
+      <a class="link-btn" href="<?= $base ?>/pages/checklist.php">Lihat Semua</a>
     </div>
     <div class="ring-wrap">
       <div class="ring">
@@ -165,7 +165,7 @@ include __DIR__ . '/includes/header.php';
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-history-line"></i>Troubleshoot Terbaru</div>
-      <a class="link-btn" href="<?= $base ?>/troubleshoot/">Lihat Semua</a>
+      <a class="link-btn" href="<?= $base ?>/pages/troubleshoot.php">Lihat Semua</a>
     </div>
     <?php foreach ($troubleshootRecent as $tr): ?>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color);gap:10px;">
@@ -182,7 +182,7 @@ include __DIR__ . '/includes/header.php';
 <div class="card">
   <div class="card-header">
     <div class="card-title"><i class="ri-youtube-line"></i>Gallery Youtube Live On This Week</div>
-    <a class="link-btn" href="<?= $base ?>/gallery/">Lihat Semua</a>
+    <a class="link-btn" href="<?= $base ?>/pages/gallery.php">Lihat Semua</a>
   </div>
   <div class="gallery-grid">
     <?php foreach ($gallery as $g): ?>
@@ -224,4 +224,4 @@ new Chart(document.getElementById('troubleDonut'), {
   options: { cutout: '72%', plugins: { legend: { display: false } } }
 });
 </script>
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

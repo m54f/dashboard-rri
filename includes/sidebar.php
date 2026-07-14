@@ -1,20 +1,20 @@
 <?php
 /* Peta menu: key => [label, icon, link relatif dari $base] */
 $menuOperasional = [
-    'agenda'      => ['Daily Agenda',        'ri-calendar-line',          '/agenda/'],
-    'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/checklist/'],
-    'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/troubleshoot/'],
-    'logbook'     => ['Logbook Digital',     'ri-book-2-line',            '/logbook/'],
-    'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/peminjaman/'],
+    'agenda'      => ['Daily Agenda',        'ri-calendar-line',          '/pages/agenda.php'],
+    'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/pages/checklist.php'],
+    'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
+    'logbook'     => ['Logbook Digital',     'ri-book-2-line',            '/pages/logbook.php'],
+    'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/pages/peminjaman.php'],
 ];
 $menuDokumentasi = [
-    'jurnal'   => ['Jurnal Kegiatan', 'ri-file-list-3-line', '/jurnal/'],
-    'gallery'  => ['Gallery Youtube', 'ri-play-line',         '/gallery/'],
-    'calendar' => ['Calendar Recap',  'ri-calendar-2-line',   '/calendar/'],
+    'jurnal'   => ['Jurnal Kegiatan', 'ri-file-list-3-line', '/pages/jurnal.php'],
+    'gallery'  => ['Gallery Youtube', 'ri-play-line',         '/pages/gallery.php'],
+    'calendar' => ['Calendar Recap',  'ri-calendar-2-line',   '/pages/calendar.php'],
 ];
 $menuPersonal = [
-    'petugas'  => ['Petugas',        'ri-team-line',      '/petugas/'],
-    'personal' => ['Jurnal Pribadi', 'ri-file-user-line', '/personal/'],
+    'petugas'  => ['Petugas',        'ri-team-line',      '/pages/petugas.php'],
+    'personal' => ['Jurnal Pribadi', 'ri-file-user-line', '/pages/personal.php'],
 ];
 
 function render_menu_group($items, $base, $activeMenu) {
@@ -35,7 +35,7 @@ function render_menu_group($items, $base, $activeMenu) {
   </div>
   <nav class="sidebar-menu">
     <div class="menu-section">
-      <a class="menu-item <?= $activeMenu === 'dashboard' ? 'active' : '' ?>" href="<?= $base ?>/dashboard.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+      <a class="menu-item <?= $activeMenu === 'dashboard' ? 'active' : '' ?>" href="<?= $base ?>/pages/dashboard.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
     </div>
     <div class="menu-section">
       <div class="menu-title">Operasional</div>
@@ -53,6 +53,6 @@ function render_menu_group($items, $base, $activeMenu) {
   <div class="sidebar-cta">
     <h4>Sistem Peminjaman Alat</h4>
     <p>Kelola peminjaman dan pengembalian alat siaran dengan mudah.</p>
-    <a href="<?= $base ?>/peminjaman/">Buka Sistem <i class="ri-arrow-right-line"></i></a>
+    <a href="<?= $base ?>/pages/peminjaman.php">Buka Sistem <i class="ri-arrow-right-line"></i></a>
   </div>
 </aside>

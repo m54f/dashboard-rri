@@ -1,6 +1,5 @@
-
 <?php
-//$base = '..'; $pageTitle = 'Daily Agenda'; $activeMenu = 'agenda';
+$base = '..'; $pageTitle = 'Daily Agenda'; $activeMenu = 'agenda';
 
 $stats = [
     ['label' => 'Agenda Hari Ini',   'value' => '6',  'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
