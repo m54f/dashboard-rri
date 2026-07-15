@@ -52,6 +52,8 @@ include __DIR__ . '/../includes/header.php';
         $time = isset($video['time']) && $video['time'] !== '' ? $video['time'] : 'TBA';
         $url = isset($video['url']) && $video['url'] !== '' ? $video['url'] : '';
         $flyer = isset($video['flyer']) && $video['flyer'] !== '' ? $video['flyer'] : '';
+        $penyiar = isset($video['penyiar']) && $video['penyiar'] !== '' ? $video['penyiar'] : '';
+        $narasumber = isset($video['narasumber']) && is_array($video['narasumber']) ? $video['narasumber'] : [];
         
         // Map Notion colors to theme palette
         $colorMap = [
@@ -77,7 +79,9 @@ include __DIR__ . '/../includes/header.php';
         'flyer' => $flyer,
         'date' => $date,
         'time' => $time,
-        'url' => $url
+        'url' => $url,
+        'penyiar' => $penyiar,
+        'narasumber' => $narasumber
       ]), ENT_QUOTES, 'UTF-8'); ?>
       <div class="feed-card" data-video="<?= $videoData ?>" style="cursor:pointer; display:flex; flex-direction:column; height:100%;">
         <div class="feed-thumb" style="display:block; position:relative; overflow:hidden; background:#f0f0f0; min-height:200px;">
@@ -147,31 +151,31 @@ include __DIR__ . '/../includes/header.php';
             <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Nama Acara</div>
             <div style="font-size:14px; color:var(--text-primary);" id="detail-namaAcara"></div>
           </div>
+          
+          <div style="margin-bottom:12px;">
+            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Program</div>
+            <div style="font-size:14px; color:var(--text-primary);" id="detail-programa"></div>
+          </div>
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:12px;">
-            <div>
-              <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Program</div>
-              <div style="font-size:14px; color:var(--text-primary);" id="detail-programa"></div>
-            </div>
             <div>
               <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Tanggal</div>
               <div style="font-size:14px; color:var(--text-primary);" id="detail-date"></div>
             </div>
-          </div>
-          
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:12px;">
             <div>
               <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Jam</div>
               <div style="font-size:14px; color:var(--text-primary);" id="detail-time"></div>
             </div>
-            
-            <div>
-              <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Warna Program</div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <div id="detail-color" style="width:20px; height:20px; border-radius:4px;"></div>
-                <span style="font-size:14px; color:var(--text-primary);" id="detail-programaColor"></span>
-              </div>
-            </div>
+          </div>
+
+          <div id="detail-penyiar-group" style="display:none; margin-bottom:12px;">
+            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Penyiar</div>
+            <div style="font-size:14px; color:var(--text-primary);" id="detail-penyiar"></div>
+          </div>
+
+          <div id="detail-narasumber-group" style="display:none; margin-bottom:12px;">
+            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Narasumber</div>
+            <div style="font-size:14px; color:var(--text-primary);" id="detail-narasumber"></div>
           </div>
           
           <div id="detail-url-group" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-color);">
@@ -212,8 +216,32 @@ function openDetailModal(videoData) {
     document.getElementById('detail-programa').textContent = videoData.programa;
     document.getElementById('detail-date').textContent = videoData.date;
     document.getElementById('detail-time').textContent = videoData.time;
-    document.getElementById('detail-programaColor').textContent = videoData.programaColor;
-    document.getElementById('detail-color').style.backgroundColor = '#' + videoData.programaColor.replace(/^#/, '');
+
+    var penyiarGroup = document.getElementById('detail-penyiar-group');
+    if (videoData.penyiar && videoData.penyiar !== '') {
+        penyiarGroup.style.display = 'block';
+        document.getElementById('detail-penyiar').textContent = videoData.penyiar;
+    } else {
+        penyiarGroup.style.display = 'none';
+    }
+
+    var narasumberGroup = document.getElementById('detail-narasumber-group');
+    if (videoData.narasumber && Array.isArray(videoData.narasumber) && videoData.narasumber.length > 0) {
+        narasumberGroup.style.display = 'block';
+        var listEl = document.createElement('ul');
+        listEl.style.margin = '0';
+        listEl.style.paddingLeft = '18px';
+        videoData.narasumber.forEach(function(nama) {
+            var li = document.createElement('li');
+            li.textContent = nama;
+            listEl.appendChild(li);
+        });
+        var container = document.getElementById('detail-narasumber');
+        container.innerHTML = '';
+        container.appendChild(listEl);
+    } else {
+        narasumberGroup.style.display = 'none';
+    }
     
     var flyerGroup = document.getElementById('detail-flyer-group');
     if (videoData.flyer && videoData.flyer !== '') {

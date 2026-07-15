@@ -136,9 +136,9 @@ function getYoutubeVideos()
         $penyiar = [];
         foreach (['Penyiar Pro 1', 'Penyiar Pro 2', 'Penyiar Pro 4'] as $key) {
             if (isset($props[$key]['multi_select'])) {
-                foreach ($props[$key]['multi_select'] as $item) {
-                    if (isset($item['name'])) {
-                        $penyiar[] = $item['name'];
+                foreach ($props[$key]['multi_select'] as $items) {
+                    if (isset($items['name'])) {
+                        $penyiar[] = $items['name'];
                     }
                 }
                 if (!empty($penyiar)) {
@@ -153,12 +153,9 @@ function getYoutubeVideos()
             if (isset($props[$key]['rich_text'][0]['plain_text']) && is_array($props[$key]['rich_text'])) {
                 $narasumber[] = $props[$key]['rich_text'][0]['plain_text'];
             }
-            if (!empty($narasumber)) {
-                    break;
-            }    
-            
         }
-        $narasumberStr = implode(', ', $narasumber);
+        // $narasumberStr = implode(', ', $narasumber);
+        // $narasumber tetap array untuk dikirim sebagai list ke frontend
 
 
         $videos[] = [
@@ -172,7 +169,8 @@ function getYoutubeVideos()
             'time'           => $time,
             'url'            => $url,
             'penyiar'        => $penyiarStr,
-            'narasumber'     => $narasumberStr,
+            'narasumber'     => $narasumber,
+            // 'narasumberStr'  => $narasumberStr,
         ];
     }
 
