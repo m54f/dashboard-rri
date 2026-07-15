@@ -38,6 +38,7 @@ $bidang     = trim($input['bidang'] ?? '');
 $deskripsi  = trim($input['deskripsi'] ?? '');
 $kesimpulan = trim($input['kesimpulan'] ?? '');
 $petugas    = $input['petugas'] ?? [];
+$dokumentasiUrls = $input['dokumentasi_urls'] ?? []; // Array of {name, url}
 
 // Validasi field wajib
 if (empty($kendala)) {
@@ -138,7 +139,27 @@ if (!empty($kesimpulan)) {
 
 // Note: "Submission time" adalah created_time (auto-generated oleh Notion)
 // Note: "Respondent" adalah created_by (auto-generated oleh Notion)
-// Note: "Dokumentasi Pendukung" (files) — tidak didukung melalui form ini
+
+// Dokumentasi Pendukung (Files) — kirim sebagai external URL jika ada
+if (!empty($dokumentasiUrls) && is_array($dokumentasiUrls)) {
+    $filesPayload = [];
+    foreach ($dokumentasiUrls as $doc) {
+        if (!empty($doc['url'])) {
+            $filesPayload[] = [
+                "name" => $doc['name'] ?? basename($doc['url']),
+                "type" => "external",
+                "external" => [
+                    "url" => $doc['url']
+                ]
+            ];
+        }
+    }
+    if (!empty($filesPayload)) {
+        $properties["Dokumentasi Pendukung"] = [
+            "files" => $filesPayload
+        ];
+    }
+}
 
 $payload = [
     "parent" => [

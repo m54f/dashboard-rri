@@ -80,6 +80,7 @@ include __DIR__ . '/../includes/header.php';
           <th>Judul Kendala</th>
           <th>Kategori</th>
           <th>PIC</th>
+          <th>Dokumentasi</th>
           <th>Status</th>
           <th>Tanggal Lapor</th>
           <th>Aksi</th>
@@ -88,7 +89,7 @@ include __DIR__ . '/../includes/header.php';
       <tbody>
         <?php if (empty($tickets)): ?>
           <tr>
-            <td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+            <td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
               Tidak ada data kendala ditemukan.
             </td>
           </tr>
@@ -102,6 +103,7 @@ include __DIR__ . '/../includes/header.php';
                 'deskripsi'  => $t['deskripsi'],
                 'kesimpulan' => $t['kesimpulan'],
                 'petugas'    => $t['petugas_arr'],
+                'dokumentasi'=> $t['dokumentasi'],
             ]), ENT_QUOTES, 'UTF-8');
           ?>
           <tr data-status="<?= htmlspecialchars($t['status']) ?>">
@@ -109,8 +111,21 @@ include __DIR__ . '/../includes/header.php';
             <td class="cell-title"><?= htmlspecialchars($t['title']) ?></td>
             <td><span class="tag gray"><?= htmlspecialchars($t['cat']) ?></span></td>
             <td>
-              <span class="avatar-sm"><?= strtoupper(substr($t['pic'], 0, 2)) ?></span> 
               <?= htmlspecialchars($t['pic']) ?>
+            </td>
+            <td>
+              <?php if (!empty($t['dokumentasi'])): ?>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <?php foreach (array_slice($t['dokumentasi'], 0, 3) as $dok): ?>
+                <img src="<?= htmlspecialchars($dok['url']) ?>" alt="dok" class="doc-thumb" onclick="openLightbox('<?= htmlspecialchars($dok['url']) ?>')" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border-color);">
+                <?php endforeach; ?>
+                <?php if (count($t['dokumentasi']) > 3): ?>
+                <span style="font-size:10px;color:var(--text-secondary);align-self:center;">+<?= count($t['dokumentasi']) - 3 ?></span>
+                <?php endif; ?>
+              </div>
+              <?php else: ?>
+              <span style="font-size:11px;color:var(--text-secondary);">—</span>
+              <?php endif; ?>
             </td>
             <td><span class="status-tag <?= htmlspecialchars($t['cls']) ?>"><?= htmlspecialchars($t['status']) ?></span></td>
             <td class="cell-sub"><?= htmlspecialchars($t['date']) ?></td>
@@ -131,7 +146,13 @@ include __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
-</div>
+
+  <!-- TAMBAHKAN BAGIAN INI: Kontainer Pagination -->
+  <div class="pagination-wrap" id="paginationWrap" style="display: none;">
+    <div class="pagination-info" id="paginationInfo">Menampilkan data</div>
+    <div class="pagination-buttons" id="paginationButtons"></div>
+  </div>
+</div> <!-- ini penutup <div class="card"> -->
 
 <!-- Modal Lapor Kendala (dipakai ulang untuk Create & Edit) -->
 <div class="modal-overlay" id="ticketModal">
@@ -194,6 +215,20 @@ include __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
+      <!-- Dokumentasi Pendukung (File Upload) -->
+      <div class="form-group">
+        <label>Dokumentasi Pendukung <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Foto bukti (JPG/PNG/WebP, maks 10MB)</span></label>
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('field_dokumentasi').click()">
+          <i class="ri-image-add-line" style="font-size:28px;color:var(--primary);"></i>
+          <p style="margin:6px 0 2px;font-weight:600;font-size:13px;">Klik atau seret foto ke sini</p>
+          <p style="font-size:11px;color:var(--text-secondary);">Bisa upload beberapa file sekaligus</p>
+          <input type="file" id="field_dokumentasi" name="dokumentasi[]" multiple accept="image/*" style="display:none" onchange="handleFileSelect(this.files)">
+        </div>
+        <div class="preview-grid" id="previewGrid"></div>
+        <!-- Existing docs from Notion (saat edit) -->
+        <div class="preview-grid" id="existingDocs" style="margin-top:8px;"></div>
+      </div>
+
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary" id="submitBtn"><i class="ri-send-plane-line"></i> <span id="submitBtnLabel">Kirim Laporan</span></button>
@@ -222,28 +257,207 @@ include __DIR__ . '/../includes/header.php';
   .icon-action.edit:hover { background:rgba(59,130,246,0.12); }
   .icon-action.delete { color:#ef4444; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; }
   .icon-action.delete:hover { background:rgba(239,68,68,0.12); }
+
+  .dropzone {
+    border: 2px dashed var(--border-color); border-radius: 12px; padding: 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: var(--bg-color);
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--primary); background: #eff6ff;
+  }
+  .preview-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+  }
+  .preview-item {
+    position: relative; width: 80px; height: 80px; border-radius: 10px;
+    overflow: hidden; border: 1px solid var(--border-color);
+  }
+  .preview-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .preview-item .remove-btn {
+    position: absolute; top: 2px; right: 2px; width: 20px; height: 20px;
+    background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 50%;
+    font-size: 12px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; line-height: 1;
+  }
+  .preview-item .existing-badge {
+    position: absolute; bottom: 2px; left: 2px; background: rgba(37,99,235,0.85);
+    color: #fff; font-size: 8px; padding: 1px 5px; border-radius: 4px; font-weight: 700;
+  }
+  .lightbox-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000;
+    display: none; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .lightbox-overlay.active { display: flex; }
+  .lightbox-overlay img {
+    max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain;
+  }
+
+  /* ===== Styling Pagination ===== */
+  .pagination-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .pagination-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+  .pagination-buttons {
+    display: flex;
+    gap: 0.35rem;
+  }
+  .btn-page {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary, #333);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-page:hover:not(:disabled) {
+    border-color: var(--primary, #3b82f6);
+    color: var(--primary, #3b82f6);
+    background: rgba(59, 130, 246, 0.05);
+  }
+  .btn-page.active {
+    background: var(--primary, #3b82f6);
+    color: #fff;
+    border-color: var(--primary, #3b82f6);
+  }
+  .btn-page:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 </style>
 
 <script>
+// ===== State untuk file uploads =====
+let selectedFiles = []; // File objects baru (belum diupload)
+let existingDocs = [];  // URL dokumen yang sudah ada di Notion
+
 function openModal(){ document.getElementById('ticketModal').classList.add('active'); }
 function closeModal(){ document.getElementById('ticketModal').classList.remove('active'); }
 
-// Tutup modal jika klik di luar area konten
 document.getElementById('ticketModal').addEventListener('click', e => { 
   if (e.target === e.currentTarget) closeModal(); 
 });
 
-// ===== Mode CREATE: buka modal kosong =====
+// ===== Drag & Drop =====
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFileSelect(e.dataTransfer.files);
+});
+
+// ===== File handling =====
+function handleFileSelect(files) {
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    if (file.size > 10 * 1024 * 1024) { showToast('⚠️ ' + file.name + ' melebihi 10MB', 'error'); continue; }
+    selectedFiles.push(file);
+  }
+  renderPreviews();
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('previewGrid');
+  grid.innerHTML = '';
+  selectedFiles.forEach((file, idx) => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    const btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.innerHTML = '&times;';
+    btn.onclick = (e) => { e.stopPropagation(); selectedFiles.splice(idx, 1); renderPreviews(); };
+    div.appendChild(img);
+    div.appendChild(btn);
+    grid.appendChild(div);
+  });
+}
+
+function renderExistingDocs(docs) {
+  const grid = document.getElementById('existingDocs');
+  grid.innerHTML = '';
+  existingDocs = docs || [];
+  existingDocs.forEach((doc, idx) => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    const img = document.createElement('img');
+    img.src = doc.url;
+    img.onerror = () => { img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="%23f1f5f9" width="80" height="80"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="10">Foto</text></svg>'; };
+    const badge = document.createElement('span');
+    badge.className = 'existing-badge';
+    badge.textContent = 'EXISTING';
+    const btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.innerHTML = '&times;';
+    btn.onclick = (e) => { e.stopPropagation(); existingDocs.splice(idx, 1); renderExistingDocs(existingDocs); };
+    div.appendChild(img);
+    div.appendChild(badge);
+    div.appendChild(btn);
+    grid.appendChild(div);
+  });
+}
+
+// ===== Upload files ke server =====
+async function uploadFiles(files) {
+  if (files.length === 0) return [];
+  const formData = new FormData();
+  files.forEach(f => formData.append('dokumentasi[]', f));
+  const res = await fetch('../api/upload-dokumentasi.php', { method: 'POST', body: formData });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Upload gagal');
+  return data.files.map(f => ({ name: f.original, url: f.url }));
+}
+
+// ===== Lightbox =====
+function openLightbox(url) {
+  let lb = document.getElementById('lightboxOverlay');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'lightboxOverlay';
+    lb.className = 'lightbox-overlay';
+    lb.onclick = () => lb.classList.remove('active');
+    lb.innerHTML = '<img id="lightboxImg" src="" alt="Preview">';
+    document.body.appendChild(lb);
+  }
+  document.getElementById('lightboxImg').src = url;
+  lb.classList.add('active');
+}
+
+// ===== Mode CREATE =====
 function openCreateModal(){
   const form = document.getElementById('newTicketForm');
   form.reset();
   document.getElementById('field_page_id').value = '';
   document.getElementById('modalTitle').textContent = 'Formulir Pencatatan Troubleshoot';
   document.getElementById('submitBtnLabel').textContent = 'Kirim Laporan';
+  selectedFiles = [];
+  existingDocs = [];
+  document.getElementById('previewGrid').innerHTML = '';
+  document.getElementById('existingDocs').innerHTML = '';
   openModal();
 }
 
-// ===== Mode EDIT: buka modal terisi data existing =====
+// ===== Mode EDIT =====
 function openEditModal(btn){
   const data = JSON.parse(btn.dataset.payload);
   const form = document.getElementById('newTicketForm');
@@ -254,108 +468,190 @@ function openEditModal(btn){
   document.getElementById('field_deskripsi').value = data.deskripsi || '';
   document.getElementById('field_kesimpulan').value = data.kesimpulan || '';
 
-  // Pilih radio Bidang yang sesuai
   const radio = form.querySelector(`input[name="bidang"][value="${CSS.escape(data.bidang)}"]`);
   if (radio) radio.checked = true;
 
-  // Centang checkbox Nama Petugas yang sesuai
   (data.petugas || []).forEach(nama => {
     const cb = form.querySelector(`input[name="petugas[]"][value="${CSS.escape(nama)}"]`);
     if (cb) cb.checked = true;
   });
+
+  // Reset file state & tampilkan existing docs
+  selectedFiles = [];
+  document.getElementById('previewGrid').innerHTML = '';
+  renderExistingDocs(data.dokumentasi || []);
 
   document.getElementById('modalTitle').textContent = 'Edit Laporan Troubleshoot';
   document.getElementById('submitBtnLabel').textContent = 'Simpan Perubahan';
   openModal();
 }
 
-// Filter tabel berdasarkan status
+// ===== STATE PAGINATION =====
+let currentPage = 1;
+const rowsPerPage = 5; // Batas data per halaman
+let currentStatusFilter = 'Semua';
+
+// Fungsi saat klik tab filter (Semua, Belum Selesai, dll)
 function filterTicket(status, el){
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  
-  document.querySelectorAll('#ticketTable tbody tr').forEach(row => {
-    if (status === 'Semua' || row.dataset.status === status) {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
-    }
-  });
+  if (el) {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+  currentStatusFilter = status;
+  currentPage = 1; // Reset ke halaman 1 setiap kali ganti filter tab
+  updateTablePagination();
 }
 
-// Kirim data (create ATAU update, tergantung ada tidaknya page_id)
+// Fungsi ganti halaman saat tombol angka / Prev / Next diklik
+function changePage(page) {
+  currentPage = page;
+  updateTablePagination();
+}
+
+// Logika utama pengatur tampilan baris & tombol navigasi
+function updateTablePagination() {
+  const allRows = Array.from(document.querySelectorAll('#ticketTable tbody tr'));
+  const paginationWrap = document.getElementById('paginationWrap');
+  
+  // Jika tabel kosong dari server (menampilkan pesan "Tidak ada data")
+  if (allRows.length === 1 && allRows[0].querySelector('td[colspan]')) {
+    if (paginationWrap) paginationWrap.style.display = 'none';
+    return;
+  }
+
+  // 1. Filter baris berdasarkan status tab yang dipilih
+  const filteredRows = allRows.filter(row => {
+    return currentStatusFilter === 'Semua' || row.dataset.status === currentStatusFilter;
+  });
+
+  const totalRows = filteredRows.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+  // Pastikan currentPage tidak melebihi batas halaman
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  // 2. Sembunyikan semua baris terlebih dahulu
+  allRows.forEach(row => row.style.display = 'none');
+
+  // 3. Tampilkan hanya baris untuk halaman saat ini
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+
+  for (let i = startIndex; i < endIndex; i++) {
+    filteredRows[i].style.display = '';
+  }
+
+  // 4. Update UI Tombol Navigasi
+  const paginationInfo = document.getElementById('paginationInfo');
+  const paginationButtons = document.getElementById('paginationButtons');
+
+  if (totalRows === 0 || !paginationWrap) {
+    if (paginationWrap) paginationWrap.style.display = 'none';
+  } else {
+    paginationWrap.style.display = 'flex';
+    paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} kendala`;
+
+    let buttonsHTML = '';
+    
+    // Tombol Prev
+    buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+
+    // Tombol Angka Halaman
+    for (let p = 1; p <= totalPages; p++) {
+      buttonsHTML += `<button type="button" class="btn-page ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
+    }
+
+    // Tombol Next
+    buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+
+    paginationButtons.innerHTML = buttonsHTML;
+  }
+}
+
+// Jalankan otomatis saat web selesai dimuat
+document.addEventListener('DOMContentLoaded', () => {
+  updateTablePagination();
+});
+
+// ===== Submit (Create/Update) =====
 async function handleNewTicket(event) {
   event.preventDefault();
-  
   const form = event.target;
   const submitBtn = form.querySelector('button[type="submit"]');
   const submitBtnLabel = document.getElementById('submitBtnLabel');
   const originalLabel = submitBtnLabel.textContent;
-  
+
   const petugasChecked = [...form.querySelectorAll('input[name="petugas[]"]:checked')].map(cb => cb.value);
-  
-  if (petugasChecked.length === 0) {
-    showToast('⚠️ Pilih minimal satu Nama Petugas!', 'error');
-    return;
-  }
-  
+  if (petugasChecked.length === 0) { showToast('⚠️ Pilih minimal satu Nama Petugas!', 'error'); return; }
+
   submitBtn.disabled = true;
-  submitBtnLabel.textContent = 'Menyimpan...';
-  
+  submitBtnLabel.textContent = 'Mengupload...';
+
   const pageId = form.page_id.value;
   const isEdit = !!pageId;
 
-  const payload = {
-    kendala: form.kendala.value.trim(),
-    bidang: form.bidang.value,
-    deskripsi: form.deskripsi.value.trim(),
-    kesimpulan: form.kesimpulan.value.trim(),
-    petugas: petugasChecked
-  };
-  if (isEdit) payload.page_id = pageId;
-
-  const endpoint = isEdit ? '../api/update-troubleshoot.php' : '../api/create-troubleshoot.php';
-
   try {
+    // 1. Upload file baru ke server (jika ada)
+    let uploadedUrls = [];
+    if (selectedFiles.length > 0) {
+      submitBtnLabel.textContent = 'Mengupload foto...';
+      uploadedUrls = await uploadFiles(selectedFiles);
+    }
+
+    // 2. Gabungkan dengan existing docs
+    const allDocs = [...existingDocs, ...uploadedUrls];
+
+    submitBtnLabel.textContent = 'Menyimpan...';
+
+    // 3. Kirim ke Notion
+    const payload = {
+      kendala: form.kendala.value.trim(),
+      bidang: form.bidang.value,
+      deskripsi: form.deskripsi.value.trim(),
+      kesimpulan: form.kesimpulan.value.trim(),
+      petugas: petugasChecked,
+      dokumentasi_urls: allDocs
+    };
+    if (isEdit) payload.page_id = pageId;
+
+    const endpoint = isEdit ? '../api/update-troubleshoot.php' : '../api/create-troubleshoot.php';
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    
+
     const data = await res.json();
-    
     if (data.success) {
       showToast('✅ ' + data.message, 'success');
       closeModal();
       form.reset();
+      selectedFiles = [];
+      existingDocs = [];
       setTimeout(() => location.reload(), 1200);
     } else {
       showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
     }
   } catch (err) {
-    console.error('Fetch error:', err);
-    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+    console.error('Error:', err);
+    showToast('❌ ' + err.message, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtnLabel.textContent = originalLabel;
   }
 }
 
-// Hapus (archive) laporan
+// Hapus laporan
 async function deleteTicket(pageId, title) {
-  const confirmed = confirm(`Hapus laporan "${title}"?\n\nLaporan akan dipindahkan ke Trash di Notion.`);
-  if (!confirmed) return;
-
+  if (!confirm(`Hapus laporan "${title}"?\n\nLaporan akan dipindahkan ke Trash di Notion.`)) return;
   try {
     const res = await fetch('../api/delete-troubleshoot.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page_id: pageId })
     });
-
     const data = await res.json();
-
     if (data.success) {
       showToast('✅ ' + data.message, 'success');
       setTimeout(() => location.reload(), 1000);
@@ -363,16 +659,14 @@ async function deleteTicket(pageId, title) {
       showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
     }
   } catch (err) {
-    console.error('Fetch error:', err);
     showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
   }
 }
 
-// Toast notification helper
+// Toast
 function showToast(message, type) {
   const existing = document.querySelector('.toast-notification');
   if (existing) existing.remove();
-  
   const toast = document.createElement('div');
   toast.className = 'toast-notification ' + type;
   toast.textContent = message;

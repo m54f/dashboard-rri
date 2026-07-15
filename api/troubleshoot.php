@@ -84,6 +84,25 @@ function getTroubleshoot()
 
         $deskripsi = $props['Deskripsi Aktivitas Identifikasi']['rich_text'][0]['plain_text'] ?? '';
 
+        // 8. Dokumentasi Pendukung (Files property)
+        $dokumentasiRaw = $props['Dokumentasi Pendukung']['files'] ?? [];
+        $dokumentasi = [];
+        foreach ($dokumentasiRaw as $file) {
+            $fileUrl = '';
+            $fileName = $file['name'] ?? 'file';
+            if (isset($file['external']['url'])) {
+                $fileUrl = $file['external']['url'];
+            } elseif (isset($file['file']['url'])) {
+                $fileUrl = $file['file']['url'];
+            }
+            if (!empty($fileUrl)) {
+                $dokumentasi[] = [
+                    'name' => $fileName,
+                    'url'  => $fileUrl,
+                ];
+            }
+        }
+
         $tickets[] = [
             'id'          => strtoupper($id),
             'page_id'     => $item['id'],                 // ID ASLI (UUID) — dipakai untuk edit & delete
@@ -98,6 +117,7 @@ function getTroubleshoot()
             'cls'         => $cls,
             'deskripsi'   => $deskripsi,
             'kesimpulan'  => $kesimpulan,
+            'dokumentasi' => $dokumentasi,                 // array foto dokumentasi
         ];
     }
 
