@@ -328,6 +328,82 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 .lightbox-overlay.active{display:flex;}
 .lightbox-overlay img{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;}
 
+
+
+/* ===== Custom Modal Checklist UI ===== */
+.radio-segment {
+  display: flex;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+.radio-segment input { display: none; }
+.radio-segment label {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.radio-segment input:checked + label {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(37,99,235,0.2);
+}
+
+/* Card Style untuk Check Item */
+.check-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.check-item:hover {
+  border-color: var(--primary);
+  background: #f8fafc;
+}
+.check-item.checked {
+  border-color: var(--success);
+  background: #ecfdf5;
+}
+.check-item.checked .check-item-text h4 {
+  color: var(--success);
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+.check-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.check-item.checked .check-status {
+  background: var(--success);
+  color: #fff;
+}
+
+
 /* ===== Responsive tambahan untuk komponen di atas ===== */
 @media (max-width:600px){
   .checkbox-grid{grid-template-columns:repeat(2,1fr);}

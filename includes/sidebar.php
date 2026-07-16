@@ -14,7 +14,7 @@ $menuDokumentasi = [
 ];
 $menuPersonal = [
     'petugas'  => ['Petugas',        'ri-team-line',      '/pages/petugas.php'],
-    'personal' => ['Jurnal Pribadi', 'ri-file-user-line', '/pages/personal.php'],
+    'personal' => ['Log Pemadaman PLN', 'ri-flashlight-line', '/pages/pemadaman.php'],
 ];
 
 function render_menu_group($items, $base, $activeMenu) {
