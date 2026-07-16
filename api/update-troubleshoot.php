@@ -19,7 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+
+
 require_once __DIR__ . '/../config/notion.php';
+
+require_once __DIR__ . '/notion-file-helpers.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -36,7 +40,8 @@ $bidang     = trim($input['bidang'] ?? '');
 $deskripsi  = trim($input['deskripsi'] ?? '');
 $kesimpulan = trim($input['kesimpulan'] ?? '');
 $petugas    = $input['petugas'] ?? [];
-$dokumentasiUrls = $input['dokumentasi_urls'] ?? []; // Array of {name, url}
+$dokumentasiFileIds = $input['dokumentasi_file_ids'] ?? []; // Foto BARU: [{id, name}]
+$dokumentasiKeep     = $input['dokumentasi_keep'] ?? [];    // Foto LAMA yang dipertahankan: [{name, url}]
 
 if (empty($pageId)) {
     http_response_code(400);
@@ -109,23 +114,39 @@ $properties = [
 ];
 
 // Dokumentasi Pendukung (Files) — kirim sebagai external URL
-if (isset($input['dokumentasi_urls']) && is_array($dokumentasiUrls)) {
+if (isset($input['dokumentasi_file_ids']) || isset($input['dokumentasi_keep'])) {
     $filesPayload = [];
-    foreach ($dokumentasiUrls as $doc) {
-        if (!empty($doc['url'])) {
+
+    // 1) Foto lama yang dipertahankan -> re-upload jadi attachment permanen
+    //    (Notion tidak bisa "reuse" attachment lama secara langsung, jadi kita
+    //    tarik ulang dari signed URL yang masih berlaku lalu upload ulang)
+    foreach ($dokumentasiKeep as $doc) {
+        if (empty($doc['url'])) continue;
+        try {
+            $id = notionReuploadFromUrl($doc['url'], $doc['name'] ?? 'dokumentasi.jpg');
             $filesPayload[] = [
-                "name" => $doc['name'] ?? basename($doc['url']),
-                "type" => "external",
-                "external" => [
-                    "url" => $doc['url']
-                ]
+                "type" => "file_upload",
+                "file_upload" => ["id" => $id],
+                "name" => $doc['name'] ?? 'dokumentasi.jpg',
             ];
+        } catch (Exception $e) {
+            // Kalau link lama sudah kedaluwarsa, lewati foto ini saja,
+            // jangan gagalkan seluruh proses update
+            error_log('Gagal reupload dokumentasi lama: ' . $e->getMessage());
         }
     }
-    // Selalu set property (kosongkan jika tidak ada file)
-    $properties["Dokumentasi Pendukung"] = [
-        "files" => $filesPayload
-    ];
+
+    // 2) Foto baru yang baru diupload user
+    foreach ($dokumentasiFileIds as $doc) {
+        if (empty($doc['id'])) continue;
+        $filesPayload[] = [
+            "type" => "file_upload",
+            "file_upload" => ["id" => $doc['id']],
+            "name" => $doc['name'] ?? 'dokumentasi.jpg',
+        ];
+    }
+
+    $properties["Dokumentasi Pendukung"] = ["files" => $filesPayload];
 }
 
 $payload = ["properties" => $properties];

@@ -6,11 +6,12 @@ $hour  = (int) $today->format('H');
 $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
 
 $stats = [
-    ['label' => 'Total Kegiatan Hari Ini',   'value' => '6',     'sub' => 'Agenda terjadwal',        'icon' => 'ri-calendar-line',       'tone' => 'blue'],
+    ['label' => 'Total Kegiatan Hari Ini',   'value' => '6',     'sub' => 'Agenda terjadwal',       'icon' => 'ri-calendar-line',       'tone' => 'blue'],
     ['label' => 'Checklist Selesai',         'value' => '18/22', 'sub' => '82% perangkat siap',       'icon' => 'ri-checkbox-circle-line','tone' => 'green'],
     ['label' => 'Troubleshoot Bulan Ini',    'value' => '12',    'sub' => '4 kasus belum selesai',    'icon' => 'ri-tools-line',          'tone' => 'orange'],
     ['label' => 'Live Streaming Bulan Ini',  'value' => '15',    'sub' => '+3 dari bulan lalu',       'icon' => 'ri-play-circle-line',    'tone' => 'purple'],
     ['label' => 'Jurnal Kegiatan',           'value' => '28',    'sub' => 'Total dokumentasi',        'icon' => 'ri-file-text-line',      'tone' => 'blue'],
+    ['label' => 'Pemadaman PLN Bulan Ini',   'value' => '4',     'sub' => 'Total kejadian',           'icon' => 'ri-flashlight-line',     'tone' => 'orange'],
 ];
 
 $agenda = [
@@ -137,6 +138,26 @@ include __DIR__ . '/../includes/header.php';
       </span>
     </div>
     <?php endforeach; ?>
+  </div>
+
+  <div class="card" style="grid-column: span 1;">
+    <div class="card-header">
+      <div class="card-title"><i class="ri-flashlight-line"></i>Log Pemadaman PLN</div>
+      <a class="link-btn" href="<?= $base ?>/pages/pemadaman.php">Kelola</a>
+    </div>
+    <div style="padding: 1rem 0;">
+      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Pemadaman Terbaru</div>
+          <div style="font-weight:600; font-size:13px;">Pemancar Studio</div>
+          <div style="font-size:11px; color:var(--text-secondary);">10 Mei 2026, 07:12 - 07:17</div>
+        </div>
+        <span class="tag orange">Aktif</span>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="location.href='<?= $base ?>/pages/pemadaman.php?action=create'" style="width:100%;">
+        <i class="ri-add-line"></i> Catat Pemadaman
+      </button>
+    </div>
   </div>
 </div>
 

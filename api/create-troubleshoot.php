@@ -38,7 +38,7 @@ $bidang     = trim($input['bidang'] ?? '');
 $deskripsi  = trim($input['deskripsi'] ?? '');
 $kesimpulan = trim($input['kesimpulan'] ?? '');
 $petugas    = $input['petugas'] ?? [];
-$dokumentasiUrls = $input['dokumentasi_urls'] ?? []; // Array of {name, url}
+$dokumentasiFileIds = $input['dokumentasi_file_ids'] ?? []; // Array of {id, name}
 
 // Validasi field wajib
 if (empty($kendala)) {
@@ -141,23 +141,20 @@ if (!empty($kesimpulan)) {
 // Note: "Respondent" adalah created_by (auto-generated oleh Notion)
 
 // Dokumentasi Pendukung (Files) — kirim sebagai external URL jika ada
-if (!empty($dokumentasiUrls) && is_array($dokumentasiUrls)) {
+// GANTI seluruh blok "Dokumentasi Pendukung (Files)" dengan:
+if (!empty($dokumentasiFileIds) && is_array($dokumentasiFileIds)) {
     $filesPayload = [];
-    foreach ($dokumentasiUrls as $doc) {
-        if (!empty($doc['url'])) {
+    foreach ($dokumentasiFileIds as $doc) {
+        if (!empty($doc['id'])) {
             $filesPayload[] = [
-                "name" => $doc['name'] ?? basename($doc['url']),
-                "type" => "external",
-                "external" => [
-                    "url" => $doc['url']
-                ]
+                "type" => "file_upload",
+                "file_upload" => ["id" => $doc['id']],
+                "name" => $doc['name'] ?? 'dokumentasi.jpg',
             ];
         }
     }
     if (!empty($filesPayload)) {
-        $properties["Dokumentasi Pendukung"] = [
-            "files" => $filesPayload
-        ];
+        $properties["Dokumentasi Pendukung"] = ["files" => $filesPayload];
     }
 }
 
