@@ -8,14 +8,48 @@ $stats = [
     ['label' => 'Live Streaming',   'value' => '2',  'sub' => 'Hari ini',       'icon' => 'ri-live-line',         'tone' => 'purple'],
 ];
 
-$agenda = [
-    ['id'=>1,'time'=>'09.00','title'=>'Podcast Luar Studio','tag'=>'PODCAST','tone'=>'purple','pic'=>'Alfan','status'=>'Selesai','cls'=>'selesai','notes'=>'Lokasi: Balai Kota Malang'],
-    ['id'=>2,'time'=>'11.00','title'=>'Persiapan Senam Sore RRI','tag'=>'EVENT','tone'=>'orange','pic'=>'Yanuar','status'=>'Selesai','cls'=>'selesai','notes'=>'Setup sound system lapangan'],
-    ['id'=>3,'time'=>'13.00','title'=>'Persiapan Senam Pagi RRI','tag'=>'EVENT','tone'=>'orange','pic'=>'Saiful','status'=>'Proses','cls'=>'proses','notes'=>'Cek kabel & mixer portable'],
-    ['id'=>4,'time'=>'15.30','title'=>'Live Youtube: Sore Ceria','tag'=>'LIVE','tone'=>'red','pic'=>'Alif','status'=>'Menunggu','cls'=>'belum','notes'=>'Kolaborasi dengan tim CBP Rupiah'],
-    ['id'=>5,'time'=>'19.00','title'=>'Produksi Ruatan Malam','tag'=>'PRODUKSI','tone'=>'blue','pic'=>'Yayang','status'=>'Menunggu','cls'=>'belum','notes'=>''],
-    ['id'=>6,'time'=>'21.00','title'=>'Live Youtube: Simphoni Keroncong','tag'=>'LIVE','tone'=>'red','pic'=>'Yanuar','status'=>'Menunggu','cls'=>'belum','notes'=>'Studio B'],
-];
+require_once __DIR__ . '/../api/agenda.php';
+
+$selectedDate = $_GET['date'] ?? '';
+$selectedSort = ($_GET['sort'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+$agenda = getAgenda($selectedDate ?: null, $selectedSort);
+$errorMessage = null;
+$errorRaw = null;
+if (!is_array($agenda) || isset($agenda['error'])) {
+  $errorMessage = $agenda['error'] ?? 'Gagal memuat data agenda dari Notion';
+  $errorRaw = $agenda['raw'] ?? null;
+  $agenda = [];
+}
+
+// Daftar kategori unik dari data yang ada — dipakai buat tab filter & saran
+// input Kategori di form (jadi otomatis update begitu ada kategori baru
+// dipakai, tidak perlu di-hardcode).
+$categories = [];
+foreach ($agenda as $a) {
+    if ($a['tag'] !== '' && !in_array($a['tag'], $categories, true)) {
+        $categories[] = $a['tag'];
+    }
+}
+sort($categories);
+
+// Pagination — 8 per halaman, sama seperti di Checklist Perangkat
+$perPage = 8;
+$totalItems = count($agenda);
+$totalPages = max(1, (int)ceil($totalItems / $perPage));
+$currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
+$offset = ($currentPage - 1) * $perPage;
+$agendaPage = array_slice($agenda, $offset, $perPage);
+$showingFrom = $totalItems === 0 ? 0 : $offset + 1;
+$showingTo = min($offset + $perPage, $totalItems);
+
+function agendaPageUrl($page, $selectedDate, $selectedSort)
+{
+    $params = [];
+    if ($selectedDate !== '') $params['date'] = $selectedDate;
+    $params['sort'] = $selectedSort;
+    $params['page'] = $page;
+    return '?' . http_build_query($params);
+}
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -24,6 +58,15 @@ include __DIR__ . '/../includes/header.php';
     <h2>Daily Agenda</h2>
     <p>Jadwal kegiatan operasional siaran hari ini.</p>
   </div>
+  <form class="date-picker" method="get" style="display:inline-flex; align-items:center; gap:0.75rem; margin-left:1rem;">
+    <label for="dateFilter" style="margin:0; font-weight:600;">Tanggal:</label>
+    <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($selectedDate) ?>" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
+    <label for="sortFilter" style="margin:0; font-weight:600;">Urutan:</label>
+    <select id="sortFilter" name="sort" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
+      <option value="asc" <?= $selectedSort === 'asc' ? 'selected' : '' ?>>Terlama</option>
+      <option value="desc" <?= $selectedSort === 'desc' ? 'selected' : '' ?>>Terbaru</option>
+    </select>
+  </form>
   <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
 </div>
 
@@ -40,29 +83,38 @@ include __DIR__ . '/../includes/header.php';
   <?php endforeach; ?>
 </div>
 
-<div class="filter-tabs">
+<?php if ($errorMessage): ?>
+<div class="alert alert-danger" style="margin-bottom:1rem; padding:1rem; border-radius:12px; background:#fee2e2; color:#991b1b;">
+  <strong>Terjadi kesalahan:</strong> <?= htmlspecialchars($errorMessage) ?>
+  <?php if (!empty($errorRaw)): ?>
+  <div style="margin-top:0.75rem; font-size:0.90rem; color:#7f1d1d;">Detail: <?= htmlspecialchars($errorRaw) ?></div>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+
+<div class="filter-tabs" id="filterTabs">
   <div class="filter-tab active" onclick="filterAgenda('Semua', this)">Semua</div>
-  <div class="filter-tab" onclick="filterAgenda('PODCAST', this)">Podcast</div>
-  <div class="filter-tab" onclick="filterAgenda('EVENT', this)">Event</div>
-  <div class="filter-tab" onclick="filterAgenda('LIVE', this)">Live</div>
-  <div class="filter-tab" onclick="filterAgenda('PRODUKSI', this)">Produksi</div>
+  <?php foreach ($categories as $cat): ?>
+  <div class="filter-tab" onclick="filterAgenda('<?= htmlspecialchars($cat, ENT_QUOTES) ?>', this)"><?= htmlspecialchars($cat) ?></div>
+  <?php endforeach; ?>
 </div>
 
 <div class="card">
   <div class="card-header">
-    <div class="card-title"><i class="ri-calendar-line"></i>Jadwal — Selasa, 8 Juli 2026</div>
+    <div class="card-title"><i class="ri-calendar-line"></i>Jadwal — <?= htmlspecialchars($selectedDate ? date('l, d F Y', strtotime($selectedDate)) : 'Semua Tanggal') ?></div>
   </div>
   <div class="table-wrap">
     <table class="data-table" id="agendaTable">
       <thead>
-        <tr><th>Waktu</th><th>Kegiatan</th><th>Kategori</th><th>PIC</th><th>Status</th><th>Catatan</th><th></th></tr>
+        <tr><th>Tanggal</th><th>Waktu</th><th>Kegiatan</th><th>Kategori</th><th>Lokasi Kegiatan</th><th>Status</th><th>Catatan</th><th></th></tr>
       </thead>
       <tbody>
-        <?php foreach ($agenda as $a): ?>
-        <tr data-tag="<?= $a['tag'] ?>">
+        <?php foreach ($agendaPage as $a): ?>
+        <tr data-tag="<?= htmlspecialchars($a['tag'], ENT_QUOTES) ?>">
+          <td style="font-weight:600; white-space:nowrap;"><?= htmlspecialchars($a['date'] ? date('d M Y', strtotime($a['date'])) : '-') ?></td>
           <td style="font-weight:700;"><?= htmlspecialchars($a['time']) ?></td>
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
-          <td><span class="tag <?= $a['tone'] ?>"><?= $a['tag'] ?></span></td>
+          <td><span class="tag <?= $a['tone'] ?>"><?= htmlspecialchars($a['tag']) ?></span></td>
           <td><span class="avatar-sm"><?= strtoupper(substr($a['pic'],0,2)) ?></span> <?= htmlspecialchars($a['pic']) ?></td>
           <td><span class="status-tag <?= $a['cls'] ?>"><?= htmlspecialchars($a['status']) ?></span></td>
           <td class="cell-sub"><?= $a['notes'] ? htmlspecialchars($a['notes']) : '—' ?></td>
@@ -75,6 +127,24 @@ include __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
+
+  <div class="pagination-wrap" style="display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; flex-wrap:wrap; gap:0.75rem;">
+    <div style="font-size:0.9rem; color:#6b7280;">
+      Menampilkan <?= $showingFrom ?>-<?= $showingTo ?> dari <?= $totalItems ?> agenda
+    </div>
+    <?php if ($totalPages > 1): ?>
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+      <a href="<?= htmlspecialchars(agendaPageUrl(max(1, $currentPage - 1), $selectedDate, $selectedSort)) ?>"
+         class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
+      <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+      <a href="<?= htmlspecialchars(agendaPageUrl($p, $selectedDate, $selectedSort)) ?>"
+         class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem;"><?= $p ?></a>
+      <?php endfor; ?>
+      <a href="<?= htmlspecialchars(agendaPageUrl(min($totalPages, $currentPage + 1), $selectedDate, $selectedSort)) ?>"
+         class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
+    </div>
+    <?php endif; ?>
+  </div>
 </div>
 
 <!-- Modal Tambah/Edit Agenda -->
@@ -84,23 +154,29 @@ include __DIR__ . '/../includes/header.php';
       <h3 class="modal-title" id="modalTitle">Tambah Agenda</h3>
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
-    <form onsubmit="event.preventDefault(); closeModal();">
-      <div class="form-group"><label>Judul Kegiatan</label><input type="text" placeholder="Contoh: Podcast Luar Studio" required></div>
+    <form onsubmit="handleAgendaForm(event)">
+      <div class="form-group"><label>Judul Kegiatan</label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
       <div class="form-row">
-        <div class="form-group"><label>Waktu</label><input type="time" required></div>
-        <div class="form-group"><label>PIC</label><input type="text" placeholder="Nama petugas" required></div>
+        <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required></div>
+        <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
       </div>
+      <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
       <div class="form-row">
         <div class="form-group">
           <label>Kategori</label>
-          <select><option>PODCAST</option><option>EVENT</option><option>LIVE</option><option>PRODUKSI</option></select>
+          <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
+          <datalist id="kategoriList">
+            <?php foreach ($categories as $cat): ?>
+            <option value="<?= htmlspecialchars($cat) ?>"></option>
+            <?php endforeach; ?>
+          </datalist>
         </div>
         <div class="form-group">
           <label>Status</label>
-          <select><option>Menunggu</option><option>Proses</option><option>Selesai</option></select>
+          <select name="status"><option>Belum</option><option>Selesai</option><option>Cancel</option></select>
         </div>
       </div>
-      <div class="form-group"><label>Catatan</label><textarea rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
+      <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>
@@ -120,6 +196,130 @@ function filterAgenda(tag, el){
   document.querySelectorAll('#agendaTable tbody tr').forEach(row => {
     row.style.display = (tag === 'Semua' || row.dataset.tag === tag) ? '' : 'none';
   });
+}
+
+// ==== Helper warna badge, sama persis logikanya dengan categoryTone()/statusClass() di api/agenda.php ====
+function categoryTone(cat){
+  const c = (cat || '').toLowerCase();
+  if (c.includes('podcast')) return 'blue';
+  if (c.includes('live')) return 'purple';
+  if (c.includes('produksi')) return 'orange';
+  if (c.includes('event') || c.includes('kunjungan')) return 'green';
+  return 'gray';
+}
+function statusTone(status){
+  const s = (status || '').toLowerCase();
+  if (s.includes('selesai')) return 'green';
+  if (s.includes('cancel')) return 'red';
+  if (s.includes('proses')) return 'orange';
+  if (s.includes('belum') || s.includes('menunggu')) return 'gray';
+  return 'blue';
+}
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+function formatDateID(ymd){
+  if (!ymd) return '-';
+  const d = new Date(ymd + 'T00:00:00');
+  if (isNaN(d)) return ymd;
+  return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// Tambahkan baris baru ke paling atas tabel tanpa reload halaman
+function addRowToTable(entry){
+  const tbody = document.querySelector('#agendaTable tbody');
+  const tr = document.createElement('tr');
+  tr.dataset.tag = entry.kategori;
+  tr.innerHTML = `
+    <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal))}</td>
+    <td style="font-weight:700;">${escapeHtml(entry.waktu)}</td>
+    <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
+    <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
+    <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
+    <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
+    <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
+    <td>
+      <button class="icon-action edit" title="Edit"><i class="ri-pencil-line"></i></button>
+      <button class="icon-action delete" title="Hapus"><i class="ri-delete-bin-line"></i></button>
+    </td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+// Tambahkan tab filter baru kalau kategorinya belum ada tab-nya
+function ensureFilterTab(cat){
+  if (!cat) return;
+  const tabs = document.getElementById('filterTabs');
+  const exists = Array.from(tabs.children).some(el => el.textContent === cat);
+  if (!exists){
+    const div = document.createElement('div');
+    div.className = 'filter-tab';
+    div.textContent = cat;
+    div.addEventListener('click', () => filterAgenda(cat, div));
+    tabs.appendChild(div);
+  }
+}
+
+// Tambahkan opsi baru ke datalist Kategori kalau belum ada
+function ensureDatalistOption(cat){
+  if (!cat) return;
+  const list = document.getElementById('kategoriList');
+  const exists = Array.from(list.options).some(o => o.value === cat);
+  if (!exists){
+    const opt = document.createElement('option');
+    opt.value = cat;
+    list.appendChild(opt);
+  }
+}
+
+async function handleAgendaForm(event){
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+  const payload = new URLSearchParams();
+  for (const [k,v] of formData.entries()) payload.append(k, v);
+
+  const submitBtn = form.querySelector('button[type=submit]');
+  const origText = submitBtn.textContent;
+  submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...';
+
+  try {
+    const res = await fetch('<?= $base ?>/api/agenda.php', {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: payload.toString()
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      alert('Gagal menyimpan agenda: ' + JSON.stringify(data));
+      return;
+    }
+
+    // Berhasil disimpan ke Notion -> langsung tampilkan di tabel & form
+    // tanpa perlu reload halaman.
+    const entry = {
+      kegiatan: formData.get('kegiatan'),
+      tanggal:  formData.get('tanggal'),
+      waktu:    formData.get('waktu'),
+      lokasi:   formData.get('lokasi_kegiatan'),
+      kategori: formData.get('kategori'),
+      status:   formData.get('status'),
+      catatan:  formData.get('catatan'),
+    };
+    addRowToTable(entry);
+    ensureFilterTab(entry.kategori);
+    ensureDatalistOption(entry.kategori);
+
+    closeModal();
+    form.reset();
+  } catch (err) {
+    alert('Gagal mengirim data: ' + err.message);
+  } finally {
+    submitBtn.disabled = false; submitBtn.textContent = origText;
+  }
 }
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
