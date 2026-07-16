@@ -37,7 +37,7 @@ button{font-family:inherit;}
 .main{flex:1;margin-left:264px;padding:22px 28px 40px;min-width:0;}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;}
 .topbar-left{display:flex;align-items:center;gap:16px;flex:1;}
-.menu-toggle{display:none;background:none;border:none;font-size:22px;cursor:pointer;}
+.menu-toggle{display:flex;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-primary);align-items:center;justify-content:center;}
 .search-box{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border-color);padding:10px 16px;border-radius:10px;width:100%;max-width:420px;}
 .search-box input{border:none;outline:none;font-size:13.5px;width:100%;font-family:inherit;}
 .search-box i{color:var(--text-secondary);}
@@ -233,15 +233,19 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 }
 
 /* ===== Responsive ===== */
+/* ===== Responsive ===== */
 @media (max-width:1200px){
   .grid-3{grid-template-columns:1fr;}
   .gallery-grid,.person-grid{grid-template-columns:repeat(2,1fr);}
 }
+
 @media (max-width:768px){
   .sidebar{transform:translateX(-100%);}
-  .sidebar.active{transform:translateX(0);}
   .main{margin-left:0;}
-  .menu-toggle{display:block;}
+  
+  body.sidebar-open .sidebar{transform:translateX(0);}
+  
+  .sidebar-hide-btn { display: none; } 
   .search-box{display:none;}
   .grid-2{grid-template-columns:1fr;}
   .gallery-grid,.person-grid{grid-template-columns:1fr;}
@@ -327,4 +331,68 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 /* ===== Responsive tambahan untuk komponen di atas ===== */
 @media (max-width:600px){
   .checkbox-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+
+/* ===== Sidebar Hide/Show Toggle ===== */
+.sidebar, .main {
+  transition: transform 0.3s ease, margin-left 0.3s ease;
+}
+
+/* Tombol tutup di dalam sidebar */
+.sidebar-hide-btn {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  z-index: 10;
+  transition: background 0.2s;
+}
+.sidebar-hide-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Tombol melayang untuk buka sidebar */
+.floating-toggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 42px;
+  height: 42px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  z-index: 1001;
+  cursor: pointer;
+  font-size: 20px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+.floating-toggle:hover {
+  background: var(--primary-dark);
+}
+
+/* Saat body memiliki class sidebar-hidden */
+body.sidebar-hidden .sidebar {
+  transform: translateX(-100%);
+}
+body.sidebar-hidden .main {
+  margin-left: 0 !important;
+}
+body.sidebar-hidden .floating-toggle {
+  display: flex;
 }

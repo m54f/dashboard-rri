@@ -50,9 +50,4 @@ function render_menu_group($items, $base, $activeMenu) {
       <?php render_menu_group($menuPersonal, $base, $activeMenu); ?>
     </div>
   </nav>
-  <div class="sidebar-cta">
-    <h4>Sistem Peminjaman Alat</h4>
-    <p>Kelola peminjaman dan pengembalian alat siaran dengan mudah.</p>
-    <a href="<?= $base ?>/pages/peminjaman.php">Buka Sistem <i class="ri-arrow-right-line"></i></a>
-  </div>
 </aside>

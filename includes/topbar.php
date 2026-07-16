@@ -1,10 +1,13 @@
 <div class="topbar">
   <div class="topbar-left">
-    <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="ri-menu-line"></i></button>
-    <div class="search-box">
+    <!-- Tombol ini akan berfungsi untuk buka/tutup sidebar di semua ukuran layar -->
+    <button class="menu-toggle" onclick="toggleSidebar()" title="Buka/Tutup Menu">
+      <i class="ri-menu-line"></i>
+    </button>
+    <!-- <div class="search-box">
       <i class="ri-search-line"></i>
       <input type="text" placeholder="Cari kegiatan, logbook, atau perangkat...">
-    </div>
+    </div> -->
   </div>
   <div class="topbar-right">
     <button class="icon-btn"><i class="ri-notification-3-line"></i><span class="badge">5</span></button>
