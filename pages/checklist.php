@@ -147,93 +147,80 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- Modal Isi Checklist (Create & Edit) -->
 <div class="modal-overlay" id="checklistModal">
-  <div class="modal-content" style="max-width:600px;">
+  <div class="modal-content" style="max-width:640px;">
     <div class="modal-header">
-      <h3 class="modal-title" id="modalTitle">Checklist Pagi Malam PT</h3>
+      <h3 class="modal-title" id="modalTitle">Isi Checklist Pagi Malam</h3>
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <form id="checklistForm" onsubmit="handleChecklistSubmit(event)">
       <input type="hidden" id="field_page_id" name="page_id" value="">
 
-      <!-- Checklist Pagi/Malam -->
+      <div class="form-row">
+        <!-- Sesi Checklist -->
+        <div class="form-group">
+          <label>Sesi Checklist <span class="required-star">*</span></label>
+          <div class="radio-segment" id="field_checklist">
+            <input type="radio" name="checklist" value="Pagi" id="r_pagi" required>
+            <label for="r_pagi"><i class="ri-sun-line"></i> Pagi</label>
+            <input type="radio" name="checklist" value="Malam" id="r_malam">
+            <label for="r_malam"><i class="ri-moon-line"></i> Malam</label>
+          </div>
+        </div>
+
+        <!-- Tanggal Cek -->
+        <div class="form-group">
+          <label>Tanggal Cek <span class="required-star">*</span></label>
+          <input type="date" id="field_tanggal" name="tanggal" required>
+        </div>
+      </div>
+
       <div class="form-group">
-        <label>Checklist <span class="required-star">*</span></label>
-        <div class="radio-group" id="field_checklist">
-          <label class="radio-option">
-            <input type="radio" name="checklist" value="Pagi" required>
-            <span class="radio-label"><i class="ri-sun-line"></i> Pagi</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="checklist" value="Malam">
-            <span class="radio-label"><i class="ri-moon-line"></i> Malam</span>
-          </label>
+        <label>Cek Perangkat <span style="font-weight:400; color:var(--text-secondary); font-size:11px;">(Klik kartu untuk menandai sudah dicek)</span></label>
+        
+        <div class="check-item" data-target="field_pro1" onclick="toggleCheckItem(this)">
+          <div class="check-item-text">
+            <h4>Programa 1 <span class="required-star">*</span></h4>
+            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Dias (App DIAS terhubung) - PC Streaming - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+          </div>
+          <div class="check-status">Belum Cek</div>
+          <input type="checkbox" id="field_pro1" name="pro1" hidden>
         </div>
-      </div>
 
-      <!-- Tanggal Cek -->
-      <div class="form-group">
-        <label>Tanggal Cek <span class="required-star">*</span></label>
-        <input type="date" id="field_tanggal" name="tanggal" required>
-      </div>
-
-      <!-- Programa 1 -->
-      <div class="check-item">
-        <div class="check-item-text">
-          <h4>Programa 1 <span class="required-star">*</span></h4>
-          <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Dias (App DIAS terhubung) - PC Streaming - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+        <div class="check-item" data-target="field_pro2" onclick="toggleCheckItem(this)">
+          <div class="check-item-text">
+            <h4>Programa 2 <span class="required-star">*</span></h4>
+            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC Backup - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+          </div>
+          <div class="check-status">Belum Cek</div>
+          <input type="checkbox" id="field_pro2" name="pro2" hidden>
         </div>
-        <label class="switch-check">
-          <input type="checkbox" id="field_pro1" name="pro1">
-          <span>Sudah Cek</span>
-        </label>
-      </div>
 
-      <!-- Programa 2 -->
-      <div class="check-item">
-        <div class="check-item-text">
-          <h4>Programa 2 <span class="required-star">*</span></h4>
-          <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC Backup - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+        <div class="check-item" data-target="field_pro4" onclick="toggleCheckItem(this)">
+          <div class="check-item-text">
+            <h4>Programa 4 <span class="required-star">*</span></h4>
+            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC WA - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+          </div>
+          <div class="check-status">Belum Cek</div>
+          <input type="checkbox" id="field_pro4" name="pro4" hidden>
         </div>
-        <label class="switch-check">
-          <input type="checkbox" id="field_pro2" name="pro2">
-          <span>Sudah Cek</span>
-        </label>
-      </div>
 
-      <!-- Programa 4 -->
-      <div class="check-item">
-        <div class="check-item-text">
-          <h4>Programa 4 <span class="required-star">*</span></h4>
-          <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC WA - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+        <div class="check-item" data-target="field_tetrack" onclick="toggleCheckItem(this)">
+          <div class="check-item-text">
+            <h4>Te-track</h4>
+            <p>Monitoring log Pemancar melalui aplikasi Te-Track</p>
+          </div>
+          <div class="check-status">Belum Submit</div>
+          <input type="checkbox" id="field_tetrack" name="tetrack" hidden>
         </div>
-        <label class="switch-check">
-          <input type="checkbox" id="field_pro4" name="pro4">
-          <span>Sudah Cek</span>
-        </label>
-      </div>
 
-      <!-- Te-track -->
-      <div class="check-item">
-        <div class="check-item-text">
-          <h4>Te-track</h4>
-          <p>Monitoring log Pemancar melalui aplikasi Te-Track</p>
+        <div class="check-item" data-target="field_mcr" onclick="toggleCheckItem(this)">
+          <div class="check-item-text">
+            <h4>MCR Depan <span class="required-star">*</span></h4>
+            <p>Cek Kondisi PC Streaming dan Logger - PC Logger Back Up - Backup Rekaman Logger Harian</p>
+          </div>
+          <div class="check-status">Belum Cek</div>
+          <input type="checkbox" id="field_mcr" name="mcr" hidden>
         </div>
-        <label class="switch-check">
-          <input type="checkbox" id="field_tetrack" name="tetrack">
-          <span>Sudah Submit</span>
-        </label>
-      </div>
-
-      <!-- MCR Depan -->
-      <div class="check-item">
-        <div class="check-item-text">
-          <h4>MCR Depan <span class="required-star">*</span></h4>
-          <p>Cek Kondisi PC Setreaming dan Logger - PC Logger Back Up - Backup Rekaman Logger Harian</p>
-        </div>
-        <label class="switch-check">
-          <input type="checkbox" id="field_mcr" name="mcr">
-          <span>Sudah Cek dan Backup</span>
-        </label>
       </div>
 
       <!-- Petugas DP -->
@@ -271,6 +258,39 @@ document.getElementById('checklistModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
+// ===== Fungsi Toggle Kartu Ceklis =====
+function toggleCheckItem(el) {
+  const inputId = el.getAttribute('data-target');
+  const input = document.getElementById(inputId);
+  const statusEl = el.querySelector('.check-status');
+  
+  input.checked = !input.checked;
+  el.classList.toggle('checked', input.checked);
+  
+  // Ubah teks status
+  if (inputId === 'field_tetrack') {
+    statusEl.textContent = input.checked ? 'Sudah Submit' : 'Belum Submit';
+  } else {
+    statusEl.textContent = input.checked ? 'Sudah Cek' : 'Belum Cek';
+  }
+}
+
+// Fungsi bantu untuk reset visual kartu saat buka modal
+function resetCheckItemVisuals() {
+  document.querySelectorAll('.check-item').forEach(el => {
+    const inputId = el.getAttribute('data-target');
+    const input = document.getElementById(inputId);
+    const statusEl = el.querySelector('.check-status');
+    
+    el.classList.toggle('checked', input.checked);
+    if (inputId === 'field_tetrack') {
+      statusEl.textContent = input.checked ? 'Sudah Submit' : 'Belum Submit';
+    } else {
+      statusEl.textContent = input.checked ? 'Sudah Cek' : 'Belum Cek';
+    }
+  });
+}
+
 // ===== Mode CREATE =====
 function openCreateModal(){
   const form = document.getElementById('checklistForm');
@@ -278,8 +298,8 @@ function openCreateModal(){
   document.getElementById('field_page_id').value = '';
   document.getElementById('modalTitle').textContent = 'Isi Checklist Pagi Malam';
   document.getElementById('submitBtnLabel').textContent = 'Kirim';
-  // Default tanggal cek = hari ini
   document.getElementById('field_tanggal').value = new Date().toISOString().split('T')[0];
+  resetCheckItemVisuals(); // Reset warna kartu
   openModal();
 }
 
@@ -291,11 +311,15 @@ function openEditModal(btn){
 
   document.getElementById('field_page_id').value = data.page_id;
   document.getElementById('field_tanggal').value = data.tanggal || '';
+  
+  // Set nilai checkbox & update visual kartunya
   document.getElementById('field_pro1').checked = !!data.pro1;
   document.getElementById('field_pro2').checked = !!data.pro2;
   document.getElementById('field_pro4').checked = !!data.pro4;
   document.getElementById('field_tetrack').checked = !!data.tetrack;
   document.getElementById('field_mcr').checked = !!data.mcr;
+  resetCheckItemVisuals(); // Terapkan warna hijau pada yang sudah dicek
+
   document.getElementById('field_keterangan').value = data.keterangan || '';
 
   const radio = form.querySelector(`input[name="checklist"][value="${CSS.escape(data.checklist)}"]`);
@@ -431,7 +455,12 @@ async function handleChecklistSubmit(event) {
       form.reset();
       setTimeout(() => location.reload(), 1200);
     } else {
-      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+      let errMsg = data.error || 'Unknown error';
+      if (data.details) {
+          errMsg += '\nDetails: ' + (typeof data.details === 'string' ? data.details : JSON.stringify(data.details));
+      }
+      showToast('❌ Gagal: ' + errMsg, 'error');
+      console.error('Notion Error Details:', data);
     }
   } catch (err) {
     console.error('Error:', err);
