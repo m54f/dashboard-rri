@@ -67,18 +67,26 @@ $headers = [
 $petugasPayload = array_map(fn($n) => ["name" => $n], $petugas);
 
 $properties = [
-    "Checklist"   => ["select" => ["name" => $checklistType]],
-    "Tanggal Cek" => ["date" => ["start" => $tanggal]],
-    "Pro 1"       => ["checkbox" => $pro1],
-    "Pro 2"       => ["checkbox" => $pro2],
-    "Pro 4"       => ["checkbox" => $pro4],
-    "Checkbox"    => ["checkbox" => $tetrack],
-    "MCR Depan"   => ["checkbox" => $mcr],
-    "Petugas DP"  => ["multi_select" => $petugasPayload],
-    "Keterangan Checklist" => [
-        "rich_text" => !empty($keterangan) ? [["text" => ["content" => $keterangan]]] : []
-    ],
+   // Di update API, Title tidak wajib dikirim, tapi tidak apa-apa dikirim
+   "Question 1" => [
+       "title" => [
+           ["text" => ["content" => "Checklist {$checklistType} - {$tanggal}"]]
+       ]
+   ],
+   "Checklist"   => ["multi_select" => [["name" => $checklistType]]],
+   "Tanggal Cek" => ["date" => ["start" => $tanggal]],
+   "Pro 1"       => ["checkbox" => $pro1],
+   "Pro 2"       => ["checkbox" => $pro2],
+   "Pro 4"       => ["checkbox" => $pro4],
+   "Checkbox"    => ["checkbox" => $tetrack],
+   "MCR Depan"   => ["checkbox" => $mcr],
+   "Petugas DP"  => ["multi_select" => $petugasPayload],
+   "Keterangan Checklist" => [
+       "rich_text" => !empty($keterangan) ? [["text" => ["content" => $keterangan]]] : []
+   ],
 ];
+
+// JANGAN masukkan "Submission time" dan "Respondent" ke $properties
 
 $payload = ["properties" => $properties];
 

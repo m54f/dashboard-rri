@@ -65,27 +65,30 @@ $headers = [
 $petugasPayload = array_map(fn($n) => ["name" => $n], $petugas);
 
 $properties = [
-    // Title property Notion-nya bernama "Question 1" (cek lagi kalau ternyata beda)
-    "Question 1" => [
-        "title" => [
-            ["text" => ["content" => "Checklist {$checklistType} - {$tanggal}"]]
-        ]
-    ],
-    "Checklist"   => ["select" => ["name" => $checklistType]],
-    "Tanggal Cek" => ["date" => ["start" => $tanggal]],
-    "Pro 1"       => ["checkbox" => $pro1],
-    "Pro 2"       => ["checkbox" => $pro2],
-    "Pro 4"       => ["checkbox" => $pro4],
-    "Checkbox"    => ["checkbox" => $tetrack],
-    "MCR Depan"   => ["checkbox" => $mcr],
-    "Petugas DP"  => ["multi_select" => $petugasPayload],
+   // "Question 1" benar bertipe title
+   "Question 1" => [
+       "title" => [
+           ["text" => ["content" => "Checklist {$checklistType} - {$tanggal}"]]
+       ]
+   ],
+   // "Checklist" benar bertipe multi_select
+   "Checklist"   => ["multi_select" => [["name" => $checklistType]]],
+   "Tanggal Cek" => ["date" => ["start" => $tanggal]],
+   "Pro 1"       => ["checkbox" => $pro1],
+   "Pro 2"       => ["checkbox" => $pro2],
+   "Pro 4"       => ["checkbox" => $pro4],
+   "Checkbox"    => ["checkbox" => $tetrack],
+   "MCR Depan"   => ["checkbox" => $mcr],
+   "Petugas DP"  => ["multi_select" => $petugasPayload],
 ];
 
 if (!empty($keterangan)) {
-    $properties["Keterangan Checklist"] = [
-        "rich_text" => [["text" => ["content" => $keterangan]]]
-    ];
+   $properties["Keterangan Checklist"] = [
+       "rich_text" => [["text" => ["content" => $keterangan]]]
+   ];
 }
+
+// JANGAN masukkan "Submission time" dan "Respondent" ke $properties
 
 $payload = [
     "parent" => ["database_id" => DATABASE_ID_CHECKLIST],

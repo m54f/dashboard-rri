@@ -50,7 +50,9 @@ function getChecklist()
 
         $id = strtoupper(substr($item['id'], 0, 6));
 
-        $checklistType = $props['Checklist']['select']['name'] ?? '-';
+        // 1. Baca Checklist (multi_select)
+        $checklistArr = $props['Checklist']['multi_select'] ?? [];
+        $checklistType = !empty($checklistArr) ? $checklistArr[0]['name'] : '-';
 
         $tanggalRaw = $props['Tanggal Cek']['date']['start'] ?? null;
         $tanggal = $tanggalRaw ? date('d M Y', strtotime($tanggalRaw)) : '-';
@@ -70,8 +72,12 @@ function getChecklist()
             $keterangan .= $rt['plain_text'] ?? '';
         }
 
+        // 2. Baca Submission time (created_time)
         $submissionRaw = $props['Submission time']['created_time'] ?? $item['created_time'] ?? null;
         $submission = $submissionRaw ? date('d M Y, H:i', strtotime($submissionRaw)) . ' WIB' : '-';
+
+        // 3. Baca Respondent (created_by) - Jika nanti ingin ditampilkan
+        $respondentName = $props['Respondent']['created_by']['name'] ?? 'Unknown';
 
         // Hitung kelengkapan checklist (5 item: Pro1, Pro2, Pro4, Te-track, MCR Depan)
         $totalItems = 5;
@@ -97,6 +103,8 @@ function getChecklist()
             'done_items'     => $doneItems,
             'total_items'    => $totalItems,
             'is_complete'    => $isComplete,
+            // Uncomment baris di bawah jika ingin mengirim data respondent ke frontend
+            // 'respondent'     => $respondentName, 
         ];
     }
 
