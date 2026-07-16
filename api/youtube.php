@@ -159,7 +159,7 @@ function getYoutubeVideos()
 
 
         $videos[] = [
-            'id'             => substr($item['id'], 0, 8),
+            'id'             => $item['id'],
             'namaAcara'      => $namaAcara,
             'title'          => $title,
             'programa'       => $programa,
