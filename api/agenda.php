@@ -156,6 +156,8 @@ function getAgenda($date = null, $sort = 'asc')
             }
         }
 
+        $docs = getNotionFilesFromProps($props);
+
         $agenda[] = [
             'id'      => strtoupper(substr($item['id'], 0, 6)),
             'page_id' => $item['id'],
@@ -169,6 +171,7 @@ function getAgenda($date = null, $sort = 'asc')
             'notes'   => $notes,
             'date'    => $dateYmd,
             'time'    => $time,
+            'dokumentasi' => $docs,
         ];
     }
 
@@ -181,6 +184,180 @@ function getAgenda($date = null, $sort = 'asc')
     }
 
     return $agenda;
+}
+
+function getNotionFilesFromProps(array $props): array
+{
+    $files = [];
+    foreach (['Dokumentasi', 'Dokumen', 'Surat Tugas', 'Files', 'Attachment', 'Attachments'] as $key) {
+        if (!isset($props[$key])) {
+            continue;
+        }
+        $prop = $props[$key];
+        if (!isset($prop['files']) || !is_array($prop['files'])) {
+            continue;
+        }
+        foreach ($prop['files'] as $file) {
+            $url = '';
+            if (isset($file['file']['url'])) {
+                $url = $file['file']['url'];
+            } elseif (isset($file['external']['url'])) {
+                $url = $file['external']['url'];
+            }
+            if ($url === '') {
+                continue;
+            }
+            $files[] = [
+                'name' => $file['name'] ?? basename($url),
+                'url'  => $url,
+            ];
+        }
+        if (!empty($files)) {
+            break;
+        }
+    }
+    return $files;
+}
+
+function buildAgendaProperties(array $data): array
+{
+    $judul    = trim($data['kegiatan'] ?? '');
+    $tanggal  = trim($data['tanggal'] ?? '');
+    $waktu    = trim($data['waktu'] ?? '');
+    $lokasi   = trim($data['lokasi_kegiatan'] ?? $data['pic'] ?? '');
+    $kategori = trim($data['kategori'] ?? 'EVENT');
+    $status   = trim($data['status'] ?? 'Belum');
+    $catatan  = trim($data['catatan'] ?? '');
+
+    $dateTimeStr = '';
+    if ($tanggal !== '' && $waktu !== '') {
+        $dateTimeStr = $tanggal . 'T' . $waktu . ':00+07:00';
+    }
+
+    $properties = [
+        'Nama Kegiatan' => [
+            'title' => [
+                ['text' => ['content' => $judul]]
+            ]
+        ],
+        'Date' => [
+            'date' => $dateTimeStr !== '' ? ['start' => $dateTimeStr] : null
+        ],
+        'Lokasi Kegiatan' => [
+            'rich_text' => [
+                ['text' => ['content' => $lokasi]]
+            ]
+        ],
+        'Jenis Kegiatan' => [
+            'multi_select' => [
+                ['name' => $kategori]
+            ]
+        ],
+        'Status' => [
+            'status' => ['name' => $status]
+        ],
+    ];
+
+    if ($catatan !== '') {
+        $properties['Catatan'] = [
+            'rich_text' => [[
+                'text' => ['content' => $catatan]
+            ]]
+        ];
+    }
+
+    return $properties;
+}
+
+function updateAgenda($data)
+{
+    $pageId = trim($data['page_id'] ?? '');
+    if ($pageId === '') {
+        return ['error' => 'Field page_id wajib diisi untuk update.'];
+    }
+
+    $properties = buildAgendaProperties($data);
+    $payload = ['properties' => $properties];
+
+    $ch = curl_init("https://api.notion.com/v1/pages/{$pageId}");
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION,
+        "Content-Type: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        return ['error' => 'cURL Error: ' . $error];
+    }
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+    if ($httpCode !== 200) {
+        return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
+    }
+    return ['success' => true, 'id' => $pageId];
+}
+
+function deleteAgenda($data)
+{
+    $pageId = trim($data['page_id'] ?? '');
+    if ($pageId === '') {
+        return ['error' => 'Field page_id wajib diisi untuk hapus.'];
+    }
+
+    $url = "https://api.notion.com/v1/pages/{$pageId}";
+    $headers = [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION,
+        "Content-Type: application/json"
+    ];
+    $payload = ['archived' => true];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        return ['error' => 'cURL Error: ' . $error];
+    }
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        $result = json_decode($response, true);
+        return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
+    }
+
+    return ['success' => true];
+}
+
+function handleAgendaRequest()
+{
+    $data = $_POST;
+    if (empty($data) && strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
+        $data = json_decode(file_get_contents('php://input'), true) ?: [];
+    }
+
+    $action = strtolower(trim($data['action'] ?? 'create'));
+    if ($action === 'update') {
+        return updateAgenda($data);
+    }
+    if ($action === 'delete') {
+        return deleteAgenda($data);
+    }
+    return createAgenda($data);
 }
 
 /**
@@ -265,15 +442,13 @@ function createAgenda($data)
         ],
     ];
 
-    // "Catatan" belum dikirim karena nama property itu belum ketemu di
-    // database Notion-mu (error sebelumnya: "Catatan is not a property
-    // that exists"). Kalau kamu tahu nama property yang benar untuk
-    // catatan/keterangan, tambahkan lagi di sini, contoh:
-    // if ($catatan !== '') {
-    //     $properties['NAMA_PROPERTY_YANG_BENAR'] = [
-    //         'rich_text' => [['text' => ['content' => $catatan]]]
-    //     ];
-    // }
+    if ($catatan !== '') {
+        $properties['Catatan'] = [
+            'rich_text' => [[
+                'text' => ['content' => $catatan]
+            ]]
+        ];
+    }
 
     $payload = json_encode([
         'parent'     => ['database_id' => DATABASE_ID_AGENDA],
@@ -317,6 +492,6 @@ function createAgenda($data)
 // Saat di-require oleh pages/agenda.php (GET), blok ini dilewati — jadi aman.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    echo json_encode(createAgenda($_POST));
+    echo json_encode(handleAgendaRequest());
     exit;
 }

@@ -11,8 +11,11 @@ $stats = [
 require_once __DIR__ . '/../api/agenda.php';
 
 $selectedDate = $_GET['date'] ?? '';
+if ($selectedDate === '') {
+    $selectedDate = date('Y-m-d');
+}
 $selectedSort = ($_GET['sort'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-$agenda = getAgenda($selectedDate ?: null, $selectedSort);
+$agenda = getAgenda($selectedDate, $selectedSort);
 $errorMessage = null;
 $errorRaw = null;
 if (!is_array($agenda) || isset($agenda['error'])) {
@@ -21,9 +24,21 @@ if (!is_array($agenda) || isset($agenda['error'])) {
   $agenda = [];
 }
 
+// Statistik dinamis berdasarkan data yang ditampilkan.
+$agendaCount = count($agenda);
+$doneCount = count(array_filter($agenda, fn($a) => stripos($a['status'], 'selesai') !== false));
+$waitingCount = count(array_filter($agenda, fn($a) => preg_match('/\b(belum|menunggu)\b/i', $a['status'])));
+$liveCount = count(array_filter($agenda, fn($a) => stripos($a['tag'], 'live') !== false));
+
+$stats = [
+    ['label' => 'Agenda Hari Ini',   'value' => (string)$agendaCount, 'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
+    ['label' => 'Sudah Berlangsung', 'value' => (string)$doneCount,  'sub' => 'Selesai dijalankan','icon' => 'ri-checkbox-circle-line','tone' => 'green'],
+    ['label' => 'Menunggu',         'value' => (string)$waitingCount, 'sub' => 'Belum dimulai',  'icon' => 'ri-time-line',         'tone' => 'orange'],
+    ['label' => 'Live Streaming',   'value' => (string)$liveCount,  'sub' => 'Hari ini',       'icon' => 'ri-live-line',         'tone' => 'purple'],
+];
+
 // Daftar kategori unik dari data yang ada — dipakai buat tab filter & saran
-// input Kategori di form (jadi otomatis update begitu ada kategori baru
-// dipakai, tidak perlu di-hardcode).
+// input Kategori di form.
 $categories = [];
 foreach ($agenda as $a) {
     if ($a['tag'] !== '' && !in_array($a['tag'], $categories, true)) {
@@ -106,11 +121,11 @@ include __DIR__ . '/../includes/header.php';
   <div class="table-wrap">
     <table class="data-table" id="agendaTable">
       <thead>
-        <tr><th>Tanggal</th><th>Waktu</th><th>Kegiatan</th><th>Kategori</th><th>Lokasi Kegiatan</th><th>Status</th><th>Catatan</th><th></th></tr>
+        <tr><th>Tanggal</th><th>Waktu</th><th>Kegiatan</th><th>Kategori</th><th>Lokasi Kegiatan</th><th>Status</th><th>Catatan</th><th>Dokumen</th><th></th></tr>
       </thead>
       <tbody>
         <?php foreach ($agendaPage as $a): ?>
-        <tr data-tag="<?= htmlspecialchars($a['tag'], ENT_QUOTES) ?>">
+        <tr data-tag="<?= htmlspecialchars($a['tag'], ENT_QUOTES) ?>" data-id="<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>">
           <td style="font-weight:600; white-space:nowrap;"><?= htmlspecialchars($a['date'] ? date('d M Y', strtotime($a['date'])) : '-') ?></td>
           <td style="font-weight:700;"><?= htmlspecialchars($a['time']) ?></td>
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
@@ -119,8 +134,37 @@ include __DIR__ . '/../includes/header.php';
           <td><span class="status-tag <?= $a['cls'] ?>"><?= htmlspecialchars($a['status']) ?></span></td>
           <td class="cell-sub"><?= $a['notes'] ? htmlspecialchars($a['notes']) : '—' ?></td>
           <td>
-            <button class="icon-action edit" title="Edit"><i class="ri-pencil-line"></i></button>
-            <button class="icon-action delete" title="Hapus"><i class="ri-delete-bin-line"></i></button>
+            <?php if (!empty($a['dokumentasi'])):
+              $docs = $a['dokumentasi'];
+              $shown = array_slice($docs, 0, 2);
+              $remaining = count($docs) - count($shown);
+            ?>
+            <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+              <?php foreach ($shown as $doc):
+                $ext = strtolower(pathinfo($doc['name'], PATHINFO_EXTENSION));
+                $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp']);
+              ?>
+                <?php if ($isImage): ?>
+                <a href="<?= htmlspecialchars($doc['url']) ?>" target="_blank" rel="noopener" title="<?= htmlspecialchars($doc['name']) ?>">
+                  <img src="<?= htmlspecialchars($doc['url']) ?>" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; display:block;">
+                </a>
+                <?php else: ?>
+                <a href="<?= htmlspecialchars($doc['url']) ?>" target="_blank" rel="noopener" title="<?= htmlspecialchars($doc['name']) ?>" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid #e5e7eb; background:#f3f4f6; text-decoration:none;">
+                  <i class="ri-file-text-line" style="color:#6b7280;"></i>
+                </a>
+                <?php endif; ?>
+              <?php endforeach; ?>
+              <?php if ($remaining > 0): ?>
+              <span style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:#e5e7eb; font-size:0.75rem; font-weight:600; color:#4b5563;">+<?= $remaining ?></span>
+              <?php endif; ?>
+            </div>
+            <?php else: ?>
+              —
+            <?php endif; ?>
+          </td>
+          <td>
+            <button class="icon-action edit" title="Edit" onclick="openEditModal('<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>')"><i class="ri-pencil-line"></i></button>
+            <button class="icon-action delete" title="Hapus" onclick="deleteAgendaRow('<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>', this)"><i class="ri-delete-bin-line"></i></button>
           </td>
         </tr>
         <?php endforeach; ?>
@@ -154,7 +198,7 @@ include __DIR__ . '/../includes/header.php';
       <h3 class="modal-title" id="modalTitle">Tambah Agenda</h3>
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
-    <form onsubmit="handleAgendaForm(event)">
+    <form id="agendaForm" onsubmit="handleAgendaForm(event)">
       <div class="form-group"><label>Judul Kegiatan</label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
       <div class="form-row">
         <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required></div>
@@ -177,6 +221,14 @@ include __DIR__ . '/../includes/header.php';
         </div>
       </div>
       <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
+      <div class="form-group">
+        <label>Surat Tugas / Dokumen / Foto (opsional)</label>
+        <input type="file" name="dokumen[]" multiple accept=".pdf,.doc,.docx,image/*">
+        <small style="color:#6b7280; display:block; margin-top:0.25rem;">Bisa pilih lebih dari satu file. Maks 5MB per file.</small>
+        <small id="editFileNote" style="color:#9ca3af; display:none; margin-top:0.25rem;">Upload file baru di sini akan MENGGANTI dokumen lama pada agenda ini. Kosongkan kalau tidak mau mengubah dokumen yang sudah ada.</small>
+      </div>
+      <input type="hidden" name="page_id" value="">
+      <input type="hidden" name="action" value="create">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>
@@ -186,9 +238,91 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
-function openModal(){ document.getElementById('agendaModal').classList.add('active'); }
+const BASE = '<?= $base ?>';
+
+// Data agenda yang lagi tampil di halaman ini (buat isi form Edit)
+const AGENDA_DATA = <?= json_encode(array_map(function ($a) {
+    return [
+        'id'       => $a['page_id'],
+        'title'    => $a['title'],
+        'date'     => $a['date'],
+        'time'     => $a['time'],
+        'lokasi'   => $a['pic'],
+        'kategori' => $a['tag'],
+        'status'   => $a['status'],
+        'catatan'  => $a['notes'],
+    ];
+}, $agendaPage)) ?>;
+
+function openModal(mode){
+  if (mode === 'create') {
+    const form = document.getElementById('agendaForm');
+    form.reset();
+    form.page_id.value = '';
+    form.elements['action'].value = 'create';
+    document.getElementById('modalTitle').textContent = 'Tambah Agenda';
+    document.getElementById('agendaForm').querySelector('button[type=submit]').textContent = 'Simpan Agenda';
+    document.getElementById('editFileNote').style.display = 'none';
+  }
+  document.getElementById('agendaModal').classList.add('active');
+}
 function closeModal(){ document.getElementById('agendaModal').classList.remove('active'); }
 document.getElementById('agendaModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+function openEditModal(id){
+  const entry = AGENDA_DATA.find(a => a.id === id);
+  if (!entry) { alert('Data agenda tidak ditemukan di halaman ini.'); return; }
+
+  const form = document.getElementById('agendaForm');
+  form.reset();
+  form.kegiatan.value = entry.title;
+  form.tanggal.value = entry.date;
+  form.waktu.value = entry.time;
+  form.lokasi_kegiatan.value = entry.lokasi;
+  form.kategori.value = entry.kategori;
+  form.status.value = entry.status;
+  form.catatan.value = entry.catatan || '';
+  form.page_id.value = entry.id;
+  form.elements['action'].value = 'update';
+
+  document.getElementById('modalTitle').textContent = 'Edit Agenda';
+  form.querySelector('button[type=submit]').textContent = 'Simpan Perubahan';
+  document.getElementById('editFileNote').style.display = 'block';
+
+  document.getElementById('agendaModal').classList.add('active');
+}
+
+async function deleteAgendaRow(id, btn){
+  console.log('[deleteAgendaRow] diklik untuk id:', id);
+  const ok = confirm('Yakin mau hapus agenda ini? Data akan dipindah ke Trash Notion.');
+  console.log('[deleteAgendaRow] hasil confirm():', ok);
+  if (!ok) { console.log('[deleteAgendaRow] dibatalkan (confirm() false / dialog diblokir browser)'); return; }
+
+  const row = btn.closest('tr');
+  const formData = new FormData();
+  formData.append('action', 'delete');
+  formData.append('page_id', id);
+
+  btn.disabled = true;
+  try {
+    console.log('[deleteAgendaRow] mengirim request ke', `${BASE}/api/agenda.php`);
+    const res = await fetch(`${BASE}/api/agenda.php`, { method: 'POST', body: formData });
+    console.log('[deleteAgendaRow] status response:', res.status);
+    const data = await res.json();
+    console.log('[deleteAgendaRow] isi response:', data);
+    if (!res.ok || data.error) {
+      alert('Gagal menghapus agenda: ' + JSON.stringify(data));
+      return;
+    }
+    row.remove();
+    console.log('[deleteAgendaRow] baris berhasil dihapus dari tabel');
+  } catch (err) {
+    console.error('[deleteAgendaRow] exception:', err);
+    alert('Gagal menghapus agenda: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 function filterAgenda(tag, el){
   document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -220,7 +354,6 @@ function escapeHtml(str){
   div.textContent = str ?? '';
   return div.innerHTML;
 }
-
 function formatDateID(ymd){
   if (!ymd) return '-';
   const d = new Date(ymd + 'T00:00:00');
@@ -228,11 +361,15 @@ function formatDateID(ymd){
   return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-// Tambahkan baris baru ke paling atas tabel tanpa reload halaman
-function addRowToTable(entry){
+// Tambahkan baris baru ke paling atas tabel tanpa reload halaman (dipakai
+// waktu Tambah Agenda sukses). Dokumen yang baru diupload belum langsung
+// muncul di baris ini — baru kelihatan setelah reload, karena kita tidak
+// tahu URL Notion-nya sampai halaman dimuat ulang.
+function addRowToTable(entry, pageId){
   const tbody = document.querySelector('#agendaTable tbody');
   const tr = document.createElement('tr');
   tr.dataset.tag = entry.kategori;
+  tr.dataset.id = pageId || '';
   tr.innerHTML = `
     <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal))}</td>
     <td style="font-weight:700;">${escapeHtml(entry.waktu)}</td>
@@ -241,15 +378,15 @@ function addRowToTable(entry){
     <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
     <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
+    <td>—</td>
     <td>
-      <button class="icon-action edit" title="Edit"><i class="ri-pencil-line"></i></button>
-      <button class="icon-action delete" title="Hapus"><i class="ri-delete-bin-line"></i></button>
+      <button class="icon-action edit" title="Edit" onclick="openEditModal('${pageId}')"><i class="ri-pencil-line"></i></button>
+      <button class="icon-action delete" title="Hapus" onclick="deleteAgendaRow('${pageId}', this)"><i class="ri-delete-bin-line"></i></button>
     </td>
   `;
   tbody.insertBefore(tr, tbody.firstChild);
 }
 
-// Tambahkan tab filter baru kalau kategorinya belum ada tab-nya
 function ensureFilterTab(cat){
   if (!cat) return;
   const tabs = document.getElementById('filterTabs');
@@ -262,8 +399,6 @@ function ensureFilterTab(cat){
     tabs.appendChild(div);
   }
 }
-
-// Tambahkan opsi baru ke datalist Kategori kalau belum ada
 function ensureDatalistOption(cat){
   if (!cat) return;
   const list = document.getElementById('kategoriList');
@@ -278,28 +413,36 @@ function ensureDatalistOption(cat){
 async function handleAgendaForm(event){
   event.preventDefault();
   const form = event.target;
+  const isUpdate = form.elements['action'].value === 'update';
+
+  // FormData (bukan URLSearchParams) supaya file ikut terkirim sebagai multipart/form-data
   const formData = new FormData(form);
-  const payload = new URLSearchParams();
-  for (const [k,v] of formData.entries()) payload.append(k, v);
 
   const submitBtn = form.querySelector('button[type=submit]');
   const origText = submitBtn.textContent;
   submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...';
 
   try {
-    const res = await fetch('<?= $base ?>/api/agenda.php', {
+    const res = await fetch(`${BASE}/api/agenda.php`, {
       method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded'},
-      body: payload.toString()
+      body: formData
     });
     const data = await res.json();
     if (!res.ok || data.error) {
       alert('Gagal menyimpan agenda: ' + JSON.stringify(data));
       return;
     }
+    if (data.file_warnings && data.file_warnings.length) {
+      alert('Agenda tersimpan, tapi ada file yang gagal diupload:\n' + data.file_warnings.join('\n'));
+    }
 
-    // Berhasil disimpan ke Notion -> langsung tampilkan di tabel & form
-    // tanpa perlu reload halaman.
+    if (isUpdate) {
+      // Cara paling aman buat nampilkan hasil edit (termasuk dokumen baru)
+      // dengan benar adalah reload halaman ini.
+      location.reload();
+      return;
+    }
+
     const entry = {
       kegiatan: formData.get('kegiatan'),
       tanggal:  formData.get('tanggal'),
@@ -309,7 +452,7 @@ async function handleAgendaForm(event){
       status:   formData.get('status'),
       catatan:  formData.get('catatan'),
     };
-    addRowToTable(entry);
+    addRowToTable(entry, data.id);
     ensureFilterTab(entry.kategori);
     ensureDatalistOption(entry.kategori);
 
