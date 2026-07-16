@@ -26,3 +26,18 @@ if (!isset($activeMenu)) $activeMenu = 'dashboard';
 <?php include __DIR__ . '/sidebar.php'; ?>
   <main class="main">
 <?php include __DIR__ . '/topbar.php'; ?>
+
+
+
+
+<script>
+  // Script untuk toggle sidebar
+  function toggleSidebar() {
+    // Cek apakah layar mobile atau desktop
+    if (window.innerWidth <= 768) {
+      document.body.classList.toggle('sidebar-open');
+    } else {
+      document.body.classList.toggle('sidebar-hidden');
+    }
+  }
+</script>
