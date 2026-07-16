@@ -422,10 +422,10 @@ async function uploadFiles(files) {
   if (files.length === 0) return [];
   const formData = new FormData();
   files.forEach(f => formData.append('dokumentasi[]', f));
-  const res = await fetch('../api/upload-dokumentasi.php', { method: 'POST', body: formData });
+  const res = await fetch('../api/upload-to-notion.php', { method: 'POST', body: formData });
   const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Upload gagal');
-  return data.files.map(f => ({ name: f.original, url: f.url }));
+  if (!data.success) throw new Error(data.error || 'Upload ke Notion gagal');
+  return data.files.map(f => ({ id: f.id, name: f.original }));
 }
 
 // ===== Lightbox =====
@@ -592,26 +592,24 @@ async function handleNewTicket(event) {
   const isEdit = !!pageId;
 
   try {
-    // 1. Upload file baru ke server (jika ada)
-    let uploadedUrls = [];
+    // 1. Upload file baru ke Notion (jika ada)
+    let uploadedFiles = [];
     if (selectedFiles.length > 0) {
-      submitBtnLabel.textContent = 'Mengupload foto...';
-      uploadedUrls = await uploadFiles(selectedFiles);
+      submitBtnLabel.textContent = 'Mengupload ke Notion...';
+      uploadedFiles = await uploadFiles(selectedFiles);
     }
-
-    // 2. Gabungkan dengan existing docs
-    const allDocs = [...existingDocs, ...uploadedUrls];
 
     submitBtnLabel.textContent = 'Menyimpan...';
 
-    // 3. Kirim ke Notion
+    // 2. Kirim ke Notion
     const payload = {
       kendala: form.kendala.value.trim(),
       bidang: form.bidang.value,
       deskripsi: form.deskripsi.value.trim(),
       kesimpulan: form.kesimpulan.value.trim(),
       petugas: petugasChecked,
-      dokumentasi_urls: allDocs
+      dokumentasi_file_ids: uploadedFiles, // foto baru
+      dokumentasi_keep: existingDocs       // foto lama yang dipertahankan (khusus edit)
     };
     if (isEdit) payload.page_id = pageId;
 

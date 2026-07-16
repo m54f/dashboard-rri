@@ -254,3 +254,77 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
     align-items: flex-start;
   }
 }
+
+
+
+/* ===== Icon Action Buttons (override: versi polos utk tabel dgn banyak aksi) ===== */
+.icon-action.edit{background:none;color:var(--primary);}
+.icon-action.edit:hover{background:rgba(37,99,235,0.12);}
+.icon-action.delete{background:none;color:var(--danger);}
+.icon-action.delete:hover{background:rgba(239,68,68,0.12);}
+.cell-actions{display:flex;gap:0.4rem;align-items:center;}
+
+/* ===== Form: Radio & Checkbox Custom (Modal Troubleshoot & Checklist) ===== */
+.required-star{color:var(--danger);}
+.radio-group{display:flex;gap:0.75rem;margin-top:0.4rem;flex-wrap:wrap;}
+.radio-option,.checkbox-option{
+  display:flex;align-items:center;gap:0.6rem;cursor:pointer;
+  padding:0.5rem 0.75rem;border-radius:8px;transition:background 0.2s;
+}
+.radio-option:hover,.checkbox-option:hover{background:rgba(15,23,42,0.04);}
+.radio-option input,.checkbox-option input{accent-color:var(--primary);width:16px;height:16px;cursor:pointer;}
+.radio-label,.checkbox-label{font-size:0.95rem;}
+.checkbox-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.25rem;margin-top:0.4rem;max-height:220px;overflow-y:auto;padding-right:0.5rem;}
+.checkbox-grid::-webkit-scrollbar{width:5px;}
+.checkbox-grid::-webkit-scrollbar-thumb{background:rgba(15,23,42,0.15);border-radius:3px;}
+
+/* ===== Checklist: Item Cek (Programa / Te-track / MCR) ===== */
+.check-item{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:0.85rem 1rem;border:1px solid var(--border-color);border-radius:10px;
+  margin-bottom:0.75rem;background:var(--bg-color);
+}
+.check-item-text h4{margin:0 0 4px;font-size:0.9rem;font-weight:700;}
+.check-item-text p{margin:0;font-size:0.78rem;color:var(--text-secondary);line-height:1.4;}
+.switch-check{
+  display:flex;align-items:center;gap:0.4rem;white-space:nowrap;cursor:pointer;
+  font-size:0.82rem;font-weight:600;flex-shrink:0;
+}
+.switch-check input{width:17px;height:17px;accent-color:var(--primary);cursor:pointer;}
+
+.mini-badge{
+  font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:5px;
+  color:#fff;letter-spacing:0.3px;
+}
+.mini-badge.on{background:var(--success);}
+.mini-badge.off{background:#94a3b8;}
+
+/* ===== Upload Dokumentasi: Dropzone & Preview (Modal Troubleshoot) ===== */
+.dropzone{
+  border:2px dashed var(--border-color);border-radius:12px;padding:24px;
+  text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg-color);
+}
+.dropzone:hover,.dropzone.dragover{border-color:var(--primary);background:#eff6ff;}
+.preview-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.preview-item{position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--border-color);}
+.preview-item img{width:100%;height:100%;object-fit:cover;}
+.preview-item .remove-btn{
+  position:absolute;top:2px;right:2px;width:20px;height:20px;
+  background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;
+  font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.preview-item .existing-badge{
+  position:absolute;bottom:2px;left:2px;background:rgba(37,99,235,0.85);
+  color:#fff;font-size:8px;padding:1px 5px;border-radius:4px;font-weight:700;
+}
+.lightbox-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;
+  display:none;align-items:center;justify-content:center;cursor:pointer;
+}
+.lightbox-overlay.active{display:flex;}
+.lightbox-overlay img{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;}
+
+/* ===== Responsive tambahan untuk komponen di atas ===== */
+@media (max-width:600px){
+  .checkbox-grid{grid-template-columns:repeat(2,1fr);}
+}

@@ -1,9 +1,8 @@
 <?php
 /**
- * api/upload-dokumentasi.php
- * Upload foto dokumentasi troubleshoot.
- * Menerima multipart/form-data POST dengan file(s) di field "dokumentasi[]".
- * Menyimpan ke /uploads/dokumentasi/ dan mengembalikan URL yang bisa diakses.
+ * api/upload-to-notion.php
+ * Upload foto dokumentasi LANGSUNG ke Notion via Notion File Upload API.
+ * Tidak menyimpan ke folder lokal sama sekali.
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -14,35 +13,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$uploadDir = __DIR__ . '/../uploads/dokumentasi/';
+require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/notion-file-helpers.php';
 
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0755, true);
-}
-
-// Detect base URL for generating accessible file URLs
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
-$baseUrl = $protocol . '://' . $host . rtrim($basePath, '/');
-
-$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-$maxSize = 10 * 1024 * 1024; // 10MB per file
-
-$uploaded = [];
-$errors = [];
-
-// Handle single or multiple files
 if (!isset($_FILES['dokumentasi'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Tidak ada file dokumentasi yang dikirim']);
     exit;
 }
 
-$files = $_FILES['dokumentasi'];
+$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+$maxSize = 10 * 1024 * 1024; // 10MB per file
 
-// Normalize to array of files (works for both single and multiple uploads)
+$files = $_FILES['dokumentasi'];
 $fileCount = is_array($files['name']) ? count($files['name']) : 1;
+
+$uploaded = [];
+$errors = [];
 
 for ($i = 0; $i < $fileCount; $i++) {
     $name    = is_array($files['name'])     ? $files['name'][$i]     : $files['name'];
@@ -55,7 +42,6 @@ for ($i = 0; $i < $fileCount; $i++) {
         continue;
     }
 
-    // Validate MIME type
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeType = finfo_file($finfo, $tmpName);
     finfo_close($finfo);
@@ -64,28 +50,20 @@ for ($i = 0; $i < $fileCount; $i++) {
         $errors[] = "File '{$name}': Tipe file tidak diizinkan ({$mimeType})";
         continue;
     }
-
-    // Validate size
     if ($size > $maxSize) {
         $errors[] = "File '{$name}': Ukuran melebihi 10MB";
         continue;
     }
 
-    // Generate unique filename
-    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    $filename = date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    $filepath = $uploadDir . $filename;
-
-    if (move_uploaded_file($tmpName, $filepath)) {
-        $fileUrl = $baseUrl . '/uploads/dokumentasi/' . $filename;
+    try {
+        $fileUploadId = notionUploadSingleFile($tmpName, $name, $mimeType);
         $uploaded[] = [
-            'filename' => $filename,
+            'id'       => $fileUploadId, // dipakai untuk attach ke property "files" saat create/update
             'original' => $name,
-            'url'      => $fileUrl,
             'size'     => $size,
         ];
-    } else {
-        $errors[] = "File '{$name}': Gagal menyimpan file";
+    } catch (Exception $e) {
+        $errors[] = "File '{$name}': " . $e->getMessage();
     }
 }
 
@@ -97,7 +75,7 @@ if (empty($uploaded) && !empty($errors)) {
 
 echo json_encode([
     'success' => true,
-    'message' => count($uploaded) . ' file berhasil diupload',
+    'message' => count($uploaded) . ' file berhasil diupload ke Notion',
     'files'   => $uploaded,
     'errors'  => $errors,
 ]);

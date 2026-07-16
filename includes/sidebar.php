@@ -9,7 +9,7 @@ $menuOperasional = [
 ];
 $menuDokumentasi = [
     'jurnal'   => ['Jurnal Kegiatan', 'ri-file-list-3-line', '/pages/jurnal.php'],
-    'gallery'  => ['Gallery Youtube', 'ri-play-line',         '/pages/gallery.php'],
+    'gallery'  => ['Rekap Youtube', 'ri-play-line',         '/pages/gallery.php'],
     'calendar' => ['Calendar Recap',  'ri-calendar-2-line',   '/pages/calendar.php'],
 ];
 $menuPersonal = [

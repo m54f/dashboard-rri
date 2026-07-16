@@ -20,15 +20,15 @@ include __DIR__ . '/../includes/header.php';
 ?>
 <div class="page-head">
   <div>
-    <h2>Gallery Youtube</h2>
+    <h2>Rekap Youtube</h2>
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
   <button class="btn btn-primary" onclick="openModal()"><i class="ri-add-line"></i> Tambah Video</button>
 </div>
 
-<div class="stats-row">
+<!-- <div class="stats-row">
   <div class="stat-card"><div class="stat-info"><h3>Total Video</h3><div class="stat-value"><?= htmlspecialchars($totalCount) ?></div><div class="stat-sub">Dari database YouTube Notion</div></div><div class="stat-icon blue"><i class="ri-play-circle-line"></i></div></div>
-</div>
+</div> -->
 
 <div class="gallery-grid" id="videoGrid">
   <?php if (isset($errorMessage)): ?>
@@ -39,7 +39,7 @@ include __DIR__ . '/../includes/header.php';
 
   <?php if (empty($videos)): ?>
     <div style="grid-column:1 / -1; text-align:center; color: var(--text-secondary); padding: 2rem;">
-      Data video gallery belum tersedia.
+      Data video belum tersedia.
     </div>
   <?php else: ?>
     <?php foreach ($videos as $video): ?>
