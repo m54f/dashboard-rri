@@ -21,11 +21,15 @@
 header('Content-Type: application/json; charset=utf-8');
 
 $dataFile = __DIR__ . '/../data/master-data.json';
-$categories = ['acara', 'pemandu', 'teknik', 'pa'];
+$categoriesGrouped = ['acara', 'pemandu'];
 $programaLabels = ['Pro 1', 'Pro 2', 'Pro 4'];
 
-$defaultStructure = [];
-foreach ($categories as $cat) {
+$defaultStructure = [
+    'petugas' => [] // Inisialisasi array tunggal untuk petugas
+];
+
+// Buat struktur grup Pro 1, Pro 2, Pro 4 HANYA untuk acara dan pemandu
+foreach ($categoriesGrouped as $cat) {
     $defaultStructure[$cat] = array_fill_keys($programaLabels, []);
 }
 
@@ -49,7 +53,9 @@ if (!is_array($data)) {
 }
 
 $result = [];
-foreach ($categories as $cat) {
+
+// 1. Ambil dan tata data untuk acara & pemandu (berdasarkan programa)
+foreach ($categoriesGrouped as $cat) {
     $fromFile = isset($data[$cat]) && is_array($data[$cat]) ? $data[$cat] : [];
     $merged = array_merge($defaultStructure[$cat], $fromFile);
 
@@ -59,5 +65,8 @@ foreach ($categories as $cat) {
 
     $result[$cat] = $merged;
 }
+
+// 2. Ambil data petugas (langsung ambil sebagai array tunggal)
+$result['petugas'] = isset($data['petugas']) && is_array($data['petugas']) ? array_values($data['petugas']) : [];
 
 echo json_encode(['success' => true] + $result);

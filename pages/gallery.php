@@ -49,6 +49,8 @@ include __DIR__ . '/../includes/header.php';
         $flyer = isset($video['flyer']) && $video['flyer'] !== '' ? $video['flyer'] : '';
         $penyiar = isset($video['penyiar']) && $video['penyiar'] !== '' ? $video['penyiar'] : '';
         $narasumber = isset($video['narasumber']) && is_array($video['narasumber']) ? $video['narasumber'] : [];
+        $teknik = isset($video['teknik']) ? $video['teknik'] : '';
+        $pa = isset($video['pa']) ? $video['pa'] : '';
         
         // Map Notion colors to theme palette
         $colorMap = [
@@ -76,7 +78,9 @@ include __DIR__ . '/../includes/header.php';
         'time' => $time,
         'url' => $url,
         'penyiar' => $penyiar,
-        'narasumber' => $narasumber
+        'narasumber' => $narasumber,
+        'teknik' => $teknik,
+        'pa' => $pa
       ]), ENT_QUOTES, 'UTF-8'); ?>
       <div class="feed-card" data-video="<?= $videoData ?>" style="cursor:pointer; display:flex; flex-direction:column; height:100%;">
         <div class="feed-thumb" style="display:block; position:relative; overflow:hidden; background:#f0f0f0; min-height:200px;">
@@ -180,15 +184,15 @@ include __DIR__ . '/../includes/header.php';
       <div class="form-row">
         <div class="form-group">
           <label>Petugas Teknik (PT)</label>
-          <select id="teknikSelect" multiple size="4" style="width:100%;" onchange="updateTeknikHidden(); generateDescription();"></select>
+          <!-- Container untuk custom dropdown -->
+          <div id="teknikContainer"></div>
           <input type="hidden" id="teknik" name="teknik">
-          <span style="font-size:12px; color:var(--text-secondary);">Tahan Ctrl (Windows) / Cmd (Mac) untuk pilih lebih dari satu nama.</span>
         </div>
         <div class="form-group">
           <label>Petugas PA / Acara</label>
-          <select id="paSelect" multiple size="4" style="width:100%;" onchange="updatePaHidden(); generateDescription();"></select>
+          <!-- Container untuk custom dropdown -->
+          <div id="paContainer"></div>
           <input type="hidden" id="pa" name="pa">
-          <span style="font-size:12px; color:var(--text-secondary);">Tahan Ctrl (Windows) / Cmd (Mac) untuk pilih lebih dari satu nama.</span>
         </div>
       </div>
 
@@ -298,7 +302,8 @@ let flyerFileName = '';
 let editingPageId = null;
 
 // ===== Master Data (Nama Acara & Nama Pemandu per Programa) =====
-let masterData = { acara: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, pemandu: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, teknik: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, pa: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] } };
+// Perbaikan: Ubah 'teknik' dan 'pa' menjadi array tunggal 'petugas' sesuai JSON
+let masterData = { acara: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, pemandu: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, petugas: [] };
 let masterDataLoaded = false;
 
 async function loadMasterData(){
@@ -306,7 +311,8 @@ async function loadMasterData(){
         const res = await fetch('../api/get-master-data.php');
         const data = await res.json();
         if (data.success) {
-            masterData = { acara: data.acara, pemandu: data.pemandu, teknik: data.teknik, pa: data.pa };
+            // Perbaikan: Ambil data.petugas langsung dari hasil respons JSON
+            masterData = { acara: data.acara, pemandu: data.pemandu, petugas: data.petugas };
         } else {
             console.error('Gagal memuat master data:', data.error);
         }
@@ -380,49 +386,188 @@ function populatePenyiarOptions(selectedValue){
 }
 
 // Isi ulang dropdown multi-select Petugas Teknik (PT) sesuai Programa terpilih.
-function populateTeknikOptions(){
-    var select = document.getElementById('teknikSelect');
-    var label = getProgramaLabelFromLive();
-    var names = (masterData.teknik && masterData.teknik[label]) ? masterData.teknik[label] : [];
+// --- FUNGSI CUSTOM MULTISELECT DROPDOWN (TAMPILAN SEPERTI GAMBAR) ---
+function createCustomMultiSelect(containerId, hiddenInputId, options) {
+    var container = document.getElementById(containerId);
+    container.innerHTML = '';
+    container.style.position = 'relative';
+    container.style.width = '100%';
 
-    select.innerHTML = '';
-    names.forEach(function(name){
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-    });
-    updateTeknikHidden();
+    var hiddenInput = document.getElementById(hiddenInputId);
+    
+    // Ambil nilai yang mungkin sudah ada (misal saat edit video)
+    var selectedValues = hiddenInput.value ? hiddenInput.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+
+    // 1. Kotak Pilih (Visual pengganti select)
+    var selectBox = document.createElement('div');
+    selectBox.style.cssText = 'min-height:38px; border:1px solid var(--border-color, #ced4da); border-radius:4px; padding:6px 30px 6px 8px; background:#fff; cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px;';
+
+    // Panah dropdown
+    var arrow = document.createElement('div');
+    arrow.innerHTML = '▼';
+    arrow.style.cssText = 'position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; color:#6c757d;';
+    selectBox.appendChild(arrow);
+
+    // 2. Menu Dropdown (Search + Checkbox List)
+    var dropdown = document.createElement('div');
+    dropdown.className = 'custom-dropdown-menu'; // Untuk identifikasi saat klik di luar
+    dropdown.style.cssText = 'position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+
+    // Baris Search
+    var searchDiv = document.createElement('div');
+    searchDiv.style.cssText = 'padding:8px; border-bottom:1px solid #eee;';
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search...';
+    searchInput.style.cssText = 'width:100%; padding:6px 10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:13px;';
+    searchDiv.appendChild(searchInput);
+    dropdown.appendChild(searchDiv);
+
+    // Daftar List
+    var listDiv = document.createElement('div');
+    listDiv.style.cssText = 'max-height:200px; overflow-y:auto; padding:4px 0;';
+    dropdown.appendChild(listDiv);
+
+    container.appendChild(selectBox);
+    container.appendChild(dropdown);
+
+    // Render Tag / Chip di kotak pilih
+    function renderChips() {
+        // Bersihkan area selectBox (kecuali panah)
+        var elementsToRemove = [];
+        for(var i = 0; i < selectBox.children.length; i++) {
+            if (selectBox.children[i] !== arrow) elementsToRemove.push(selectBox.children[i]);
+        }
+        elementsToRemove.forEach(function(el){ selectBox.removeChild(el); });
+
+        if (selectedValues.length === 0) {
+            var placeholder = document.createElement('span');
+            placeholder.textContent = 'Pilih petugas...';
+            placeholder.style.cssText = 'color:#6c757d; font-size:14px;';
+            selectBox.insertBefore(placeholder, arrow);
+        } else {
+            selectedValues.forEach(function(val) {
+                var chip = document.createElement('span');
+                // Styling mirip tag/chip seperti di referensi gambar
+                chip.style.cssText = 'background:#e2e8f0; color:#334155; padding:2px 8px; border-radius:4px; font-size:12px; display:inline-flex; align-items:center; gap:6px; border:1px solid #cbd5e1;';
+                chip.textContent = val;
+                
+                var closeBtn = document.createElement('span');
+                closeBtn.innerHTML = '&times;';
+                closeBtn.style.cssText = 'cursor:pointer; font-size:14px; font-weight:bold; color:#64748b;';
+                closeBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    toggleValue(val, false);
+                };
+                chip.appendChild(closeBtn);
+                selectBox.insertBefore(chip, arrow);
+            });
+        }
+        
+        hiddenInput.value = selectedValues.join(', ');
+        if (typeof generateDescription === 'function') generateDescription();
+    }
+
+    // Toggle (Centang / Hapus Centang)
+    function toggleValue(val, isChecked) {
+        if (isChecked && !selectedValues.includes(val)) {
+            selectedValues.push(val);
+        } else if (!isChecked) {
+            selectedValues = selectedValues.filter(function(v){ return v !== val; });
+        }
+        renderChips();
+        renderList(searchInput.value); // Update centang di list
+    }
+
+    // Render daftar nama (dengan filter search)
+    // Render daftar nama (dengan filter search)
+    function renderList(filterText) {
+        if (!filterText) filterText = '';
+        listDiv.innerHTML = '';
+        listDiv.style.textAlign = 'left'; // Paksa bungkus utama ke kiri
+        
+        var filtered = options.filter(function(o){ 
+            return o.toLowerCase().indexOf(filterText.toLowerCase()) !== -1; 
+        });
+        
+        if (filtered.length === 0) {
+            var empty = document.createElement('div');
+            empty.textContent = 'Tidak ditemukan';
+            empty.style.cssText = 'padding:8px; color:#999; text-align:center; font-size:13px;';
+            listDiv.appendChild(empty);
+            return;
+        }
+
+        filtered.forEach(function(opt) {
+            var label = document.createElement('label');
+            // Gunakan !important, width: 100%, dan flex-direction: row untuk melawan CSS template
+            label.style.cssText = 'display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; text-align:left !important; padding:6px 12px !important; cursor:pointer !important; font-size:14px !important; margin:0 !important; width:100% !important; box-sizing:border-box !important; transition:background 0.2s;';
+            label.onmouseover = function() { label.style.background = '#f8f9fa'; };
+            label.onmouseout = function() { label.style.background = 'transparent'; };
+
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = opt;
+            cb.checked = selectedValues.includes(opt);
+            // Kunci posisi checkbox persis di ujung kiri
+            cb.style.cssText = 'margin:0 10px 0 0 !important; position:static !important; float:none !important; width:auto !important; flex-shrink:0 !important;';
+            
+            cb.onchange = function(e) {
+                toggleValue(opt, e.target.checked);
+            };
+
+            // Bungkus teks dalam span agar tidak terpengaruh margin label bawaan
+            var textSpan = document.createElement('span');
+            textSpan.textContent = opt;
+            textSpan.style.cssText = 'flex-grow:1 !important; text-align:left !important; margin:0 !important;';
+
+            label.appendChild(cb);
+            label.appendChild(textSpan); 
+            listDiv.appendChild(label);
+        });
+    }
+
+    // Event Klik untuk Buka/Tutup Dropdown
+    selectBox.onclick = function() {
+        var isOpen = dropdown.style.display === 'block';
+        
+        // Tutup semua dropdown custom lain yang sedang terbuka
+        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ d.style.display = 'none'; });
+        
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+            searchInput.focus();
+            renderList(searchInput.value);
+        }
+    };
+
+    // Event Ketik di Search
+    searchInput.oninput = function(e) {
+        renderList(e.target.value);
+    };
+
+    renderChips();
+    renderList('');
 }
 
-// Isi ulang dropdown multi-select Petugas PA sesuai Programa terpilih.
-function populatePaOptions(){
-    var select = document.getElementById('paSelect');
-    var label = getProgramaLabelFromLive();
-    var names = (masterData.pa && masterData.pa[label]) ? masterData.pa[label] : [];
+// Tutup dropdown jika user klik di luar area
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#teknikContainer') && !e.target.closest('#paContainer')) {
+        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ 
+            d.style.display = 'none'; 
+        });
+    }
+});
 
-    select.innerHTML = '';
-    names.forEach(function(name){
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-    });
-    updatePaHidden();
+// Panggil fungsi pembuat UI di fungsi standar yang sudah dipanggil sistem Anda
+function populateTeknikOptions() {
+    var names = (masterData.petugas) ? masterData.petugas : [];
+    createCustomMultiSelect('teknikContainer', 'teknik', names);
 }
 
-// Gabungkan nama-nama yang dipilih di dropdown multi-select jadi string dipisah koma,
-// disimpan ke hidden input yang sungguhan dikirim ke backend (format sama seperti sebelumnya).
-function updateTeknikHidden(){
-    var select = document.getElementById('teknikSelect');
-    var selected = Array.from(select.selectedOptions).map(function(o){ return o.value; });
-    document.getElementById('teknik').value = selected.join(', ');
-}
-
-function updatePaHidden(){
-    var select = document.getElementById('paSelect');
-    var selected = Array.from(select.selectedOptions).map(function(o){ return o.value; });
-    document.getElementById('pa').value = selected.join(', ');
+function populatePaOptions() {
+    var names = (masterData.petugas) ? masterData.petugas : [];
+    createCustomMultiSelect('paContainer', 'pa', names);
 }
 
 // Dipanggil saat Live Dimana (Programa) berubah: isi ulang dropdown Nama Acara & Nama Pemandu
@@ -710,6 +855,7 @@ function editVideoFromModal(){
 }
 
 function openEditView(videoData){
+  console.log("Data Video dari Notion:", videoData);
     editingPageId = videoData.id;
     closeDetailModal();
 
@@ -770,9 +916,33 @@ function openEditView(videoData){
         penyiarSelect.value = namaPenyiar;
     }
 
-    // ---- Petugas Teknik & PA (dropdown diisi sesuai Programa di atas) ----
+    // ---- Petugas Teknik & PA ----
+    // 1. Masukkan data dari database ke dalam hidden input
+    document.getElementById('teknik').value = videoData.teknik || '';
+    document.getElementById('pa').value = videoData.pa || '';
+
+    // 2. Baru panggil pembentuk UI (skrip kita otomatis membaca hidden input di atas)
     populateTeknikOptions();
     populatePaOptions();
+
+    // // ---- Centang Checkbox Petugas Teknik & PA Saat Edit ----
+    // if (videoData.teknik) {
+    //     var arrTeknik = videoData.teknik.split(',').map(function(s){ return s.trim(); });
+    //     var cbsTeknik = document.getElementById('teknikSelectContainer').querySelectorAll('input[type="checkbox"]');
+    //     cbsTeknik.forEach(function(cb) {
+    //         if (arrTeknik.includes(cb.value)) cb.checked = true;
+    //     });
+    //     updateTeknikHidden();
+    // }
+
+    // if (videoData.pa) {
+    //     var arrPa = videoData.pa.split(',').map(function(s){ return s.trim(); });
+    //     var cbsPa = document.getElementById('paSelectContainer').querySelectorAll('input[type="checkbox"]');
+    //     cbsPa.forEach(function(cb) {
+    //         if (arrPa.includes(cb.value)) cb.checked = true;
+    //     });
+    //     updatePaHidden();
+    // }
 
     // ---- Tema (diturunkan dari "Nama Acara - Tema") ----
     var tema = '';

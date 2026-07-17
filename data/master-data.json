@@ -81,14 +81,23 @@
       "Taufiq"
     ]
   },
-  "teknik": {
-    "Pro 1": [],
-    "Pro 2": [],
-    "Pro 4": []
-  },
-  "pa": {
-    "Pro 1": [],
-    "Pro 2": [],
-    "Pro 4": []
-  }
+  "petugas": [
+    "Dicky",
+    "Priyo",
+    "Anggi",
+    "Ludfi",
+    "Deny",
+    "Shofirin",
+    "Yhanuar",
+    "Yudha",
+    "Dayat",
+    "Dedy",
+    "Winsa",
+    "Yayang",
+    "Syukur",
+    "Saiful",
+    "Alif",
+    "Selvy",
+    "Alfian"
+  ]
 }
