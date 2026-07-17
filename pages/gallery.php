@@ -119,14 +119,11 @@ include __DIR__ . '/../includes/header.php';
   </div>
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
     <div>
-    <h2 style="margin-bottom:4px;">Tambah Video</h2>
+    <h2 id="addVideoTitle" style="margin-bottom:4px;">Tambah Video</h2>
     <p style="color:var(--text-secondary); margin-bottom:24px;">Isi detail video yang akan ditambahkan ke rekap.</p>
 
     <form id="addVideoForm" onsubmit="event.preventDefault(); submitAddVideo();">
-      <div class="form-group">
-        <label>Judul Video <span style="font-weight:400; color:var(--text-secondary); text-transform:none;">(otomatis: Nama Acara - Tema)</span></label>
-        <input type="text" id="judulVideo" name="judul" readonly style="background:#f1f3f5; cursor:not-allowed;">
-      </div>
+      <input type="hidden" id="judulVideo" name="judul">
       <input type="hidden" id="namaAcaraDisplayHidden" name="namaAcaraDisplay">
 
       <div class="form-group">
@@ -156,18 +153,11 @@ include __DIR__ . '/../includes/header.php';
         <input type="text" id="tema" name="tema" placeholder="Contoh: MPLS Ramah 2026, Tanpa Perploncoan" oninput="generateDescription()">
       </div>
 
-      <div class="form-row">
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="form-group">
           <label>Tanggal</label>
           <input type="date" id="tanggal" name="tanggal" required oninput="generateDescription()">
         </div>
-        <div class="form-group">
-          <label>Hari</label>
-          <input type="text" id="hari" readonly disabled style="background-color: #e9ecef; cursor: not-allowed;">
-        </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-group"><label>Jam Mulai</label><input type="time" id="jamMulai" name="jamMulai" required oninput="generateDescription()"></div>
         <div class="form-group"><label>Jam Selesai</label><input type="time" id="jamSelesai" name="jamSelesai" oninput="generateDescription()"></div>
       </div>
@@ -225,8 +215,7 @@ include __DIR__ . '/../includes/header.php';
       </div>
 
       <div class="modal-footer" style="padding-left:0; padding-right:0;">
-        <button type="button" class="btn btn-secondary" onclick="hideAddView()">Batal</button>
-        <button type="submit" class="btn btn-primary">Simpan</button>
+        <button type="submit" id="addVideoSubmitBtn" class="btn btn-primary">Simpan</button>
       </div>
     </form>
     </div>
@@ -297,6 +286,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-danger" id="detail-delete-btn" style="background-color: var(--danger); background-color: #ef4444; color: white;" onclick="deleteVideoFromModal()"><i class="ri-delete-bin-line"></i> Hapus Video</button>
+      <button type="button" class="btn btn-secondary" id="detail-edit-btn" onclick="editVideoFromModal()"><i class="ri-edit-line"></i> Edit Video</button>
       <button type="button" class="btn btn-secondary" onclick="closeDetailModal()">Tutup</button>
       <a id="detail-open-url" href="" target="_blank" class="btn btn-primary" style="text-decoration:none; display:none;"><i class="ri-external-link-line"></i> Buka Video</a>
     </div>
@@ -308,6 +298,7 @@ include __DIR__ . '/../includes/header.php';
 let selectedFiles = []; 
 let flyerBase64Data = null; 
 let flyerFileName = '';
+let editingPageId = null;
 
 // ===== Drag & Drop Event Listeners =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -389,12 +380,63 @@ function formatJamSistem(timeString){
     return timeString.replace(':', '.');
 }
 
+// Kebalikan dari format gabungan "00.00-00.00" yang disimpan di Notion:
+// pecah jadi { mulai, selesai } dalam format "HH:MM" untuk <input type="time">.
+function parseJamGabungToInputs(gabung){
+    if (!gabung) return { mulai: '', selesai: '' };
+    var toHHMM = function(s){
+        s = String(s).trim();
+        var m = s.match(/^(\d{1,2})[.:](\d{2})$/);
+        if (!m) return '';
+        var hh = m[1].length < 2 ? '0' + m[1] : m[1];
+        return hh + ':' + m[2];
+    };
+    var parts = String(gabung).split('-');
+    return {
+        mulai: toHHMM(parts[0]),
+        selesai: parts.length > 1 ? toHHMM(parts[1]) : ''
+    };
+}
+
 function formatTanggalIndonesia(dateString){
     if (!dateString) return '-';
     var date = new Date(dateString);
     if (isNaN(date.getTime())) return '-';
     var bulanIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     return date.getDate() + ' ' + bulanIndo[date.getMonth()] + ' ' + date.getFullYear();
+}
+
+// Kebalikan dari formatTanggalIndonesia: menerima ISO ("2026-07-17"),
+// format Indonesia ("17 Juli 2026"), atau string tanggal lain yang bisa
+// di-parse Date(), lalu selalu mengembalikan "YYYY-MM-DD" untuk <input type="date">.
+function parseTanggalToISO(str){
+    if (!str) return '';
+    str = String(str).trim();
+
+    var isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return isoMatch[1] + '-' + isoMatch[2] + '-' + isoMatch[3];
+
+    var bulanIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    var parts = str.split(' ');
+    if (parts.length === 3) {
+        var day = parseInt(parts[0], 10);
+        var monthIdx = bulanIndo.findIndex(function(m){ return m.toLowerCase() === parts[1].toLowerCase(); });
+        var year = parseInt(parts[2], 10);
+        if (!isNaN(day) && monthIdx !== -1 && !isNaN(year)) {
+            var mm = (monthIdx + 1) < 10 ? '0' + (monthIdx + 1) : '' + (monthIdx + 1);
+            var dd = day < 10 ? '0' + day : '' + day;
+            return year + '-' + mm + '-' + dd;
+        }
+    }
+
+    var d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        var yyyy = d.getFullYear();
+        var mo = (d.getMonth() + 1) < 10 ? '0' + (d.getMonth() + 1) : '' + (d.getMonth() + 1);
+        var da = d.getDate() < 10 ? '0' + d.getDate() : '' + d.getDate();
+        return yyyy + '-' + mo + '-' + da;
+    }
+    return '';
 }
 
 function setAddVideoDefaults(){
@@ -406,9 +448,6 @@ function setAddVideoDefaults(){
     if (mm < 10) mm = '0' + mm;
 
     document.getElementById('tanggal').value = yyyy + '-' + mm + '-' + dd;
-
-    var hariIndo = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    document.getElementById('hari').value = hariIndo[today.getDay()];
 
     var currentHour = today.getHours();
     var nextHour = (currentHour + 1) % 24;
@@ -460,17 +499,15 @@ function generateDescription(){
     var tema = document.getElementById('tema').value.trim();
 
     const tanggalMentah = document.getElementById('tanggal').value;
-        if (tanggalMentah) {
-            const dateObj = new Date(tanggalMentah);
-            if (!isNaN(dateObj.getTime())) {
-                const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-                // Mengubah nilai elemen dropdown <select id="hari"> secara otomatis
-                document.getElementById('hari').value = daftarHari[dateObj.getDay()];
-            }
+    var hari = '';
+    if (tanggalMentah) {
+        const dateObj = new Date(tanggalMentah);
+        if (!isNaN(dateObj.getTime())) {
+            const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            hari = daftarHari[dateObj.getDay()];
         }
+    }
 
-    var hari = document.getElementById('hari').value;
-    // var tanggalMentah = document.getElementById('tanggal').value;
     var tanggalFormatted = formatTanggalIndonesia(tanggalMentah);
     var hariTanggalGabung = hari + ', ' + tanggalFormatted;
 
@@ -539,6 +576,10 @@ function copyDescription(){
 }
 
 function showAddView(){
+    editingPageId = null;
+    document.getElementById('addVideoTitle').textContent = 'Tambah Video';
+    document.getElementById('addVideoSubmitBtn').textContent = 'Simpan';
+
     document.getElementById('galleryMainView').style.display = 'none';
     document.getElementById('addVideoView').style.display = 'block';
     window.scrollTo(0, 0);
@@ -547,10 +588,113 @@ function showAddView(){
     generateDescription();
 }
 
+function editVideoFromModal(){
+    if (!activeVideoData) {
+        alert('Data video tidak ditemukan.');
+        return;
+    }
+    openEditView(activeVideoData);
+}
+
+function openEditView(videoData){
+    editingPageId = videoData.id;
+    closeDetailModal();
+
+    document.getElementById('galleryMainView').style.display = 'none';
+    document.getElementById('addVideoView').style.display = 'block';
+    window.scrollTo(0, 0);
+
+    document.getElementById('addVideoTitle').textContent = 'Edit Video';
+    document.getElementById('addVideoSubmitBtn').textContent = 'Simpan Perubahan';
+
+    document.getElementById('addVideoForm').reset();
+    selectedFiles = [];
+    document.getElementById('previewGrid').innerHTML = '';
+
+    // ---- Program / Nama Acara ----
+    var programSelect = document.getElementById('program');
+    var namaAcara = videoData.namaAcara || '';
+    var matchedOption = Array.from(programSelect.options).find(function(opt){
+        return opt.value !== 'LAINNYA' && opt.text === namaAcara;
+    });
+
+    if (namaAcara.indexOf('Berita ') === 0) {
+        programSelect.value = 'BERITA';
+        document.getElementById('waktuBerita').value = namaAcara.replace('Berita ', '').trim().toUpperCase() || 'PAGI';
+    } else if (matchedOption) {
+        programSelect.value = matchedOption.value;
+    } else if (namaAcara !== '') {
+        programSelect.value = 'LAINNYA';
+        document.getElementById('programKustom').value = namaAcara;
+    }
+    handleProgramChange();
+
+    // ---- Tema (diturunkan dari "Nama Acara - Tema") ----
+    var tema = '';
+    var titlePrefix = namaAcara + ' - ';
+    if (videoData.title && namaAcara !== '' && videoData.title.indexOf(titlePrefix) === 0) {
+        tema = videoData.title.substring(titlePrefix.length);
+    }
+    document.getElementById('tema').value = tema;
+
+    // ---- Tanggal & Jam ----
+    document.getElementById('tanggal').value = parseTanggalToISO(videoData.date);
+    var jamParsed = parseJamGabungToInputs(videoData.time);
+    document.getElementById('jamMulai').value = jamParsed.mulai;
+    document.getElementById('jamSelesai').value = jamParsed.selesai;
+
+    // ---- Live Dimana (Programa) ----
+    var liveSelect = document.getElementById('live');
+    var liveIndexByProgram = { 'Pro 1': 0, 'Pro 2': 1, 'Pro 4': 2 };
+    if (videoData.programa in liveIndexByProgram) {
+        liveSelect.selectedIndex = liveIndexByProgram[videoData.programa];
+    }
+
+    // ---- Penyiar & Narasumber ----
+    document.getElementById('penyiar').value = videoData.penyiar || '';
+    document.getElementById('narasumber').value = Array.isArray(videoData.narasumber) ? videoData.narasumber.join('\n') : '';
+
+    // ---- Link Youtube ----
+    var linkInput = document.querySelector('#addVideoForm input[name="link"]');
+    if (linkInput) linkInput.value = (videoData.url && videoData.url !== '#') ? videoData.url : '';
+
+    // ---- Flyer: tampilkan yang sudah ada, ganti hanya jika user pilih foto baru ----
+    if (videoData.flyer) {
+        var grid = document.getElementById('previewGrid');
+        grid.innerHTML = '';
+        var wrapper = document.createElement('div');
+        wrapper.className = 'preview-item';
+        var img = document.createElement('img');
+        img.src = videoData.flyer;
+        wrapper.appendChild(img);
+        grid.appendChild(wrapper);
+
+        var hint = document.createElement('p');
+        hint.style.cssText = 'font-size:12px; color:var(--text-secondary); margin-top:6px;';
+        hint.textContent = 'Flyer saat ini. Pilih foto baru di atas untuk menggantinya, atau biarkan untuk tetap memakai flyer ini.';
+        document.getElementById('dropzone').insertAdjacentElement('afterend', hint);
+    }
+
+    generateDescription();
+}
+
 function hideAddView(){
     document.getElementById('addVideoView').style.display = 'none';
     document.getElementById('galleryMainView').style.display = 'block';
     document.getElementById('addVideoForm').reset();
+
+    selectedFiles = [];
+    flyerBase64Data = null;
+    flyerFileName = '';
+    document.getElementById('previewGrid').innerHTML = '';
+
+    var dropzoneHint = document.querySelector('#dropzone + p');
+    if (dropzoneHint) dropzoneHint.remove();
+
+    editingPageId = null;
+    document.getElementById('addVideoTitle').textContent = 'Tambah Video';
+    document.getElementById('addVideoSubmitBtn').textContent = 'Simpan';
+
     handleProgramChange();
 }
 
@@ -558,6 +702,7 @@ function hideAddView(){
 async function submitAddVideo(){
     var form = document.getElementById('addVideoForm');
     var formData = new FormData(form);
+    var isEditMode = !!editingPageId;
 
     var submitBtn = form.querySelector('button[type="submit"]');
     var originalBtnText = submitBtn.textContent;
@@ -575,18 +720,25 @@ async function submitAddVideo(){
     try {
         let uploadedFilesPayload = [];
         
-        // 2. Jalankan pre-upload ke Notion via AWS S3 (jika ada file di dropzone)
+        // 2. Jalankan pre-upload ke Notion via AWS S3 (jika ada file baru di dropzone)
         if (selectedFiles.length > 0) {
             submitBtn.textContent = 'Menyimpan Gambar ke Notion S3...';
             uploadedFilesPayload = await uploadFiles(selectedFiles);
         }
 
-        // Simpan hasilnya ke key 'flyer_urls'
+        // Simpan hasilnya ke key 'flyer_urls'. Saat edit dan tidak ada file baru,
+        // array ini kosong -> flyer lama di Notion tidak akan diubah.
         plainObject['flyer_urls'] = uploadedFilesPayload;
         submitBtn.textContent = 'Menyimpan ke Database...';
 
+        var endpoint = '../api/add-video.php';
+        if (isEditMode) {
+            plainObject['page_id'] = editingPageId;
+            endpoint = '../api/edit-video.php';
+        }
+
         // 3. Kirim data teks + manifes ID file dalam format JSON murni
-        const res = await fetch('../api/add-video.php', {
+        const res = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -596,11 +748,11 @@ async function submitAddVideo(){
 
         const data = await res.json();
         if (data.success) {
-            alert('Video berhasil disimpan ke Notion.');
+            alert(isEditMode ? 'Perubahan berhasil disimpan.' : 'Video berhasil disimpan ke Notion.');
             hideAddView();
             location.reload();
         } else {
-            alert('Gagal menyimpan: ' + (data.error || 'Kesalahan tidak diketahui'));
+            alert('Gagal menyimpan: ' + (data.error || data.details || 'Kesalahan tidak diketahui'));
         }
     } catch (err) {
         console.error('Error:', err);
@@ -611,24 +763,13 @@ async function submitAddVideo(){
     }
 }
 
-function hideAddView(){
-    document.getElementById('addVideoView').style.display = 'none';
-    document.getElementById('galleryMainView').style.display = 'block';
-    document.getElementById('addVideoForm').reset();
-    
-    // Bersihkan data dropzone
-    flyerBase64Data = null;
-    flyerFileName = '';
-    document.getElementById('previewGrid').innerHTML = '';
-    
-    handleProgramChange();
-}
-
 var activeNotionPageId = null;
+var activeVideoData = null;
 
 function openDetailModal(videoData) {
 
     activeNotionPageId = videoData.id;
+    activeVideoData = videoData;
 
     document.getElementById('detail-title').textContent = videoData.title;
     
@@ -737,18 +878,6 @@ function deleteVideoFromModal() {
         deleteBtn.disabled = false;
         deleteBtn.textContent = 'Hapus Video';
     });
-}
-
-function hideAddView(){
-    document.getElementById('addVideoView').style.display = 'none';
-    document.getElementById('galleryMainView').style.display = 'block';
-    document.getElementById('addVideoForm').reset();
-    
-    // Tambahkan 2 baris pembersihan state ini:
-    selectedFiles = [];
-    document.getElementById('previewGrid').innerHTML = '';
-    
-    handleProgramChange();
 }
 
 // Modal overlay click handler
