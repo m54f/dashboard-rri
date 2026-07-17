@@ -119,35 +119,28 @@ include __DIR__ . '/../includes/header.php';
   </div>
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
     <div>
-    <h2 style="margin-bottom:4px;">Tambah Video</h2>
+    <h2 id="addVideoTitle" style="margin-bottom:4px;">Tambah Video</h2>
     <p style="color:var(--text-secondary); margin-bottom:24px;">Isi detail video yang akan ditambahkan ke rekap.</p>
 
     <form id="addVideoForm" onsubmit="event.preventDefault(); submitAddVideo();">
-      <div class="form-group">
-        <label>Judul Video <span style="font-weight:400; color:var(--text-secondary); text-transform:none;">(otomatis: Nama Acara - Tema)</span></label>
-        <input type="text" id="judulVideo" name="judul" readonly style="background:#f1f3f5; cursor:not-allowed;">
-      </div>
+      <input type="hidden" id="judulVideo" name="judul">
       <input type="hidden" id="namaAcaraDisplayHidden" name="namaAcaraDisplay">
+
+      <div class="form-group">
+        <label>Live Dimana (Programa)</label>
+        <select id="live" name="live" onchange="handleLiveChange(); generateDescription();" required>
+          <option value="94,6 FM Pro 1 RRI Malang dan Youtube RRI Malang Official">Pro 1 FM 94.6 Mhz</option>
+          <option value="87.9 FM Pro 2 RRI Malang dan Youtube RRI Malang Official">Pro 2 FM 87.9 Mhz</option>
+          <option value="105.3 FM Pro 4 RRI Malang dan Youtube RRI Malang Official">Pro 4 FM 105.3 Mhz</option>
+        </select>
+      </div>
 
       <div class="form-group">
         <label>Nama Program / Acara</label>
         <div id="programContainer" class="form-row" style="grid-template-columns:1fr;">
-          <select id="program" name="program" onchange="handleProgramChange(); generateDescription();" required>
-            <option value="DIALOG MALANG MENYAPA">Dialog Malang Menyapa</option>
-            <option value="MUTIARA PAGI">Mutiara Pagi</option>
-            <option value="BERITA">Berita (Pagi/Siang/Malam)</option>
-            <option value="CATUR LARAS (JAGONGAN UMKM)">Catur Laras (Jagongan UMKM)</option>
-            <option value="JAGA MALAM">Jaga Malam</option>
-            <option value="LAINNYA">Lainnya...</option>
+          <select id="program" name="program" onchange="generateDescription()" required>
+            <option value="">— Pilih Nama Acara —</option>
           </select>
-
-          <select id="waktuBerita" name="waktuBerita" style="display:none;" onchange="generateDescription()">
-            <option value="PAGI">Pagi</option>
-            <option value="SIANG">Siang</option>
-            <option value="MALAM">Malam</option>
-          </select>
-
-          <input type="text" id="programKustom" name="programKustom" style="display:none;" placeholder="Ketik nama acara baru di sini" oninput="generateDescription()">
         </div>
       </div>
 
@@ -156,29 +149,13 @@ include __DIR__ . '/../includes/header.php';
         <input type="text" id="tema" name="tema" placeholder="Contoh: MPLS Ramah 2026, Tanpa Perploncoan" oninput="generateDescription()">
       </div>
 
-      <div class="form-row">
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="form-group">
           <label>Tanggal</label>
           <input type="date" id="tanggal" name="tanggal" required oninput="generateDescription()">
         </div>
-        <div class="form-group">
-          <label>Hari</label>
-          <input type="text" id="hari" readonly disabled style="background-color: #e9ecef; cursor: not-allowed;">
-        </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-group"><label>Jam Mulai</label><input type="time" id="jamMulai" name="jamMulai" required oninput="generateDescription()"></div>
         <div class="form-group"><label>Jam Selesai</label><input type="time" id="jamSelesai" name="jamSelesai" oninput="generateDescription()"></div>
-      </div>
-
-      <div class="form-group">
-        <label>Live Dimana (Programa)</label>
-        <select id="live" name="live" onchange="generateDescription()" required>
-          <option value="94,6 FM Pro 1 RRI Malang dan Youtube RRI Malang Official">Pro 1 FM 94.6 Mhz</option>
-          <option value="87.9 FM Pro 2 RRI Malang dan Youtube RRI Malang Official">Pro 2 FM 87.9 Mhz</option>
-          <option value="105.3 FM Pro 4 RRI Malang dan Youtube RRI Malang Official">Pro 4 FM 105.3 Mhz</option>
-        </select>
       </div>
 
       <div class="form-group">
@@ -189,7 +166,9 @@ include __DIR__ . '/../includes/header.php';
             <option value="Penyiar">Penyiar</option>
             <option value="Host">Host</option>
           </select>
-          <input type="text" id="penyiar" name="penyiar" placeholder="Nama pengisi acara" oninput="generateDescription()">
+          <select id="penyiar" name="penyiar" onchange="generateDescription()">
+            <option value="">— Pilih Nama Pemandu —</option>
+          </select>
         </div>
       </div>
 
@@ -201,11 +180,15 @@ include __DIR__ . '/../includes/header.php';
       <div class="form-row">
         <div class="form-group">
           <label>Petugas Teknik (PT)</label>
-          <input type="text" id="teknik" name="teknik" placeholder="Contoh: Yhanuar, Alif" oninput="generateDescription()">
+          <select id="teknikSelect" multiple size="4" style="width:100%;" onchange="updateTeknikHidden(); generateDescription();"></select>
+          <input type="hidden" id="teknik" name="teknik">
+          <span style="font-size:12px; color:var(--text-secondary);">Tahan Ctrl (Windows) / Cmd (Mac) untuk pilih lebih dari satu nama.</span>
         </div>
         <div class="form-group">
           <label>Petugas PA / Acara</label>
-          <input type="text" id="pa" name="pa" placeholder="Contoh: Roni" oninput="generateDescription()">
+          <select id="paSelect" multiple size="4" style="width:100%;" onchange="updatePaHidden(); generateDescription();"></select>
+          <input type="hidden" id="pa" name="pa">
+          <span style="font-size:12px; color:var(--text-secondary);">Tahan Ctrl (Windows) / Cmd (Mac) untuk pilih lebih dari satu nama.</span>
         </div>
       </div>
 
@@ -225,14 +208,17 @@ include __DIR__ . '/../includes/header.php';
       </div>
 
       <div class="modal-footer" style="padding-left:0; padding-right:0;">
-        <button type="button" class="btn btn-secondary" onclick="hideAddView()">Batal</button>
-        <button type="submit" class="btn btn-primary">Simpan</button>
+        <button type="submit" id="addVideoSubmitBtn" class="btn btn-primary">Simpan</button>
       </div>
     </form>
     </div>
 
     <div>
-      <h3 style="margin-bottom:12px;">Preview Deskripsi Youtube</h3>
+      <h3 style="margin-bottom:12px;">Judul Video</h3>
+      <input type="text" id="judulVideoPreview" readonly style="width:100%; background:#f1f3f5; color:#212529; border:1px solid var(--border-color); border-radius:4px; padding:10px 12px; font-size:14px;">
+      <button type="button" class="btn btn-primary" style="margin-top:10px; background-color:#198754;" onclick="copyJudul()">Salin Judul</button>
+
+      <h3 style="margin:24px 0 12px;">Preview Deskripsi Youtube</h3>
       <textarea id="descPreview" readonly style="width:100%; height:460px; font-family:Courier, monospace; background:#f1f3f5; color:#212529; border:1px solid var(--border-color); border-radius:4px; padding:12px; resize:none; font-size:13px; line-height:1.5;"></textarea>
       <button type="button" class="btn btn-primary" style="margin-top:10px; background-color:#198754;" onclick="copyDescription()">Salin Deskripsi</button>
     </div>
@@ -297,6 +283,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-danger" id="detail-delete-btn" style="background-color: var(--danger); background-color: #ef4444; color: white;" onclick="deleteVideoFromModal()"><i class="ri-delete-bin-line"></i> Hapus Video</button>
+      <button type="button" class="btn btn-secondary" id="detail-edit-btn" onclick="editVideoFromModal()"><i class="ri-edit-line"></i> Edit Video</button>
       <button type="button" class="btn btn-secondary" onclick="closeDetailModal()">Tutup</button>
       <a id="detail-open-url" href="" target="_blank" class="btn btn-primary" style="text-decoration:none; display:none;"><i class="ri-external-link-line"></i> Buka Video</a>
     </div>
@@ -308,9 +295,147 @@ include __DIR__ . '/../includes/header.php';
 let selectedFiles = []; 
 let flyerBase64Data = null; 
 let flyerFileName = '';
+let editingPageId = null;
 
-// ===== Drag & Drop Event Listeners =====
+// ===== Master Data (Nama Acara & Nama Pemandu per Programa) =====
+let masterData = { acara: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, pemandu: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, teknik: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, pa: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] } };
+let masterDataLoaded = false;
+
+async function loadMasterData(){
+    try {
+        const res = await fetch('../api/get-master-data.php');
+        const data = await res.json();
+        if (data.success) {
+            masterData = { acara: data.acara, pemandu: data.pemandu, teknik: data.teknik, pa: data.pa };
+        } else {
+            console.error('Gagal memuat master data:', data.error);
+        }
+    } catch (err) {
+        console.error('Gagal memuat master data:', err);
+    } finally {
+        masterDataLoaded = true;
+        // Isi dropdown sesuai Live Dimana yang sedang terpilih (kalau form sedang terbuka)
+        populateProgramOptions();
+        populatePenyiarOptions();
+        populateTeknikOptions();
+        populatePaOptions();
+    }
+}
+
+function getProgramaLabelFromLive(){
+    var liveVal = document.getElementById('live').value;
+    if (liveVal.indexOf('Pro 1') !== -1) return 'Pro 1';
+    if (liveVal.indexOf('Pro 2') !== -1) return 'Pro 2';
+    if (liveVal.indexOf('Pro 4') !== -1) return 'Pro 4';
+    return 'Pro 1';
+}
+
+// Isi ulang dropdown Nama Acara sesuai Programa terpilih (murni dari master-data.json).
+// selectedValue (opsional): value yang ingin dipertahankan/dipilih setelah dropdown diisi ulang.
+function populateProgramOptions(selectedValue){
+    var select = document.getElementById('program');
+    var label = getProgramaLabelFromLive();
+    var names = (masterData.acara && masterData.acara[label]) ? masterData.acara[label] : [];
+
+    select.innerHTML = '';
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = masterDataLoaded ? '— Pilih Nama Acara —' : 'Memuat daftar acara...';
+    select.appendChild(placeholder);
+
+    names.forEach(function(name){
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+
+    if (selectedValue && Array.from(select.options).some(function(o){ return o.value === selectedValue; })) {
+        select.value = selectedValue;
+    }
+}
+
+// Isi ulang dropdown Nama Pemandu sesuai Programa terpilih (murni dari master-data.json).
+function populatePenyiarOptions(selectedValue){
+    var select = document.getElementById('penyiar');
+    var label = getProgramaLabelFromLive();
+    var names = (masterData.pemandu && masterData.pemandu[label]) ? masterData.pemandu[label] : [];
+
+    select.innerHTML = '';
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = masterDataLoaded ? '— Pilih Nama Pemandu —' : 'Memuat daftar pemandu...';
+    select.appendChild(placeholder);
+
+    names.forEach(function(name){
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+
+    if (selectedValue && Array.from(select.options).some(function(o){ return o.value === selectedValue; })) {
+        select.value = selectedValue;
+    }
+}
+
+// Isi ulang dropdown multi-select Petugas Teknik (PT) sesuai Programa terpilih.
+function populateTeknikOptions(){
+    var select = document.getElementById('teknikSelect');
+    var label = getProgramaLabelFromLive();
+    var names = (masterData.teknik && masterData.teknik[label]) ? masterData.teknik[label] : [];
+
+    select.innerHTML = '';
+    names.forEach(function(name){
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+    updateTeknikHidden();
+}
+
+// Isi ulang dropdown multi-select Petugas PA sesuai Programa terpilih.
+function populatePaOptions(){
+    var select = document.getElementById('paSelect');
+    var label = getProgramaLabelFromLive();
+    var names = (masterData.pa && masterData.pa[label]) ? masterData.pa[label] : [];
+
+    select.innerHTML = '';
+    names.forEach(function(name){
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+    updatePaHidden();
+}
+
+// Gabungkan nama-nama yang dipilih di dropdown multi-select jadi string dipisah koma,
+// disimpan ke hidden input yang sungguhan dikirim ke backend (format sama seperti sebelumnya).
+function updateTeknikHidden(){
+    var select = document.getElementById('teknikSelect');
+    var selected = Array.from(select.selectedOptions).map(function(o){ return o.value; });
+    document.getElementById('teknik').value = selected.join(', ');
+}
+
+function updatePaHidden(){
+    var select = document.getElementById('paSelect');
+    var selected = Array.from(select.selectedOptions).map(function(o){ return o.value; });
+    document.getElementById('pa').value = selected.join(', ');
+}
+
+// Dipanggil saat Live Dimana (Programa) berubah: isi ulang dropdown Nama Acara & Nama Pemandu
+function handleLiveChange(){
+    populateProgramOptions();
+    populatePenyiarOptions();
+    populateTeknikOptions();
+    populatePaOptions();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  loadMasterData();
+
   const dropzone = document.getElementById('dropzone');
   if (dropzone) {
     dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
@@ -368,25 +493,27 @@ async function uploadFiles(files) {
   return data.files.map(f => ({ id: f.id, name: f.original })); 
 }
 
-function handleProgramChange(){
-    var programSelect = document.getElementById('program').value;
-    var customInput = document.getElementById('programKustom');
-    var beritaSelect = document.getElementById('waktuBerita');
-
-    customInput.style.display = 'none';
-    beritaSelect.style.display = 'none';
-
-    if (programSelect === 'LAINNYA') {
-        customInput.style.display = 'block';
-        customInput.focus();
-    } else if (programSelect === 'BERITA') {
-        beritaSelect.style.display = 'block';
-    }
-}
-
 function formatJamSistem(timeString){
     if (!timeString) return '00.00';
     return timeString.replace(':', '.');
+}
+
+// Kebalikan dari format gabungan "00.00-00.00" yang disimpan di Notion:
+// pecah jadi { mulai, selesai } dalam format "HH:MM" untuk <input type="time">.
+function parseJamGabungToInputs(gabung){
+    if (!gabung) return { mulai: '', selesai: '' };
+    var toHHMM = function(s){
+        s = String(s).trim();
+        var m = s.match(/^(\d{1,2})[.:](\d{2})$/);
+        if (!m) return '';
+        var hh = m[1].length < 2 ? '0' + m[1] : m[1];
+        return hh + ':' + m[2];
+    };
+    var parts = String(gabung).split('-');
+    return {
+        mulai: toHHMM(parts[0]),
+        selesai: parts.length > 1 ? toHHMM(parts[1]) : ''
+    };
 }
 
 function formatTanggalIndonesia(dateString){
@@ -395,6 +522,39 @@ function formatTanggalIndonesia(dateString){
     if (isNaN(date.getTime())) return '-';
     var bulanIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     return date.getDate() + ' ' + bulanIndo[date.getMonth()] + ' ' + date.getFullYear();
+}
+
+// Kebalikan dari formatTanggalIndonesia: menerima ISO ("2026-07-17"),
+// format Indonesia ("17 Juli 2026"), atau string tanggal lain yang bisa
+// di-parse Date(), lalu selalu mengembalikan "YYYY-MM-DD" untuk <input type="date">.
+function parseTanggalToISO(str){
+    if (!str) return '';
+    str = String(str).trim();
+
+    var isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return isoMatch[1] + '-' + isoMatch[2] + '-' + isoMatch[3];
+
+    var bulanIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    var parts = str.split(' ');
+    if (parts.length === 3) {
+        var day = parseInt(parts[0], 10);
+        var monthIdx = bulanIndo.findIndex(function(m){ return m.toLowerCase() === parts[1].toLowerCase(); });
+        var year = parseInt(parts[2], 10);
+        if (!isNaN(day) && monthIdx !== -1 && !isNaN(year)) {
+            var mm = (monthIdx + 1) < 10 ? '0' + (monthIdx + 1) : '' + (monthIdx + 1);
+            var dd = day < 10 ? '0' + day : '' + day;
+            return year + '-' + mm + '-' + dd;
+        }
+    }
+
+    var d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        var yyyy = d.getFullYear();
+        var mo = (d.getMonth() + 1) < 10 ? '0' + (d.getMonth() + 1) : '' + (d.getMonth() + 1);
+        var da = d.getDate() < 10 ? '0' + d.getDate() : '' + d.getDate();
+        return yyyy + '-' + mo + '-' + da;
+    }
+    return '';
 }
 
 function setAddVideoDefaults(){
@@ -407,9 +567,6 @@ function setAddVideoDefaults(){
 
     document.getElementById('tanggal').value = yyyy + '-' + mm + '-' + dd;
 
-    var hariIndo = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    document.getElementById('hari').value = hariIndo[today.getDay()];
-
     var currentHour = today.getHours();
     var nextHour = (currentHour + 1) % 24;
     var formatHH = currentHour < 10 ? '0' + currentHour : currentHour;
@@ -421,56 +578,34 @@ function setAddVideoDefaults(){
 
 function updateJudulVideo(){
     var programSelect = document.getElementById('program');
-    var customProgramText = document.getElementById('programKustom').value;
-    var waktuBerita = document.getElementById('waktuBerita').value;
     var tema = document.getElementById('tema').value.trim();
 
-    var namaAcaraDisplay = '';
-    if (programSelect.value === 'LAINNYA') {
-        namaAcaraDisplay = customProgramText.trim() || 'Nama Program Kustom';
-    } else if (programSelect.value === 'BERITA') {
-        var waktuLabel = waktuBerita.charAt(0) + waktuBerita.slice(1).toLowerCase();
-        namaAcaraDisplay = 'Berita ' + waktuLabel;
-    } else {
-        namaAcaraDisplay = programSelect.options[programSelect.selectedIndex].text;
-    }
+    var namaAcaraDisplay = programSelect.selectedIndex >= 0 ? programSelect.options[programSelect.selectedIndex].text : '';
+    if (programSelect.value === '') namaAcaraDisplay = '';
 
     var judul = tema !== '' ? (namaAcaraDisplay + ' - ' + tema) : namaAcaraDisplay;
     document.getElementById('judulVideo').value = judul;
+    document.getElementById('judulVideoPreview').value = judul;
     document.getElementById('namaAcaraDisplayHidden').value = namaAcaraDisplay;
 }
 
 function generateDescription(){
     updateJudulVideo();
 
-    var programSelect = document.getElementById('program').value;
-    var customProgramText = document.getElementById('programKustom').value;
-    var waktuBerita = document.getElementById('waktuBerita').value;
-
-    var programFinal = '';
-    if (programSelect === 'LAINNYA') {
-        programFinal = customProgramText || 'Nama Program Kustom';
-    } else if (programSelect === 'BERITA') {
-        programFinal = 'BERITA ' + waktuBerita;
-    } else {
-        programFinal = programSelect;
-    }
-
+    var programFinal = document.getElementById('program').value;
     var programTitleCase = programFinal.toUpperCase();
     var tema = document.getElementById('tema').value.trim();
 
     const tanggalMentah = document.getElementById('tanggal').value;
-        if (tanggalMentah) {
-            const dateObj = new Date(tanggalMentah);
-            if (!isNaN(dateObj.getTime())) {
-                const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-                // Mengubah nilai elemen dropdown <select id="hari"> secara otomatis
-                document.getElementById('hari').value = daftarHari[dateObj.getDay()];
-            }
+    var hari = '';
+    if (tanggalMentah) {
+        const dateObj = new Date(tanggalMentah);
+        if (!isNaN(dateObj.getTime())) {
+            const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            hari = daftarHari[dateObj.getDay()];
         }
+    }
 
-    var hari = document.getElementById('hari').value;
-    // var tanggalMentah = document.getElementById('tanggal').value;
     var tanggalFormatted = formatTanggalIndonesia(tanggalMentah);
     var hariTanggalGabung = hari + ', ' + tanggalFormatted;
 
@@ -496,7 +631,7 @@ function generateDescription(){
     var pa = document.getElementById('pa').value || '-';
 
     var template = '';
-    if (programSelect === 'DIALOG MALANG MENYAPA') {
+    if (programTitleCase === 'DIALOG MALANG MENYAPA') {
         template += 'Prioritas Nasional\n';
     }
 
@@ -538,12 +673,145 @@ function copyDescription(){
     });
 }
 
+function copyJudul(){
+    var judulField = document.getElementById('judulVideoPreview');
+    judulField.select();
+    judulField.setSelectionRange(0, 99999);
+
+    navigator.clipboard.writeText(judulField.value).then(function(){
+        var toast = document.getElementById('descToast');
+        toast.style.display = 'block';
+        setTimeout(function(){ toast.style.display = 'none'; }, 2500);
+    });
+}
+
 function showAddView(){
+    editingPageId = null;
+    document.getElementById('addVideoTitle').textContent = 'Tambah Video';
+    document.getElementById('addVideoSubmitBtn').textContent = 'Simpan';
+
     document.getElementById('galleryMainView').style.display = 'none';
     document.getElementById('addVideoView').style.display = 'block';
     window.scrollTo(0, 0);
     setAddVideoDefaults();
-    handleProgramChange();
+    populateProgramOptions();
+    populatePenyiarOptions();
+    populateTeknikOptions();
+    populatePaOptions();
+    generateDescription();
+}
+
+function editVideoFromModal(){
+    if (!activeVideoData) {
+        alert('Data video tidak ditemukan.');
+        return;
+    }
+    openEditView(activeVideoData);
+}
+
+function openEditView(videoData){
+    editingPageId = videoData.id;
+    closeDetailModal();
+
+    document.getElementById('galleryMainView').style.display = 'none';
+    document.getElementById('addVideoView').style.display = 'block';
+    window.scrollTo(0, 0);
+
+    document.getElementById('addVideoTitle').textContent = 'Edit Video';
+    document.getElementById('addVideoSubmitBtn').textContent = 'Simpan Perubahan';
+
+    document.getElementById('addVideoForm').reset();
+    selectedFiles = [];
+    document.getElementById('previewGrid').innerHTML = '';
+
+    // ---- Live Dimana (Programa) : diset LEBIH DULU karena menentukan isi dropdown Acara & Pemandu ----
+    var liveSelect = document.getElementById('live');
+    var liveIndexByProgram = { 'Pro 1': 0, 'Pro 2': 1, 'Pro 4': 2 };
+    if (videoData.programa in liveIndexByProgram) {
+        liveSelect.selectedIndex = liveIndexByProgram[videoData.programa];
+    }
+
+    // ---- Program / Nama Acara (dropdown diisi sesuai Programa di atas) ----
+    populateProgramOptions();
+    var programSelect = document.getElementById('program');
+    var namaAcara = videoData.namaAcara || '';
+    var matchedOption = Array.from(programSelect.options).find(function(opt){
+        return opt.value !== '' && opt.text === namaAcara;
+    });
+
+    if (matchedOption) {
+        programSelect.value = matchedOption.value;
+    } else if (namaAcara !== '') {
+        // Nama acara ini belum terdaftar di master-data.json -- tetap tampilkan
+        // apa adanya supaya data lama tidak hilang saat diedit.
+        var extraOpt = document.createElement('option');
+        extraOpt.value = namaAcara;
+        extraOpt.textContent = namaAcara + ' (belum ada di daftar)';
+        programSelect.appendChild(extraOpt);
+        programSelect.value = namaAcara;
+    }
+
+    // ---- Pemandu Acara (dropdown diisi sesuai Programa di atas) ----
+    populatePenyiarOptions();
+    var penyiarSelect = document.getElementById('penyiar');
+    var namaPenyiar = videoData.penyiar || '';
+    var matchedPenyiar = Array.from(penyiarSelect.options).find(function(opt){
+        return opt.value !== '' && opt.value === namaPenyiar;
+    });
+    if (matchedPenyiar) {
+        penyiarSelect.value = namaPenyiar;
+    } else if (namaPenyiar !== '') {
+        // Nama pemandu ini belum terdaftar di master-data.json -- tetap tampilkan
+        // apa adanya supaya data lama tidak hilang saat diedit.
+        var extraPenyiarOpt = document.createElement('option');
+        extraPenyiarOpt.value = namaPenyiar;
+        extraPenyiarOpt.textContent = namaPenyiar + ' (belum ada di daftar)';
+        penyiarSelect.appendChild(extraPenyiarOpt);
+        penyiarSelect.value = namaPenyiar;
+    }
+
+    // ---- Petugas Teknik & PA (dropdown diisi sesuai Programa di atas) ----
+    populateTeknikOptions();
+    populatePaOptions();
+
+    // ---- Tema (diturunkan dari "Nama Acara - Tema") ----
+    var tema = '';
+    var titlePrefix = namaAcara + ' - ';
+    if (videoData.title && namaAcara !== '' && videoData.title.indexOf(titlePrefix) === 0) {
+        tema = videoData.title.substring(titlePrefix.length);
+    }
+    document.getElementById('tema').value = tema;
+
+    // ---- Tanggal & Jam ----
+    document.getElementById('tanggal').value = parseTanggalToISO(videoData.date);
+    var jamParsed = parseJamGabungToInputs(videoData.time);
+    document.getElementById('jamMulai').value = jamParsed.mulai;
+    document.getElementById('jamSelesai').value = jamParsed.selesai;
+
+    // ---- Narasumber ----
+    document.getElementById('narasumber').value = Array.isArray(videoData.narasumber) ? videoData.narasumber.join('\n') : '';
+
+    // ---- Link Youtube ----
+    var linkInput = document.querySelector('#addVideoForm input[name="link"]');
+    if (linkInput) linkInput.value = (videoData.url && videoData.url !== '#') ? videoData.url : '';
+
+    // ---- Flyer: tampilkan yang sudah ada, ganti hanya jika user pilih foto baru ----
+    if (videoData.flyer) {
+        var grid = document.getElementById('previewGrid');
+        grid.innerHTML = '';
+        var wrapper = document.createElement('div');
+        wrapper.className = 'preview-item';
+        var img = document.createElement('img');
+        img.src = videoData.flyer;
+        wrapper.appendChild(img);
+        grid.appendChild(wrapper);
+
+        var hint = document.createElement('p');
+        hint.style.cssText = 'font-size:12px; color:var(--text-secondary); margin-top:6px;';
+        hint.textContent = 'Flyer saat ini. Pilih foto baru di atas untuk menggantinya, atau biarkan untuk tetap memakai flyer ini.';
+        document.getElementById('dropzone').insertAdjacentElement('afterend', hint);
+    }
+
     generateDescription();
 }
 
@@ -551,13 +819,25 @@ function hideAddView(){
     document.getElementById('addVideoView').style.display = 'none';
     document.getElementById('galleryMainView').style.display = 'block';
     document.getElementById('addVideoForm').reset();
-    handleProgramChange();
+
+    selectedFiles = [];
+    flyerBase64Data = null;
+    flyerFileName = '';
+    document.getElementById('previewGrid').innerHTML = '';
+
+    var dropzoneHint = document.querySelector('#dropzone + p');
+    if (dropzoneHint) dropzoneHint.remove();
+
+    editingPageId = null;
+    document.getElementById('addVideoTitle').textContent = 'Tambah Video';
+    document.getElementById('addVideoSubmitBtn').textContent = 'Simpan';
 }
 
 // UBAH MENJADI ASYNC FUNCTION
 async function submitAddVideo(){
     var form = document.getElementById('addVideoForm');
     var formData = new FormData(form);
+    var isEditMode = !!editingPageId;
 
     var submitBtn = form.querySelector('button[type="submit"]');
     var originalBtnText = submitBtn.textContent;
@@ -575,18 +855,25 @@ async function submitAddVideo(){
     try {
         let uploadedFilesPayload = [];
         
-        // 2. Jalankan pre-upload ke Notion via AWS S3 (jika ada file di dropzone)
+        // 2. Jalankan pre-upload ke Notion via AWS S3 (jika ada file baru di dropzone)
         if (selectedFiles.length > 0) {
             submitBtn.textContent = 'Menyimpan Gambar ke Notion S3...';
             uploadedFilesPayload = await uploadFiles(selectedFiles);
         }
 
-        // Simpan hasilnya ke key 'flyer_urls'
+        // Simpan hasilnya ke key 'flyer_urls'. Saat edit dan tidak ada file baru,
+        // array ini kosong -> flyer lama di Notion tidak akan diubah.
         plainObject['flyer_urls'] = uploadedFilesPayload;
         submitBtn.textContent = 'Menyimpan ke Database...';
 
+        var endpoint = '../api/add-video.php';
+        if (isEditMode) {
+            plainObject['page_id'] = editingPageId;
+            endpoint = '../api/edit-video.php';
+        }
+
         // 3. Kirim data teks + manifes ID file dalam format JSON murni
-        const res = await fetch('../api/add-video.php', {
+        const res = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -596,11 +883,11 @@ async function submitAddVideo(){
 
         const data = await res.json();
         if (data.success) {
-            alert('Video berhasil disimpan ke Notion.');
+            alert(isEditMode ? 'Perubahan berhasil disimpan.' : 'Video berhasil disimpan ke Notion.');
             hideAddView();
             location.reload();
         } else {
-            alert('Gagal menyimpan: ' + (data.error || 'Kesalahan tidak diketahui'));
+            alert('Gagal menyimpan: ' + (data.error || data.details || 'Kesalahan tidak diketahui'));
         }
     } catch (err) {
         console.error('Error:', err);
@@ -611,24 +898,13 @@ async function submitAddVideo(){
     }
 }
 
-function hideAddView(){
-    document.getElementById('addVideoView').style.display = 'none';
-    document.getElementById('galleryMainView').style.display = 'block';
-    document.getElementById('addVideoForm').reset();
-    
-    // Bersihkan data dropzone
-    flyerBase64Data = null;
-    flyerFileName = '';
-    document.getElementById('previewGrid').innerHTML = '';
-    
-    handleProgramChange();
-}
-
 var activeNotionPageId = null;
+var activeVideoData = null;
 
 function openDetailModal(videoData) {
 
     activeNotionPageId = videoData.id;
+    activeVideoData = videoData;
 
     document.getElementById('detail-title').textContent = videoData.title;
     
@@ -737,18 +1013,6 @@ function deleteVideoFromModal() {
         deleteBtn.disabled = false;
         deleteBtn.textContent = 'Hapus Video';
     });
-}
-
-function hideAddView(){
-    document.getElementById('addVideoView').style.display = 'none';
-    document.getElementById('galleryMainView').style.display = 'block';
-    document.getElementById('addVideoForm').reset();
-    
-    // Tambahkan 2 baris pembersihan state ini:
-    selectedFiles = [];
-    document.getElementById('previewGrid').innerHTML = '';
-    
-    handleProgramChange();
 }
 
 // Modal overlay click handler
