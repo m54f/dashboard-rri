@@ -82,7 +82,6 @@ include __DIR__ . '/../includes/header.php';
         ?>
         <tr data-status="<?= htmlspecialchars($it['status']) ?>">
           <td class="cell-title"><?= htmlspecialchars($it['kegiatan']) ?></td>
-          <td><span class="avatar-sm"><?= strtoupper(substr($it['pic'],0,2)) ?></span> <?= htmlspecialchars($it['pic']) ?></td>
           <td class="cell-sub"><?= htmlspecialchars($it['alat_display']) ?></td>
           <td class="cell-sub"><?= htmlspecialchars($it['lokasi']) ?></td>
           <td><?= htmlspecialchars($it['tgl_pinjam'] ?? '-') ?></td>

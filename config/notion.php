@@ -7,7 +7,10 @@ define('DATABASE_ID_KEGIATAN', '2841ca6157e18030a56cc7cfa1f93ccb');
 define('DATABASE_ID_YOUTUBE', '3251ca6157e18070999afbdda7591854');
 define('DATABASE_ID_AGENDA', '2a31ca61-57e1-8007-9476-c4897368e037');
 define('DATABASE_ID_PADAM_PLN', '31e1ca6157e180d9ac43f26d71a0e2fe');
+define('DATABASE_ID_PIJAT', '3a01ca6157e180f5825ac169bd7f0f32');
+
+
 define('NOTION_VERSION', '2022-06-28');
 
 
-define('DATABASE_ID_PEMINJAMAN', "2a31ca61-57e1-8007-9476-c4897368e037");//isi disini untuk id table peminjaman alat jika sudah ada
+define('DATABASE_ID_PEMINJAMAN', '3a01ca6157e180f5825ac169bd7f0f32');//isi disini untuk id table peminjaman alat jika sudah ada

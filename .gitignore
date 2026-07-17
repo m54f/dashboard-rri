@@ -1,0 +1,3 @@
+setup/1-setup-peminjaman.php
+setup/2-setup-inventaris-relasi.php
+setup/3-seed-inventaris.php
