@@ -49,12 +49,33 @@ $troubleshootRecent = [
     ['title' => 'Internet PC dias tidak ada internet',      'status' => 'Selesai',       'cls'=>'selesai','date' => '5 Jul 2026, 11.30'],
 ];
 
-$gallery = [
-    ['title' => 'Deteksi Dini Kekerasan Pada Anak',            'show' => 'Obrolan Psikologi', 'time' => '20:10', 'date' => '9 Jul 2026', 'live' => true],
-    ['title' => 'Sore Ceria - Sinergi Radio Dalam Kampanye CBP Rupiah', 'show' => 'Sore Ceria', 'time' => '16:00', 'date' => '9 Jul 2026', 'live' => true],
-    ['title' => 'Berita Siang RRI Malang',                     'show' => 'Berita Siang',      'time' => '15:30', 'date' => '8 Jul 2026', 'live' => true],
-    ['title' => 'Catur Laras Jagongan UMKM',                   'show' => 'Catur Laras',       'time' => '18:45', 'date' => '7 Jul 2026', 'live' => false],
-];
+require_once __DIR__ . '/../api/youtube.php';
+$fetchedVideos = getYoutubeVideos();
+
+$gallery = [];
+if (is_array($fetchedVideos) && !isset($fetchedVideos['error'])) {
+    $sekarang = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+    
+    // Pisahkan proses clone dan modify agar tidak terjadi syntax error
+    $semingguLalu = clone $sekarang;
+    $semingguLalu->modify('-7 days');
+    
+    $sekarang->modify('+1 day'); // Memastikan kegiatan hari ini ikut masuk batas akhir
+    
+    foreach ($fetchedVideos as $v) {
+        // Karena di youtube.php tanggal diformat 'j M Y', kita ubah lagi jadi objek waktu
+        $vDate = DateTime::createFromFormat('j M Y', $v['date']);
+        
+        if ($vDate) {
+            $vDate->setTime(0, 0, 0); // Reset jam agar akurat
+            
+            // Cek apakah tanggal berada di rentang 7 hari terakhir
+            if ($vDate >= $semingguLalu && $vDate <= $sekarang) {
+                $gallery[] = $v;
+            }
+        }
+    }
+}
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -202,24 +223,135 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="card">
   <div class="card-header">
-    <div class="card-title"><i class="ri-youtube-line"></i>Gallery Youtube Live On This Week</div>
+    <div class="card-title"><i class="ri-youtube-line"></i>Recap Youtube Live On This Week</div>
     <a class="link-btn" href="<?= $base ?>/pages/gallery.php">Lihat Semua</a>
   </div>
-  <div class="gallery-grid">
-    <?php foreach ($gallery as $g): ?>
-    <div class="feed-card">
-      <div class="feed-thumb">
-        <?php if ($g['live']): ?><span class="live-badge">LIVE</span><?php endif; ?>
-        <span class="feed-badge-time"><?= htmlspecialchars($g['time']) ?></span>
-        <span class="overlay-label"><?= htmlspecialchars($g['show']) ?></span>
-      </div>
-      <div class="feed-info">
-        <div class="title"><?= htmlspecialchars($g['title']) ?></div>
-        <div class="meta"><span><?= htmlspecialchars($g['date']) ?></span></div>
-      </div>
+  <div class="slider-wrapper" style="position: relative;">
+    <!-- Tombol Navigasi Kiri -->
+    <button id="slideLeftBtn" onclick="scrollGallery(-1)" style="display:flex; opacity:0; visibility:hidden; transition:all 0.3s ease; position:absolute; left:-15px; top:50%; transform:translateY(-50%); z-index:10; background:var(--primary, #2563eb); color:#fff; border:none; width:34px; height:34px; border-radius:50%; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.3); align-items:center; justify-content:center;">
+      <i class="ri-arrow-left-s-line" style="font-size:22px;"></i>
+    </button>
+
+    <!-- Kontainer Slider (overflow-x: hidden agar mouse/touchpad tidak bisa scroll) -->
+    <div id="youtubeSlider" style="display:flex; gap:16px; overflow-x:hidden; padding-bottom: 5px; padding-top: 5px; scroll-behavior: smooth;">
+      
+      <?php if (empty($gallery)): ?>
+        <div style="width:100%; text-align:center; color: var(--text-secondary); padding: 2rem;">
+          Data video untuk seminggu kebelakang belum tersedia.
+        </div>
+      <?php else: ?>
+        <?php foreach ($gallery as $g): ?>
+          <?php
+            $title = isset($g['title']) && $g['title'] !== '' ? $g['title'] : 'Tanpa Judul';
+            $namaAcara = isset($g['namaAcara']) && $g['namaAcara'] !== '' ? $g['namaAcara'] : '';
+            $programa = isset($g['programa']) && $g['programa'] !== '' ? $g['programa'] : 'Umum';
+            $programaColor = isset($g['programaColor']) ? $g['programaColor'] : 'gray';
+            $date = isset($g['date']) && $g['date'] !== '' ? $g['date'] : 'TBA';
+            $time = isset($g['time']) && $g['time'] !== '' ? $g['time'] : 'TBA';
+            $flyer = isset($g['flyer']) && $g['flyer'] !== '' ? $g['flyer'] : '';
+            
+            $colorMap = [
+                'gray'    => '#64748b', 'brown'   => '#92400e', 'orange'  => '#f59e0b',
+                'yellow'  => '#fbbf24', 'green'   => '#10b981', 'blue'    => '#2563eb',
+                'purple'  => '#8b5cf6', 'pink'    => '#ec4899', 'red'     => '#ef4444',
+                'default' => '#64748b'
+            ];
+            $bgColor = isset($colorMap[$programaColor]) ? $colorMap[$programaColor] : $colorMap['default'];
+          ?>
+          
+          <!-- ITEM SLIDER: Lebar dinamis (25% minus porsi gap) agar pas 4 kotak tanpa terpotong -->
+          <div class="feed-card" style="display:flex; flex-direction:column; flex: 0 0 calc(25% - 12px); width: calc(25% - 12px);">
+            <div class="feed-thumb" style="display:block; position:relative; overflow:hidden; background:#f0f0f0; min-height:180px;">
+              <?php if ($flyer !== ''): ?>
+                <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" style="width:100%; height:100%; object-fit:cover; position:absolute;">
+              <?php else: ?>
+                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; position:absolute;">
+                  <i class="ri-image-line" style="font-size:3rem;"></i>
+                </div>
+              <?php endif; ?>
+              <span class="overlay-label" style="position:absolute; top:10px; left:10px; background:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; color:#fff; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:bold; z-index:2;">
+                <?= htmlspecialchars($programa, ENT_QUOTES, 'UTF-8') ?>
+              </span>
+            </div>
+            <div class="feed-info" style="flex:1; display:flex; flex-direction:column;">
+              <div style="flex:1;">
+                <?php if ($namaAcara !== ''): ?>
+                  <div style="font-size:12px; color:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; font-weight:bold; margin-bottom:4px;">
+                    <?= htmlspecialchars($namaAcara, ENT_QUOTES, 'UTF-8') ?>
+                  </div>
+                <?php endif; ?>
+                <div class="title" style="white-space:normal;"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></div>
+              </div>
+              <div class="meta" style="font-size:13px; color:var(--text-secondary); border-top:1px solid var(--border-color); padding-top:12px; margin-top:12px;">
+                <span><i class="ri-calendar-line"></i> <?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
+                <span><i class="ri-time-line"></i> <?= htmlspecialchars($time, ENT_QUOTES, 'UTF-8') ?></span>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
     </div>
-    <?php endforeach; ?>
+
+    <!-- Tombol Navigasi Kanan -->
+    <button id="slideRightBtn" onclick="scrollGallery(1)" style="display:flex; opacity:1; visibility:visible; transition:all 0.3s ease; position:absolute; right:-15px; top:50%; transform:translateY(-50%); z-index:10; background:var(--primary, #2563eb); color:#fff; border:none; width:34px; height:34px; border-radius:50%; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.3); align-items:center; justify-content:center;">
+      <i class="ri-arrow-right-s-line" style="font-size:22px;"></i>
+    </button>
   </div>
+
+  <!-- Script untuk mekanisme scroll horizontal dan hide/show tombol panah dengan animasi -->
+  <script>
+  function scrollGallery(direction) {
+      const slider = document.getElementById('youtubeSlider');
+      const card = slider.querySelector('.feed-card');
+      
+      if (!card) return;
+
+      // Ambil lebar kotak secara dinamis ditambah gap (16px), lalu dikali 4
+      const scrollAmount = (card.offsetWidth + 16) * 4; 
+      
+      // Lakukan scroll smooth
+      slider.scrollBy({ left: direction * scrollAmount });
+  }
+
+  function updateSliderButtons() {
+      const slider = document.getElementById('youtubeSlider');
+      const leftBtn = document.getElementById('slideLeftBtn');
+      const rightBtn = document.getElementById('slideRightBtn');
+
+      if (!slider || !leftBtn || !rightBtn) return;
+
+      // Animasi Tombol Kiri
+      if (slider.scrollLeft <= 5) { // Diberi toleransi 5px untuk presisi browser
+          leftBtn.style.opacity = '0';
+          leftBtn.style.visibility = 'hidden';
+      } else {
+          leftBtn.style.opacity = '1';
+          leftBtn.style.visibility = 'visible';
+      }
+
+      // Animasi Tombol Kanan
+      if (slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 5) { // Diberi toleransi 5px
+          rightBtn.style.opacity = '0';
+          rightBtn.style.visibility = 'hidden';
+      } else {
+          rightBtn.style.opacity = '1';
+          rightBtn.style.visibility = 'visible';
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+      const slider = document.getElementById('youtubeSlider');
+      if (slider) {
+          // Menggunakan 'scrollend' agar tombol dicek TEPAT setelah animasi geser selesai berhenti
+          slider.addEventListener('scrollend', updateSliderButtons);
+          
+          window.addEventListener('resize', updateSliderButtons);
+          
+          // Jalankan pengecekan pertama saat halaman dimuat
+          setTimeout(updateSliderButtons, 100); 
+      }
+  });
+  </script>
 </div>
 
 
