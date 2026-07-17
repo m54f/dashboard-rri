@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__.'/../config/notion.php';
 
+// Notion File Upload API baru butuh Notion-Version yang lebih baru dari yang
+// dipakai query/create/update biasa (config/notion.php pakai 2022-06-28,
+// itu tetap dipakai untuk semua request lain dan TIDAK diubah supaya tidak
+// merusak yang sudah jalan). Khusus untuk upload file, kita pakai versi ini.
+define('NOTION_VERSION_FILES', '2025-09-03');
+
 /**
  * Ambil data agenda dari Notion Database Agenda.
  *
@@ -23,11 +29,6 @@ function getAgenda($date = null, $sort = 'asc')
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-    // Tidak menyaring/mengurutkan lewat payload Notion karena nama property Date
-    // di database Agenda belum bisa dipastikan 100% — filter & sort tanggal
-    // dilakukan di PHP setelah data diambil (lebih aman, tidak error kalau
-    // nama property meleset).
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode((object)[]));
 
     $response = curl_exec($ch);
@@ -56,7 +57,7 @@ function getAgenda($date = null, $sort = 'asc')
     foreach ($data['results'] as $item) {
         $props = $item['properties'];
 
-        // 1. Judul Kegiatan (Title) — coba beberapa kemungkinan nama property
+        // 1. Judul Kegiatan (Title)
         $title = 'Tanpa Judul';
         foreach (['Nama Kegiatan', 'Kegiatan', 'Judul', 'Judul Kegiatan', 'Title', 'Nama Agenda'] as $key) {
             if (isset($props[$key]['title'][0]['plain_text'])) {
@@ -86,7 +87,6 @@ function getAgenda($date = null, $sort = 'asc')
             }
         }
 
-        // Kalau ada filter tanggal, lewati item yang tidak cocok
         if ($date !== null && $dateYmd !== $date) {
             continue;
         }
@@ -106,7 +106,7 @@ function getAgenda($date = null, $sort = 'asc')
         $tag = $cat;
         $tone = categoryTone($cat);
 
-        // 4. PIC / Lokasi Kegiatan — coba PIC dulu, fallback ke Lokasi
+        // 4. PIC / Lokasi Kegiatan
         $pic = '';
         foreach (['PIC', 'Petugas', 'Nama Petugas'] as $key) {
             if (isset($props[$key]['multi_select']) && !empty($props[$key]['multi_select'])) {
@@ -138,7 +138,7 @@ function getAgenda($date = null, $sort = 'asc')
             $pic = 'Belum Ditentukan';
         }
 
-        // 5. Status (Status property atau Select)
+        // 5. Status
         $status = 'Belum';
         if (isset($props['Status']['status']['name'])) {
             $status = $props['Status']['status']['name'];
@@ -149,33 +149,50 @@ function getAgenda($date = null, $sort = 'asc')
 
         // 6. Catatan / Keterangan tambahan
         $notes = '';
-        foreach (['Catatan', 'Keterangan', 'Notes', 'Surat Tugas / Pengantar'] as $key) {
+        foreach (['Catatan', 'Keterangan', 'Notes'] as $key) {
             if (isset($props[$key]['rich_text'][0]['plain_text'])) {
                 $notes = $props[$key]['rich_text'][0]['plain_text'];
                 break;
             }
         }
 
-        $docs = getNotionFilesFromProps($props);
+        // 7. Dokumentasi / Surat Tugas (Files property)
+        $dokumentasi = [];
+        foreach (['Surat Tugas / Pengantar (Jika Ada)', 'Surat Tugas / Pengantar', 'Dokumentasi', 'Dokumentasi Pendukung', 'Lampiran'] as $key) {
+            if (isset($props[$key]['files']) && !empty($props[$key]['files'])) {
+                foreach ($props[$key]['files'] as $file) {
+                    $fileUrl = '';
+                    $fileName = $file['name'] ?? 'file';
+                    if (isset($file['external']['url'])) {
+                        $fileUrl = $file['external']['url'];
+                    } elseif (isset($file['file']['url'])) {
+                        $fileUrl = $file['file']['url'];
+                    }
+                    if ($fileUrl !== '') {
+                        $dokumentasi[] = ['name' => $fileName, 'url' => $fileUrl];
+                    }
+                }
+                break;
+            }
+        }
 
         $agenda[] = [
-            'id'      => strtoupper(substr($item['id'], 0, 6)),
-            'page_id' => $item['id'],
-            'url'     => $item['url'] ?? '#',
-            'title'   => $title,
-            'tag'     => $tag,
-            'tone'    => $tone,
-            'pic'     => $pic,
-            'status'  => $status,
-            'cls'     => $cls,
-            'notes'   => $notes,
-            'date'    => $dateYmd,
-            'time'    => $time,
-            'dokumentasi' => $docs,
+            'id'          => strtoupper(substr($item['id'], 0, 6)),
+            'page_id'     => $item['id'],
+            'url'         => $item['url'] ?? '#',
+            'title'       => $title,
+            'tag'         => $tag,
+            'tone'        => $tone,
+            'pic'         => $pic,
+            'status'      => $status,
+            'cls'         => $cls,
+            'notes'       => $notes,
+            'date'        => $dateYmd,
+            'time'        => $time,
+            'dokumentasi' => $dokumentasi,
         ];
     }
 
-    // Urutkan berdasarkan tanggal + jam (bukan cuma jam) sesuai arah $sort
     usort($agenda, function ($a, $b) {
         return strcmp($a['date'] . $a['time'], $b['date'] . $b['time']);
     });
@@ -186,183 +203,6 @@ function getAgenda($date = null, $sort = 'asc')
     return $agenda;
 }
 
-function getNotionFilesFromProps(array $props): array
-{
-    $files = [];
-    foreach (['Dokumentasi', 'Dokumen', 'Surat Tugas', 'Files', 'Attachment', 'Attachments'] as $key) {
-        if (!isset($props[$key])) {
-            continue;
-        }
-        $prop = $props[$key];
-        if (!isset($prop['files']) || !is_array($prop['files'])) {
-            continue;
-        }
-        foreach ($prop['files'] as $file) {
-            $url = '';
-            if (isset($file['file']['url'])) {
-                $url = $file['file']['url'];
-            } elseif (isset($file['external']['url'])) {
-                $url = $file['external']['url'];
-            }
-            if ($url === '') {
-                continue;
-            }
-            $files[] = [
-                'name' => $file['name'] ?? basename($url),
-                'url'  => $url,
-            ];
-        }
-        if (!empty($files)) {
-            break;
-        }
-    }
-    return $files;
-}
-
-function buildAgendaProperties(array $data): array
-{
-    $judul    = trim($data['kegiatan'] ?? '');
-    $tanggal  = trim($data['tanggal'] ?? '');
-    $waktu    = trim($data['waktu'] ?? '');
-    $lokasi   = trim($data['lokasi_kegiatan'] ?? $data['pic'] ?? '');
-    $kategori = trim($data['kategori'] ?? 'EVENT');
-    $status   = trim($data['status'] ?? 'Belum');
-    $catatan  = trim($data['catatan'] ?? '');
-
-    $dateTimeStr = '';
-    if ($tanggal !== '' && $waktu !== '') {
-        $dateTimeStr = $tanggal . 'T' . $waktu . ':00+07:00';
-    }
-
-    $properties = [
-        'Nama Kegiatan' => [
-            'title' => [
-                ['text' => ['content' => $judul]]
-            ]
-        ],
-        'Date' => [
-            'date' => $dateTimeStr !== '' ? ['start' => $dateTimeStr] : null
-        ],
-        'Lokasi Kegiatan' => [
-            'rich_text' => [
-                ['text' => ['content' => $lokasi]]
-            ]
-        ],
-        'Jenis Kegiatan' => [
-            'multi_select' => [
-                ['name' => $kategori]
-            ]
-        ],
-        'Status' => [
-            'status' => ['name' => $status]
-        ],
-    ];
-
-    if ($catatan !== '') {
-        $properties['Catatan'] = [
-            'rich_text' => [[
-                'text' => ['content' => $catatan]
-            ]]
-        ];
-    }
-
-    return $properties;
-}
-
-function updateAgenda($data)
-{
-    $pageId = trim($data['page_id'] ?? '');
-    if ($pageId === '') {
-        return ['error' => 'Field page_id wajib diisi untuk update.'];
-    }
-
-    $properties = buildAgendaProperties($data);
-    $payload = ['properties' => $properties];
-
-    $ch = curl_init("https://api.notion.com/v1/pages/{$pageId}");
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer " . NOTION_TOKEN,
-        "Notion-Version: " . NOTION_VERSION,
-        "Content-Type: application/json"
-    ]);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-
-    $response = curl_exec($ch);
-    if (curl_errno($ch)) {
-        $error = curl_error($ch);
-        curl_close($ch);
-        return ['error' => 'cURL Error: ' . $error];
-    }
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    $result = json_decode($response, true);
-    if ($httpCode !== 200) {
-        return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
-    }
-    return ['success' => true, 'id' => $pageId];
-}
-
-function deleteAgenda($data)
-{
-    $pageId = trim($data['page_id'] ?? '');
-    if ($pageId === '') {
-        return ['error' => 'Field page_id wajib diisi untuk hapus.'];
-    }
-
-    $url = "https://api.notion.com/v1/pages/{$pageId}";
-    $headers = [
-        "Authorization: Bearer " . NOTION_TOKEN,
-        "Notion-Version: " . NOTION_VERSION,
-        "Content-Type: application/json"
-    ];
-    $payload = ['archived' => true];
-
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-
-    $response = curl_exec($ch);
-    if (curl_errno($ch)) {
-        $error = curl_error($ch);
-        curl_close($ch);
-        return ['error' => 'cURL Error: ' . $error];
-    }
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode !== 200) {
-        $result = json_decode($response, true);
-        return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
-    }
-
-    return ['success' => true];
-}
-
-function handleAgendaRequest()
-{
-    $data = $_POST;
-    if (empty($data) && strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
-        $data = json_decode(file_get_contents('php://input'), true) ?: [];
-    }
-
-    $action = strtolower(trim($data['action'] ?? 'create'));
-    if ($action === 'update') {
-        return updateAgenda($data);
-    }
-    if ($action === 'delete') {
-        return deleteAgenda($data);
-    }
-    return createAgenda($data);
-}
-
-/**
- * Tentukan warna badge kategori berdasarkan kata kunci pada nama kategori.
- */
 function categoryTone($cat)
 {
     $c = strtolower($cat);
@@ -373,9 +213,6 @@ function categoryTone($cat)
     return 'gray';
 }
 
-/**
- * Tentukan kelas warna status.
- */
 function statusClass($status)
 {
     $s = strtolower($status);
@@ -387,18 +224,131 @@ function statusClass($status)
 }
 
 /**
- * Buat page/agenda baru di Notion dari data form.
+ * Langkah 1+2 Notion File Upload API: buat slot upload, lalu kirim isi file.
+ * Dokumentasi: https://developers.notion.com/reference/file-upload
  *
- * PENTING: nama property di sini HARUS SAMA PERSIS dengan nama property
- * asli di database Notion Agenda kamu (beda dengan getAgenda() di atas
- * yang boleh menebak-nebak, karena untuk MENULIS Notion butuh nama yang
- * pas). Kalau ada property yang namanya beda, tinggal ganti string-nya
- * di bawah — jangan ubah bagian lain.
- *
- * @param array $data Data dari $_POST (kegiatan, tanggal, waktu, pic, kategori, status, catatan)
- * @return array
+ * @return array ['id' => ..., 'name' => ...] kalau sukses, atau ['error' => ...]
  */
-function createAgenda($data)
+function notionUploadFile($tmpPath, $filename, $mimeType)
+{
+    // Batas ukuran 5MB per file, sama seperti Formulir Notion-nya
+    if (filesize($tmpPath) > 5 * 1024 * 1024) {
+        return ['error' => "File \"$filename\" lebih dari 5MB"];
+    }
+
+    $headersJson = [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION_FILES,
+        "Content-Type: application/json"
+    ];
+
+    // --- Langkah 1: minta slot upload ---
+    $ch = curl_init('https://api.notion.com/v1/file_uploads');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headersJson);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+        'mode'         => 'single_part',
+        'filename'     => $filename,
+        'content_type' => $mimeType,
+    ]));
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        return ['error' => $err];
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $result = json_decode($response, true);
+    if ($code !== 200) {
+        return ['error' => $result['message'] ?? "HTTP Error: {$code}"];
+    }
+
+    $uploadId  = $result['id'];
+    $uploadUrl = $result['upload_url'];
+
+    // --- Langkah 2: kirim isi file ke upload_url ---
+    $ch2 = curl_init($uploadUrl);
+    curl_setopt($ch2, CURLOPT_POST, true);
+    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch2, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION_FILES,
+    ]);
+    curl_setopt($ch2, CURLOPT_POSTFIELDS, [
+        'file' => new CURLFile($tmpPath, $mimeType, $filename),
+    ]);
+    $response2 = curl_exec($ch2);
+    if (curl_errno($ch2)) {
+        $err = curl_error($ch2);
+        curl_close($ch2);
+        return ['error' => $err];
+    }
+    $code2 = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+    curl_close($ch2);
+    $result2 = json_decode($response2, true);
+    if ($code2 !== 200) {
+        return ['error' => $result2['message'] ?? "HTTP Error: {$code2}"];
+    }
+
+    return ['id' => $uploadId, 'name' => $filename];
+}
+
+/**
+ * Upload banyak file sekaligus dari $_FILES['dokumen'] (bisa array kalau
+ * input pakai name="dokumen[]" multiple).
+ *
+ * @return array [fileObjectsUntukProperty, daftarPesanError]
+ */
+function notionUploadFiles($filesInput)
+{
+    $fileObjects = [];
+    $errors = [];
+
+    if (!$filesInput || empty($filesInput['name'])) {
+        return [$fileObjects, $errors];
+    }
+
+    $names = $filesInput['name'];
+    $isMultiple = is_array($names);
+    $count = $isMultiple ? count($names) : 1;
+
+    for ($i = 0; $i < $count; $i++) {
+        $name = $isMultiple ? $filesInput['name'][$i] : $filesInput['name'];
+        $tmp  = $isMultiple ? $filesInput['tmp_name'][$i] : $filesInput['tmp_name'];
+        $type = $isMultiple ? $filesInput['type'][$i] : $filesInput['type'];
+        $err  = $isMultiple ? $filesInput['error'][$i] : $filesInput['error'];
+
+        if ($name === '' || $err === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        if ($err !== UPLOAD_ERR_OK) {
+            $errors[] = "$name: gagal diupload dari browser (kode error $err)";
+            continue;
+        }
+
+        $uploaded = notionUploadFile($tmp, $name, $type ?: 'application/octet-stream');
+        if (isset($uploaded['error'])) {
+            $errors[] = "$name: " . $uploaded['error'];
+            continue;
+        }
+
+        $fileObjects[] = [
+            'name'        => $uploaded['name'],
+            'type'        => 'file_upload',
+            'file_upload' => ['id' => $uploaded['id']],
+        ];
+    }
+
+    return [$fileObjects, $errors];
+}
+
+/**
+ * Susun properties dasar (judul, tanggal, lokasi, kategori, status) yang
+ * dipakai bareng oleh createAgenda() dan updateAgenda().
+ */
+function buildAgendaBaseProperties($data)
 {
     $judul    = trim($data['kegiatan'] ?? '');
     $tanggal  = trim($data['tanggal'] ?? '');
@@ -406,48 +356,60 @@ function createAgenda($data)
     $lokasi   = trim($data['lokasi_kegiatan'] ?? $data['pic'] ?? '');
     $kategori = trim($data['kategori'] ?? 'EVENT');
     $status   = trim($data['status'] ?? 'Belum');
-    $catatan  = trim($data['catatan'] ?? '');
 
     if ($judul === '' || $tanggal === '' || $waktu === '') {
         return ['error' => 'Judul, tanggal, dan waktu wajib diisi'];
     }
 
-    // Gabungkan tanggal + waktu jadi ISO 8601 dengan zona waktu WIB (+07:00)
     $dateTimeStr = $tanggal . 'T' . $waktu . ':00+07:00';
 
     // ==== SESUAIKAN nama property di sini kalau beda dengan Notion-mu ====
-    $properties = [
-        'Nama Kegiatan' => [
-            'title' => [
-                ['text' => ['content' => $judul]]
-            ]
-        ],
-        'Date' => [
-            'date' => ['start' => $dateTimeStr]
-        ],
-        'Lokasi Kegiatan' => [
-            'rich_text' => [
-                ['text' => ['content' => $lokasi]]
-            ]
-        ],
-        'Jenis Kegiatan' => [
-            'multi_select' => [
-                ['name' => $kategori]
-            ]
-        ],
-        'Status' => [
-            // Ganti ke 'select' => ['name' => $status] kalau di Notion-mu
-            // property Status tipenya Select biasa, bukan Status bawaan.
-            'status' => ['name' => $status]
-        ],
+    return [
+        'properties' => [
+            'Nama Kegiatan' => [
+                'title' => [
+                    ['text' => ['content' => $judul]]
+                ]
+            ],
+            'Date' => [
+                'date' => ['start' => $dateTimeStr]
+            ],
+            'Lokasi Kegiatan' => [
+                'rich_text' => [
+                    ['text' => ['content' => $lokasi]]
+                ]
+            ],
+            'Jenis Kegiatan' => [
+                'multi_select' => [
+                    ['name' => $kategori]
+                ]
+            ],
+            'Status' => [
+                'select' => ['name' => $status]
+            ],
+        ]
     ];
+}
 
-    if ($catatan !== '') {
-        $properties['Catatan'] = [
-            'rich_text' => [[
-                'text' => ['content' => $catatan]
-            ]]
-        ];
+/**
+ * Buat page/agenda baru di Notion dari data form.
+ *
+ * @param array $data Data dari $_POST
+ * @param array|null $filesInput Data dari $_FILES['dokumen'] (opsional)
+ * @return array
+ */
+function createAgenda($data, $filesInput = null)
+{
+    $built = buildAgendaBaseProperties($data);
+    if (isset($built['error'])) {
+        return $built;
+    }
+    $properties = $built['properties'];
+
+    [$fileObjects, $fileErrors] = notionUploadFiles($filesInput);
+    if (!empty($fileObjects)) {
+        // Gunakan nama property yang umum di Database Notion: "Surat Tugas / Pengantar"
+        $properties['Surat Tugas / Pengantar'] = ['files' => $fileObjects];
     }
 
     $payload = json_encode([
@@ -468,30 +430,163 @@ function createAgenda($data)
     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
 
     $response = curl_exec($ch);
-
     if (curl_errno($ch)) {
         $error = curl_error($ch);
         curl_close($ch);
         return ['error' => $error];
     }
-
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-
     $result = json_decode($response, true);
 
     if ($httpCode !== 200) {
-        // Notion biasanya mengirim pesan error yang jelas di 'message'
         return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
     }
 
-    return ['success' => true, 'id' => $result['id'] ?? null];
+    $out = ['success' => true, 'id' => $result['id'] ?? null];
+    if (!empty($fileErrors)) {
+        $out['file_warnings'] = $fileErrors;
+    }
+    if (!empty($fileObjects)) {
+        $out['uploaded_files'] = array_map(fn($f) => $f['name'] ?? null, $fileObjects);
+    }
+    return $out;
 }
 
-// ==== Jalan hanya kalau file ini diakses langsung lewat POST (dari fetch di agenda.php) ====
-// Saat di-require oleh pages/agenda.php (GET), blok ini dilewati — jadi aman.
+/**
+ * Update page agenda yang sudah ada.
+ *
+ * PENTING soal dokumen: kalau kamu upload file baru saat edit, file yang
+ * LAMA akan TERGANTI (Notion tidak punya "tambah ke file yang sudah ada"
+ * lewat API, cuma bisa timpa seluruh isi property). Kalau tidak upload
+ * file baru sama sekali, dokumen lama tetap aman karena property-nya
+ * tidak ikut dikirim di request update.
+ *
+ * @return array
+ */
+function updateAgenda($pageId, $data, $filesInput = null)
+{
+    if (!$pageId) {
+        return ['error' => 'page_id wajib diisi'];
+    }
+
+    $built = buildAgendaBaseProperties($data);
+    if (isset($built['error'])) {
+        return $built;
+    }
+    $properties = $built['properties'];
+
+    [$fileObjects, $fileErrors] = notionUploadFiles($filesInput);
+    if (!empty($fileObjects)) {
+        $properties['Surat Tugas / Pengantar'] = ['files' => $fileObjects];
+    }
+
+    $headers = [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION,
+        "Content-Type: application/json"
+    ];
+
+    $ch = curl_init("https://api.notion.com/v1/pages/" . $pageId);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['properties' => $properties]));
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        return ['error' => $error];
+    }
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $result = json_decode($response, true);
+
+    if ($httpCode !== 200) {
+        return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
+    }
+
+    $out = ['success' => true, 'id' => $pageId];
+    if (!empty($fileErrors)) {
+        $out['file_warnings'] = $fileErrors;
+    }
+    if (!empty($fileObjects)) {
+        $out['uploaded_files'] = array_map(fn($f) => $f['name'] ?? null, $fileObjects);
+    }
+    return $out;
+}
+
+/**
+ * "Hapus" agenda. Notion API tidak benar-benar menghapus page lewat API
+ * publik — yang dilakukan adalah archive (dipindah ke Trash Notion),
+ * persis seperti kalau kamu hapus manual dari Notion.
+ *
+ * @return array
+ */
+function deleteAgenda($pageId)
+{
+    if (!$pageId) {
+        return ['error' => 'page_id wajib diisi'];
+    }
+
+    $headers = [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION,
+        "Content-Type: application/json"
+    ];
+
+    $ch = curl_init("https://api.notion.com/v1/pages/" . $pageId);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['archived' => true]));
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        return ['error' => $error];
+    }
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        $result = json_decode($response, true);
+        return ['error' => $result['message'] ?? "HTTP Error: {$httpCode}", 'raw' => $response];
+    }
+
+    return ['success' => true];
+}
+
+// ==== Endpoint POST — dipanggil langsung dari fetch() di pages/agenda.php ====
+// Saat file ini di-require oleh pages/agenda.php (GET, buat nampilin
+// halaman), blok ini dilewati — jadi aman dipakai dua-duanya.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    echo json_encode(handleAgendaRequest());
+
+    // Kasus klasik PHP: kalau ukuran TOTAL request (termasuk file) melebihi
+    // post_max_size di php.ini, PHP diam-diam mengosongkan $_POST dan
+    // $_FILES — tidak ada error per-file yang bisa ditangkap kode di bawah.
+    // Ini caranya mendeteksi kejadian itu supaya tidak gagal secara diam-diam.
+    if (empty($_POST) && !empty($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0) {
+        $postMax = ini_get('post_max_size');
+        $uploadMax = ini_get('upload_max_filesize');
+        echo json_encode([
+            'error' => "Request ditolak PHP karena kebesaran. Batas saat ini di server: post_max_size={$postMax}, upload_max_filesize={$uploadMax}. File yang kamu lampirkan kemungkinan melebihi ini — perbesar dua nilai itu di php.ini (lalu restart web server/PHP), atau coba dulu dengan file yang lebih kecil."
+        ]);
+        exit;
+    }
+
+    $action = $_POST['action'] ?? 'create';
+    $filesInput = $_FILES['dokumen'] ?? null;
+
+    if ($action === 'delete') {
+        echo json_encode(deleteAgenda($_POST['page_id'] ?? ''));
+    } elseif ($action === 'update') {
+        echo json_encode(updateAgenda($_POST['page_id'] ?? '', $_POST, $filesInput));
+    } else {
+        echo json_encode(createAgenda($_POST, $filesInput));
+    }
     exit;
 }
