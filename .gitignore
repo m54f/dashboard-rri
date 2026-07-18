@@ -2,3 +2,6 @@ setup/1-setup-peminjaman.php
 setup/2-setup-inventaris-relasi.php
 setup/3-seed-inventaris.php
 setup/get-json-peminjaman.php
+setup/4-seed-peminjaman.php
+setup/5-clear-peminjaman.php
+setup/6-seed-peminjaman-full.php

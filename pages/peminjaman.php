@@ -1,33 +1,39 @@
 <?php
 require_once __DIR__.'/../api/peminjaman.php';
 
-$items = getPeminjaman();
+ $items = getPeminjaman();
 
 if (!is_array($items) || isset($items['error'])) {
     $errorMessage = $items['error'] ?? 'Gagal memuat data';
     $items = [];
 }
 
-$total       = count($items);
-$dipinjam    = count(array_filter($items, fn($i) => $i['status'] === 'Dipinjam'));
-$terlambat   = count(array_filter($items, fn($i) => $i['status'] === 'Terlambat'));
-$dikembalikan = count(array_filter($items, fn($i) => $i['status'] === 'Dikembalikan'));
+ $total       = count($items);
+ $dipinjam    = count(array_filter($items, fn($i) => $i['status'] === 'Dipinjam'));
+ $terlambat   = count(array_filter($items, fn($i) => $i['status'] === 'Terlambat'));
+ $dikembalikan = count(array_filter($items, fn($i) => $i['status'] === 'Dikembalikan'));
 
-$stats = [
+ $stats = [
     ['label' => 'Sedang Dipinjam', 'value' => $dipinjam, 'sub' => 'Di lapangan', 'icon' => 'ri-hand-heart-line', 'tone' => 'orange'],
     ['label' => 'Dikembalikan', 'value' => $dikembalikan, 'sub' => 'Sudah selesai', 'icon' => 'ri-checkbox-circle-line', 'tone' => 'green'],
     ['label' => 'Terlambat', 'value' => $terlambat, 'sub' => 'Perlu ditindaklanjuti', 'icon' => 'ri-alarm-warning-line', 'tone' => 'red'],
     ['label' => 'Total Transaksi', 'value' => $total, 'sub' => 'Data real-time dari Notion', 'icon' => 'ri-exchange-line', 'tone' => 'blue'],
 ];
 
-$base = '..'; $pageTitle = 'Peminjaman Alat'; $activeMenu = 'peminjaman';
+ $base = '..'; $pageTitle = 'Peminjaman Alat'; $activeMenu = 'peminjaman';
 
 // Master data untuk dropdown
-$picList  = ['Alfian','Alif','Saiful','Yhanuar','Yayang','Yudha','Dicky','Yoyok','Anggi','Ludfi','Shofirin','Syukur','Dedy','Deny','Dayat','Winsa','Selvy'];
-$alatList = ['Mixer','Mic','Laptop','Tripod','Kamera','Kabel','Soundcard','Speaker','HT','Headphone','Modem','Video Switcher','Video Sender','Converter','Baterai','Lampu','Overlength','Earpik','Lainnya'];
+ $picList  = ['Alfian','Alif','Saiful','Yhanuar','Yayang','Yudha','Dicky','Yoyok','Anggi','Ludfi','Shofirin','Syukur','Dedy','Deny','Dayat','Winsa','Selvy'];
+ $alatList = ['Mixer', 'Mic', 'Laptop', 'Tripod', 'Kamera', 'Kabel', 'Soundcard', 'Speaker', 'HT', 'Headphone', 'Modem', 'Video Switcher', 'Video Sender', 'Converter', 'Baterai', 'Lampu', 'Overlength', 'Earpik', 'Stand Mic', 'PC Desktop', 'Monitor', 'Keyboard', 'Mouse', 'Audio Distribution', 'Lainnya'];
 
 include __DIR__ . '/../includes/header.php';
 ?>
+
+<!-- Dependencies untuk Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <div class="page-head">
   <div>
     <h2>Peminjaman Alat</h2>
@@ -82,6 +88,7 @@ include __DIR__ . '/../includes/header.php';
         ?>
         <tr data-status="<?= htmlspecialchars($it['status']) ?>">
           <td class="cell-title"><?= htmlspecialchars($it['kegiatan']) ?></td>
+          <td class="cell-sub"><?= htmlspecialchars($it['pic']) ?></td>
           <td class="cell-sub"><?= htmlspecialchars($it['alat_display']) ?></td>
           <td class="cell-sub"><?= htmlspecialchars($it['lokasi']) ?></td>
           <td><?= htmlspecialchars($it['tgl_pinjam'] ?? '-') ?></td>
@@ -103,29 +110,34 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- Modal Create/Edit -->
 <div class="modal-overlay" id="pinjamModal">
-  <div class="modal-content" style="max-width:640px;">
+  <div class="modal-content" style="max-width:800px;">
     <div class="modal-header"><h3 class="modal-title" id="modalTitle">Catat Peminjaman Alat</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <form id="pinjamForm" onsubmit="handleSubmit(event)">
       <input type="hidden" id="field_page_id" value="">
 
-      <div class="form-group">
-        <label>Nama Kegiatan</label>
-        <input type="text" id="field_kegiatan" placeholder="Contoh: Liputan Senam Sore RRI" required>
-      </div>
-
       <div class="form-row">
         <div class="form-group">
+          <label>Nama Kegiatan</label>
+          <select id="field_kegiatan" required>
+            <option value="">Pilih Kegiatan</option>
+            <option value="Event Kantor">Event Kantor</option>
+            <option value="Troubleshooting / Maintenance">Troubleshooting / Maintenance</option>
+            <option value="Upacara / Apel Pagi">Upacara / Apel Pagi</option>
+            <option value="Acara Live / Dialog Luar / Tapping">Acara Live / Dialog Luar / Tapping</option>
+            <option value="Podcast / Tapping">Podcast / Tapping</option>
+            <option value="Keroncong">Keroncong</option>
+            <option value="Senandung Rindu">Senandung Rindu</option>
+            <option value="Zoom Meeting">Zoom Meeting</option>
+            <option value="Kunjungan">Kunjungan</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Nama PIC PT</label>
-          <select id="field_pic" required>
-            <option value="">Pilih PIC</option>
+          <select id="field_pic" multiple required>
             <?php foreach ($picList as $nama): ?>
               <option value="<?= $nama ?>"><?= $nama ?></option>
             <?php endforeach; ?>
           </select>
-        </div>
-        <div class="form-group">
-          <label>Lokasi</label>
-          <input type="text" id="field_lokasi" placeholder="Contoh: Studio A">
         </div>
       </div>
 
@@ -138,25 +150,27 @@ include __DIR__ . '/../includes/header.php';
           <label>Tanggal Pinjam</label>
           <input type="date" id="field_tgl_pinjam" required>
         </div>
+        <div class="form-group">
+          <label>Lokasi</label>
+          <input type="text" id="field_lokasi" placeholder="Contoh: Auditorium">
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>Durasi (jam)</label>
-        <input type="number" id="field_durasi" min="0" step="0.5" placeholder="Contoh: 3">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Durasi (jam)</label>
+          <input type="number" id="field_durasi" min="0" step="0.5" placeholder="Contoh: 3">
+        </div>
+        <div class="form-group">
+          <label>Keterangan</label>
+          <input type="text" id="field_keterangan" placeholder="Catatan tambahan">
+        </div>
       </div>
 
-      <!-- Daftar Alat Dinamis -->
+      <!-- Checkbox Alat Dinamis (Persis seperti GAS) -->
       <div class="form-group">
         <label>Alat yang Dipinjam <span class="required-star">*</span></label>
-        <div id="alatRows"></div>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="addAlatRow()" style="margin-top:0.5rem;">
-          <i class="ri-add-line"></i> Tambah Alat
-        </button>
-      </div>
-
-      <div class="form-group">
-        <label>Keterangan</label>
-        <textarea id="field_keterangan" rows="2" placeholder="Catatan tambahan (opsional)"></textarea>
+        <div id="alatContainer" class="alat-grid"></div>
       </div>
 
       <div class="modal-footer">
@@ -169,10 +183,20 @@ include __DIR__ . '/../includes/header.php';
 
 <style>
   .required-star { color:#ef4444; }
-  .alat-row { display:grid; grid-template-columns: 1.2fr 1.2fr 0.6fr auto; gap:0.5rem; margin-bottom:0.5rem; align-items:center; }
-  .alat-row select, .alat-row input { width:100%; }
-  .alat-row .remove-row { background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.1rem; padding:0.3rem; }
-  .btn-sm { padding:0.4rem 0.8rem; font-size:0.85rem; }
+  .alat-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:0.75rem; max-height:350px; overflow-y:auto; padding:0.5rem; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; }
+  .alat-checkbox-item { background:#fff; padding:0.75rem; border-radius:8px; border:1px solid #e5e7eb; }
+  .alat-cb-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem; }
+  .alat-cb-top label { margin-left:0.5rem; font-weight:600; flex-grow:1; cursor:pointer; }
+  .btn-add-alat { background:#3b82f6; color:#fff; border:none; border-radius:4px; width:24px; height:24px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+  .btn-remove-alat { background:#ef4444; color:#fff; border:none; border-radius:4px; width:24px; height:24px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; margin-left:auto; }
+  .alat-cb-inputs { display:flex; flex-direction:column; gap:0.4rem; }
+  .alat-cb-inputs input { padding:0.4rem 0.6rem; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; width:100%; box-sizing:border-box; }
+  .alat-cb-inputs input:disabled { background:#f3f4f6; cursor:not-allowed; }
+  
+  /* Select2 Z-index fix biar nampil di atas modal */
+  .select2-container--open { z-index: 99999 !important; }
+  .select2-container { width: 100% !important; margin-bottom: 0.5rem; }
+  
   .cell-actions { display:flex; gap:0.4rem; align-items:center; }
   .icon-action.edit, .icon-action.return { background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; }
   .icon-action.edit { color:#3b82f6; }
@@ -181,12 +205,198 @@ include __DIR__ . '/../includes/header.php';
   .icon-action.return:hover { background:rgba(34,197,94,0.12); }
   .icon-action.delete { color:#ef4444; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; }
   .icon-action.delete:hover { background:rgba(239,68,68,0.12); }
-  @media (max-width:600px) { .alat-row { grid-template-columns: 1fr; } }
+  @media (max-width:600px) { .alat-grid { grid-template-columns: 1fr; } }
 </style>
 
 <script>
 const ALAT_LIST = <?= json_encode($alatList) ?>;
 
+// Mapping Alat Default Berdasarkan Kegiatan
+const alatPerKegiatan = {
+  "Upacara / Apel Pagi": [
+    { nama: "Mic", jenis: "Kabel", qty: 3 }, { nama: "Speaker", jenis: "Huper", qty: 1 },
+    { nama: "Overlength", jenis: "Putih", qty: 1 }, { nama: "Mixer", jenis: "8 chanel", qty: 1 },
+    { nama: "Stand Mic", jenis: "Mic", qty: 3 }, { nama: "Kabel", jenis: "Power", qty: 2 },
+    { nama: "Kabel", jenis: "Roll Biru", qty: 1 }, { nama: "Kabel", jenis: "Male Female", qty: 4 }
+  ],
+  "Acara Live / Dialog Luar / Tapping": [
+    { nama: "Mic", jenis: "Kabel", qty: 3 }, { nama: "Kamera", jenis: "Mirrorless", qty: 2 },
+    { nama: "Kamera", jenis: "PXW", qty: 1 }, { nama: "Tripod", jenis: "kamera", qty: 3 },
+    { nama: "Kabel", jenis: "HDMI", qty: 2 }, { nama: "Kabel", jenis: "SDI", qty: 1 },
+    { nama: "Kabel", jenis: "Male Female", qty: 3 }, { nama: "Kabel", jenis: "Roll Biru", qty: 1 },
+    { nama: "Video Switcher", jenis: "Avmatrik", qty: 1 }, { nama: "Soundcard", jenis: "Behringer", qty: 1 },
+    { nama: "Baterai", jenis: "Dummy Kingma", qty: 1 }, { nama: "Converter", jenis: "HDMI-SDI", qty: 2 },
+    { nama: "Mixer", jenis: "Digital Ashley", qty: 1 }, { nama: "Headphone", jenis: "Kabel", qty: 1 },
+    { nama: "Laptop", jenis: "TUF", qty: 1 }, { nama: "Modem", jenis: "Orbit", qty: 1 },
+    { nama: "Lampu", jenis: "Inbex", qty: 2 }, { nama: "Lampu", jenis: "Godox", qty: 1 },
+    { nama: "Overlength", jenis: "MCB", qty: 1 }, { nama: "HT", jenis: "WLN", qty: 6 },
+    { nama: "Earpik", jenis: "HT", qty: 6 }
+  ],
+  "Podcast / Tapping": [
+    { nama: "Mic", jenis: "Saramonic Sepaket", qty: 1 }, { nama: "Kamera", jenis: "Mirrorless", qty: 2 },
+    { nama: "Kamera", jenis: "PXW", qty: 1 }, { nama: "Tripod", jenis: "kamera", qty: 3 },
+    { nama: "Kabel", jenis: "HDMI", qty: 2 }, { nama: "Kabel", jenis: "SDI", qty: 1 },
+    { nama: "Overlength", jenis: "putih", qty: 2 }, { nama: "Video Switcher", jenis: "Avmatrik", qty: 1 },
+    { nama: "Soundcard", jenis: "Behringer", qty: 1 }, { nama: "Baterai", jenis: "Dummy Kingma", qty: 1 },
+    { nama: "Laptop", jenis: "TUF", qty: 1 }, { nama: "Lampu", jenis: "Inbex", qty: 2 },
+    { nama: "Lampu", jenis: "Godox", qty: 1 }
+  ],
+  "Keroncong": [
+    { nama: "Kamera", jenis: "PXW", qty: 1 }, { nama: "Tripod", jenis: "kamera", qty: 1 },
+    { nama: "Mic", jenis: "Wireless", qty: 1 }, { nama: "Mic", jenis: "Kabel", qty: 1 },
+    { nama: "HT", jenis: "WLN", qty: 2 }, { nama: "Kabel", jenis: "Male Female", qty: 6 },
+    { nama: "Kabel", jenis: "Male TS", qty: 5 }, { nama: "Overlength", jenis: "putih", qty: 1 },
+    { nama: "Headphone", jenis: "Senheizer", qty: 1 }
+  ],
+  "Senandung Rindu": [
+    { nama: "Kamera", jenis: "MD", qty: 1 }, { nama: "Kamera", jenis: "PXW", qty: 1 },
+    { nama: "Tripod", jenis: "kamera", qty: 2 }, { nama: "Mic", jenis: "Wireless", qty: 1 },
+    { nama: "Mic", jenis: "Kabel", qty: 1 }, { nama: "HT", jenis: "WLN", qty: 2 },
+    { nama: "Kabel", jenis: "Male TS", qty: 1 }, { nama: "Overlength", jenis: "putih", qty: 2 },
+    { nama: "Kabel", jenis: "Roll Biru", qty: 1 }
+  ],
+  "Zoom Meeting": [
+    { nama: "Laptop", jenis: "MSI", qty: 1 }
+  ],
+  "Kunjungan": [
+    { nama: "Laptop", jenis: "MSI", qty: 1 }, { nama: "Baterai", jenis: "Charge", qty: 4 }
+  ]
+};
+
+// ===== Init Select2 & Checkbox =====
+ $(document).ready(function() {
+  $('#field_pic').select2({
+    placeholder: "Pilih PIC PT",
+    allowClear: true,
+    width: '100%',
+    closeOnSelect: false,
+    dropdownParent: $('#pinjamModal')
+  });
+
+  $('#field_kegiatan').select2({
+    placeholder: "Pilih Kegiatan",
+    allowClear: true,
+    width: '100%',
+    dropdownParent: $('#pinjamModal')
+  });
+
+  $('#field_kegiatan').on('change', function() {
+    updateAlatCheckboxes(this.value);
+  });
+
+  generateAlatCheckboxes();
+  initCheckboxListeners();
+});
+
+function generateAlatCheckboxes() {
+  const container = document.getElementById('alatContainer');
+  container.innerHTML = '';
+  ALAT_LIST.forEach((alat, index) => {
+    const id = 'alat' + index;
+    const div = document.createElement('div');
+    div.className = 'alat-checkbox-item';
+    div.setAttribute('data-alat', alat);
+    div.innerHTML = `
+      <div class="alat-cb-top">
+        <input class="form-check-input alat-checkbox" type="checkbox" id="${id}" value="${alat}">
+        <label for="${id}">${alat}</label>
+        <button type="button" class="btn-add-alat" data-alat="${alat}">+</button>
+      </div>
+      <div class="alat-cb-inputs">
+        <input type="text" class="alat-jenis" id="${id}_jenis" placeholder="Jenis/Tipe" disabled>
+        <input type="number" min="1" max="9" class="alat-qty" id="${id}_qty" placeholder="Qty" disabled>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function updateAlatCheckboxes(selectedEvent) {
+  const defaultAlat = alatPerKegiatan[selectedEvent] || [];
+  // Uncheck & disable semua dulu
+  document.querySelectorAll('.alat-checkbox-item').forEach(item => {
+    if (item.querySelector('.btn-remove-alat')) item.remove(); // Hapus duplikat
+    const cb = item.querySelector('.alat-checkbox');
+    if(cb) {
+      cb.checked = false;
+      const jenis = document.getElementById(cb.id + '_jenis');
+      const qty = document.getElementById(cb.id + '_qty');
+      if(jenis) { jenis.disabled = true; jenis.value = ''; }
+      if(qty) { qty.disabled = true; qty.value = ''; }
+    }
+  });
+
+  // Check & isi default
+  defaultAlat.forEach(d => {
+    let cb = [...document.querySelectorAll('.alat-checkbox:not([id*="dup"])')].find(x => x.value === d.nama);
+    if (cb && !cb.checked) {
+      cb.checked = true;
+      const jenis = document.getElementById(cb.id + '_jenis');
+      const qty = document.getElementById(cb.id + '_qty');
+      if(jenis) { jenis.disabled = false; jenis.value = d.jenis; }
+      if(qty) { qty.disabled = false; qty.value = d.qty; }
+    } else if (cb && cb.checked) {
+      // Jika sudah ada yang tercentang dengan nama sama, tambah duplikat
+      addDuplicateRow(d.nama, d.jenis, d.qty);
+    }
+  });
+}
+
+function initCheckboxListeners() {
+  const container = document.getElementById('alatContainer');
+  container.addEventListener('change', e => {
+    if (e.target.classList.contains('alat-checkbox')) {
+      const id = e.target.id;
+      const jenis = document.getElementById(id + '_jenis');
+      const qty = document.getElementById(id + '_qty');
+      const checked = e.target.checked;
+      if(jenis) { jenis.disabled = !checked; if(!checked) jenis.value=''; }
+      if(qty) { qty.disabled = !checked; if(!checked) qty.value=''; }
+    }
+  });
+
+  container.addEventListener('click', e => {
+    if (e.target.classList.contains('btn-add-alat')) {
+      const alat = e.target.dataset.alat;
+      addDuplicateRow(alat, '', '');
+    } else if (e.target.classList.contains('btn-remove-alat')) {
+      e.target.closest('.alat-checkbox-item').remove();
+    }
+  });
+}
+
+function addDuplicateRow(alat, jenisVal, qtyVal) {
+  const newIndex = 'dup' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'alat-checkbox-item';
+  div.innerHTML = `
+    <div class="alat-cb-top">
+      <input class="form-check-input alat-checkbox" type="checkbox" id="${newIndex}" value="${alat}" checked>
+      <label for="${newIndex}">${alat}</label>
+      <button type="button" class="btn-remove-alat">×</button>
+    </div>
+    <div class="alat-cb-inputs">
+      <input type="text" class="alat-jenis" id="${newIndex}_jenis" placeholder="Jenis/Tipe" value="${jenisVal}">
+      <input type="number" min="1" max="9" class="alat-qty" id="${newIndex}_qty" placeholder="Qty" value="${qtyVal}">
+    </div>`;
+  document.getElementById('alatContainer').appendChild(div);
+}
+
+function collectAlatRows() {
+  let rows = [];
+  document.querySelectorAll('.alat-checkbox-item').forEach(item => {
+    const cb = item.querySelector('.alat-checkbox');
+    if (cb && cb.checked) {
+      rows.push({
+        alat: cb.value,
+        jenis: item.querySelector('.alat-jenis').value.trim(),
+        qty: item.querySelector('.alat-qty').value
+      });
+    }
+  });
+  return rows;
+}
+
+// ===== Modal Logic =====
 function openModal(){ document.getElementById('pinjamModal').classList.add('active'); }
 function closeModal(){ document.getElementById('pinjamModal').classList.remove('active'); }
 document.getElementById('pinjamModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
@@ -199,67 +409,48 @@ function filterPinjam(status, el){
   });
 }
 
-// ===== Baris alat dinamis =====
-function alatRowTemplate(alat = '', jenis = '', qty = '') {
-  const options = ALAT_LIST.map(a => `<option value="${a}" ${a === alat ? 'selected' : ''}>${a}</option>`).join('');
-  return `
-    <div class="alat-row">
-      <select class="alat-nama">
-        <option value="">Pilih Alat</option>
-        ${options}
-      </select>
-      <input type="text" class="alat-jenis" placeholder="Jenis/Tipe" value="${jenis}">
-      <input type="number" class="alat-qty" placeholder="Qty" min="1" value="${qty}">
-      <button type="button" class="remove-row" onclick="this.closest('.alat-row').remove()"><i class="ri-close-line"></i></button>
-    </div>`;
-}
-
-function addAlatRow(alat = '', jenis = '', qty = '') {
-  document.getElementById('alatRows').insertAdjacentHTML('beforeend', alatRowTemplate(alat, jenis, qty));
-}
-
-function resetAlatRows() {
-  document.getElementById('alatRows').innerHTML = '';
-  addAlatRow(); // selalu mulai dengan 1 baris kosong
-}
-
-function collectAlatRows() {
-  return [...document.querySelectorAll('.alat-row')].map(row => ({
-    alat: row.querySelector('.alat-nama').value,
-    jenis: row.querySelector('.alat-jenis').value.trim(),
-    qty: row.querySelector('.alat-qty').value
-  })).filter(r => r.alat);
-}
-
-// ===== Mode Create =====
 function openCreateModal(){
   document.getElementById('pinjamForm').reset();
   document.getElementById('field_page_id').value = '';
+  $('#field_pic').val(null).trigger('change');
+  $('#field_kegiatan').val(null).trigger('change');
   document.getElementById('modalTitle').textContent = 'Catat Peminjaman Alat';
   document.getElementById('submitBtnLabel').textContent = 'Simpan';
-  resetAlatRows();
+  updateAlatCheckboxes(''); // Clear alat
   openModal();
 }
 
-// ===== Mode Edit =====
 function openEditModal(btn){
   const d = JSON.parse(btn.dataset.payload);
   document.getElementById('pinjamForm').reset();
-
   document.getElementById('field_page_id').value = d.page_id;
-  document.getElementById('field_kegiatan').value = d.kegiatan || '';
-  document.getElementById('field_pic').value = d.pic || '';
   document.getElementById('field_lokasi').value = d.lokasi || '';
   document.getElementById('field_tgl_kegiatan').value = d.tgl_kegiatan || '';
   document.getElementById('field_tgl_pinjam').value = d.tgl_pinjam || '';
   document.getElementById('field_durasi').value = d.durasi ?? '';
   document.getElementById('field_keterangan').value = d.keterangan || '';
+  
+  // Set Kegiatan & PIC
+  $('#field_kegiatan').val(d.kegiatan).trigger('change');
+  const picArr = d.pic ? d.pic.split(',').map(p => p.trim()) : [];
+  $('#field_pic').val(picArr).trigger('change');
 
-  document.getElementById('alatRows').innerHTML = '';
+  // Reset & Set Alat
+  updateAlatCheckboxes(''); // Uncheck all dulu
   if (d.alat_arr && d.alat_arr.length > 0) {
-    d.alat_arr.forEach(a => addAlatRow(a));
-  } else {
-    addAlatRow();
+    d.alat_arr.forEach(a => {
+      let cb = [...document.querySelectorAll('.alat-checkbox')].find(x => x.value === a.alat && !x.checked);
+      if (cb) {
+        cb.checked = true;
+        const jenis = document.getElementById(cb.id + '_jenis');
+        const qty = document.getElementById(cb.id + '_qty');
+        if(jenis) { jenis.disabled = false; jenis.value = a.jenis; }
+        if(qty) { qty.disabled = false; qty.value = a.qty; }
+      } else {
+        // Jika gk ada slot kosong, tambah duplicate
+        addDuplicateRow(a.alat, a.jenis, a.qty);
+      }
+    });
   }
 
   document.getElementById('modalTitle').textContent = 'Edit Peminjaman Alat';
@@ -267,7 +458,6 @@ function openEditModal(btn){
   openModal();
 }
 
-// ===== Submit (create / update) =====
 async function handleSubmit(event) {
   event.preventDefault();
 
@@ -286,9 +476,14 @@ async function handleSubmit(event) {
   const pageId = document.getElementById('field_page_id').value;
   const isEdit = !!pageId;
 
+  // PIC di join jadi string karena Notion API (Select) hanya terima 1 opsi, 
+  // kecuali jika Anda merubahnya jadi Multi-select di Notion, maka kirim array picArr = $('#field_pic').val()
+  const picArr = $('#field_pic').val();
+  const picString = picArr ? picArr.join(', ') : '';
+
   const payload = {
     kegiatan: document.getElementById('field_kegiatan').value.trim(),
-    pic: document.getElementById('field_pic').value,
+    pic: picString,
     lokasi: document.getElementById('field_lokasi').value.trim(),
     tgl_kegiatan: document.getElementById('field_tgl_kegiatan').value,
     tgl_pinjam: document.getElementById('field_tgl_pinjam').value,
@@ -323,7 +518,6 @@ async function handleSubmit(event) {
   }
 }
 
-// ===== Tandai Dikembalikan =====
 async function markReturned(pageId, kegiatan) {
   if (!confirm(`Tandai "${kegiatan}" sebagai sudah dikembalikan?`)) return;
   try {
@@ -344,7 +538,6 @@ async function markReturned(pageId, kegiatan) {
   }
 }
 
-// ===== Delete =====
 async function deleteItem(pageId, kegiatan) {
   if (!confirm(`Hapus data peminjaman "${kegiatan}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
   try {
