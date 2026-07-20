@@ -77,6 +77,21 @@ function getYoutubeVideos()
                 break;
             }
         }
+
+        // 2.6 Tema Acara - properti TERSENDIRI (bukan hasil parsing dari judul).
+        // Dicek sebagai title & rich_text karena tipe kolomnya bisa berbeda
+        // tergantung database Notion masing-masing.
+        $tema = '';
+        foreach (['Tema Acara', 'Tema'] as $key) {
+            if (isset($props[$key]['rich_text'][0]['plain_text'])) {
+                $tema = $props[$key]['rich_text'][0]['plain_text'];
+                break;
+            }
+            if (isset($props[$key]['title'][0]['plain_text'])) {
+                $tema = $props[$key]['title'][0]['plain_text'];
+                break;
+            }
+        }
         
         // 3. Flyer
         $flyer = '';
@@ -205,6 +220,7 @@ function getYoutubeVideos()
             'id'             => $item['id'],
             'namaAcara'      => $namaAcara,
             'title'          => $title,
+            'tema'           => $tema,
             'programa'       => $programa,
             'programaColor'  => $programaColor,
             'flyer'          => $flyer,

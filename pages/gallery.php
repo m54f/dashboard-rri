@@ -25,94 +25,140 @@ include __DIR__ . '/../includes/header.php';
   <button class="btn btn-primary" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
 </div>
 
-<div class="gallery-grid" id="videoGrid">
-  <?php if (isset($errorMessage)): ?>
-    <div class="alert alert-danger" style="background:#fee2e2; color:#991b1b; padding:1rem; border-radius:8px; margin-bottom:1rem; width:100%;">
-      ⚠️ <?= htmlspecialchars($errorMessage) ?>
-    </div>
-  <?php endif; ?>
+<?php if (isset($errorMessage)): ?>
+  <div class="alert alert-danger" style="background:#fee2e2; color:#991b1b; padding:1rem; border-radius:8px; margin-bottom:1rem;">
+    ⚠️ <?= htmlspecialchars($errorMessage) ?>
+  </div>
+<?php endif; ?>
 
-  <?php if (empty($videos)): ?>
-    <div style="grid-column:1 / -1; text-align:center; color: var(--text-secondary); padding: 2rem;">
-      Data video gallery belum tersedia.
-    </div>
-  <?php else: ?>
-    <?php foreach ($videos as $video): ?>
-      <?php
-        $title = isset($video['title']) && $video['title'] !== '' ? $video['title'] : 'Tanpa Judul';
-        $namaAcara = isset($video['namaAcara']) && $video['namaAcara'] !== '' ? $video['namaAcara'] : '';
-        $programa = isset($video['programa']) && $video['programa'] !== '' ? $video['programa'] : 'Umum';
-        $programaColor = isset($video['programaColor']) ? $video['programaColor'] : 'gray';
-        $date = isset($video['date']) && $video['date'] !== '' ? $video['date'] : 'TBA';
-        $time = isset($video['time']) && $video['time'] !== '' ? $video['time'] : 'TBA';
-        $url = isset($video['url']) && $video['url'] !== '' ? $video['url'] : '';
-        $flyer = isset($video['flyer']) && $video['flyer'] !== '' ? $video['flyer'] : '';
-        $penyiar = isset($video['penyiar']) && $video['penyiar'] !== '' ? $video['penyiar'] : '';
-        $narasumber = isset($video['narasumber']) && is_array($video['narasumber']) ? $video['narasumber'] : [];
-        $teknik = isset($video['teknik']) ? $video['teknik'] : '';
-        $pa = isset($video['pa']) ? $video['pa'] : '';
-        
-        // Map Notion colors to theme palette
-        $colorMap = [
-            'gray'    => '#64748b',  // --secondary
-            'brown'   => '#92400e',  // warm brown
-            'orange'  => '#f59e0b',  // --warning
-            'yellow'  => '#fbbf24',  // amber
-            'green'   => '#10b981',  // --success
-            'blue'    => '#2563eb',  // --primary
-            'purple'  => '#8b5cf6',  // --purple
-            'pink'    => '#ec4899',  // rose-500
-            'red'     => '#ef4444',  // --danger
-            'default' => '#64748b'   // --secondary
-        ];
-        $bgColor = isset($colorMap[$programaColor]) ? $colorMap[$programaColor] : $colorMap['default'];
-      ?>
-      <?php $videoData = htmlspecialchars(json_encode([
-        'id' => $video['id'],
-        'namaAcara' => $namaAcara,
-        'title' => $title,
-        'programa' => $programa,
-        'programaColor' => $programaColor,
-        'flyer' => $flyer,
-        'date' => $date,
-        'time' => $time,
-        'url' => $url,
-        'penyiar' => $penyiar,
-        'narasumber' => $narasumber,
-        'teknik' => $teknik,
-        'pa' => $pa
-      ]), ENT_QUOTES, 'UTF-8'); ?>
-      <div class="feed-card" data-video="<?= $videoData ?>" style="cursor:pointer; display:flex; flex-direction:column; height:100%;">
-        <div class="feed-thumb" style="display:block; position:relative; overflow:hidden; background:#f0f0f0; min-height:200px;">
-          <?php if ($flyer !== ''): ?>
-            <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" style="width:100%; height:100%; object-fit:cover;">
-          <?php else: ?>
-            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999;">
-              <i class="ri-image-line" style="font-size:3rem;"></i>
-            </div>
-          <?php endif; ?>
-          <span class="overlay-label" style="position:absolute; top:10px; left:10px; background:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; color:#fff; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:bold;">
-            <?= htmlspecialchars($programa, ENT_QUOTES, 'UTF-8') ?>
-          </span>
-        </div>
-        <div class="feed-info" style="flex:1; display:flex; flex-direction:column;">
-          <div style="flex:1;">
-            <?php if ($namaAcara !== ''): ?>
-              <div style="font-size:12px; color:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; font-weight:bold; margin-bottom:4px;">
-                <?= htmlspecialchars($namaAcara, ENT_QUOTES, 'UTF-8') ?>
-              </div>
-            <?php endif; ?>
-            <div class="title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></div>
-          </div>
-          <div class="meta" style="font-size:13px; color:var(--text-secondary); border-top:1px solid var(--border-color); padding-top:12px; margin-top:12px;">
-            <span><i class="ri-calendar-line"></i> <?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
-            <span><i class="ri-time-line"></i> <?= htmlspecialchars($time, ENT_QUOTES, 'UTF-8') ?></span>
-          </div>
-        </div>
-      </div>
-    <?php endforeach; ?>
-  <?php endif; ?>
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="ri-play-list-2-line"></i> Daftar Video</div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table" id="videoTable">
+      <thead>
+        <tr>
+          <th>Thumbnail</th>
+          <th>Judul Video</th>
+          <th>Program</th>
+          <th>Tanggal</th>
+          <th>Jam</th>
+          <th>Penyiar</th>
+          <th>Narasumber</th>
+          <th>Petugas PT</th>
+          <th>Petugas PA</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($videos)): ?>
+          <tr>
+            <td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+              Data video gallery belum tersedia.
+            </td>
+          </tr>
+        <?php else: ?>
+          <?php foreach ($videos as $video): ?>
+            <?php
+              $title = isset($video['title']) && $video['title'] !== '' ? $video['title'] : 'Tanpa Judul';
+              $namaAcara = isset($video['namaAcara']) && $video['namaAcara'] !== '' ? $video['namaAcara'] : '';
+              $tema = isset($video['tema']) ? $video['tema'] : '';
+              $programa = isset($video['programa']) && $video['programa'] !== '' ? $video['programa'] : 'Umum';
+              $programaColor = isset($video['programaColor']) ? $video['programaColor'] : 'gray';
+              $date = isset($video['date']) && $video['date'] !== '' ? $video['date'] : 'TBA';
+              $time = isset($video['time']) && $video['time'] !== '' ? $video['time'] : 'TBA';
+              $url = isset($video['url']) && $video['url'] !== '' ? $video['url'] : '';
+              $flyer = isset($video['flyer']) && $video['flyer'] !== '' ? $video['flyer'] : '';
+              $penyiar = isset($video['penyiar']) && $video['penyiar'] !== '' ? $video['penyiar'] : '';
+              $narasumber = isset($video['narasumber']) && is_array($video['narasumber']) ? $video['narasumber'] : [];
+              $teknik = isset($video['teknik']) ? $video['teknik'] : '';
+              $pa = isset($video['pa']) ? $video['pa'] : '';
+
+              // Map Notion colors to theme palette
+              $colorMap = [
+                  'gray'    => '#64748b',  // --secondary
+                  'brown'   => '#92400e',  // warm brown
+                  'orange'  => '#f59e0b',  // --warning
+                  'yellow'  => '#fbbf24',  // amber
+                  'green'   => '#10b981',  // --success
+                  'blue'    => '#2563eb',  // --primary
+                  'purple'  => '#8b5cf6',  // --purple
+                  'pink'    => '#ec4899',  // rose-500
+                  'red'     => '#ef4444',  // --danger
+                  'default' => '#64748b'   // --secondary
+              ];
+              $bgColor = isset($colorMap[$programaColor]) ? $colorMap[$programaColor] : $colorMap['default'];
+            ?>
+            <?php $videoData = htmlspecialchars(json_encode([
+              'id' => $video['id'],
+              'namaAcara' => $namaAcara,
+              'title' => $title,
+              'tema' => $tema,
+              'programa' => $programa,
+              'programaColor' => $programaColor,
+              'flyer' => $flyer,
+              'date' => $date,
+              'time' => $time,
+              'url' => $url,
+              'penyiar' => $penyiar,
+              'narasumber' => $narasumber,
+              'teknik' => $teknik,
+              'pa' => $pa
+            ]), ENT_QUOTES, 'UTF-8'); ?>
+            <tr class="video-row" data-video="<?= $videoData ?>">
+              <td>
+                <?php if ($flyer !== ''): ?>
+                  <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" class="video-thumb">
+                <?php else: ?>
+                  <div class="video-thumb video-thumb-empty"><i class="ri-image-line"></i></div>
+                <?php endif; ?>
+              </td>
+              <td class="cell-title">
+                <?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>
+                <?php if ($namaAcara !== ''): ?>
+                  <div class="cell-sub"><?= htmlspecialchars($namaAcara, ENT_QUOTES, 'UTF-8') ?></div>
+                <?php endif; ?>
+              </td>
+              <td>
+                <span class="tag" style="background:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>1a; color:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; border:1px solid <?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>4d;">
+                  <?= htmlspecialchars($programa, ENT_QUOTES, 'UTF-8') ?>
+                </span>
+              </td>
+              <td class="cell-sub"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></td>
+              <td class="cell-sub"><?= htmlspecialchars($time, ENT_QUOTES, 'UTF-8') ?></td>
+              <td class="cell-sub"><?= $penyiar !== '' ? htmlspecialchars($penyiar, ENT_QUOTES, 'UTF-8') : '—' ?></td>
+              <td class="cell-sub"><?= !empty($narasumber) ? htmlspecialchars(implode(', ', $narasumber), ENT_QUOTES, 'UTF-8') : '—' ?></td>
+              <td class="cell-sub"><?= $teknik !== '' ? htmlspecialchars($teknik, ENT_QUOTES, 'UTF-8') : '—' ?></td>
+              <td class="cell-sub"><?= $pa !== '' ? htmlspecialchars($pa, ENT_QUOTES, 'UTF-8') : '—' ?></td>
+              <td class="cell-actions">
+                <?php if ($url !== ''): ?>
+                <a href="<?= htmlspecialchars($url, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="icon-action view" title="Buka di Youtube" onclick="event.stopPropagation();">
+                  <i class="ri-external-link-line"></i>
+                </a>
+                <?php endif; ?>
+                <button type="button" class="icon-action edit" title="Edit" onclick="event.stopPropagation(); openEditView(JSON.parse(this.closest('tr').dataset.video));">
+                  <i class="ri-edit-line"></i>
+                </button>
+                <button type="button" class="icon-action delete" title="Hapus" onclick="event.stopPropagation(); deleteVideoRow('<?= htmlspecialchars($video['id'], ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars(addslashes($title)) ?>');">
+                  <i class="ri-delete-bin-line"></i>
+                </button>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
+
+<style>
+  .video-thumb { width:64px; height:40px; object-fit:cover; border-radius:6px; display:block; }
+  .video-thumb-empty { display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; font-size:1.1rem; }
+  .video-row:hover { background:rgba(0,0,0,0.03); }
+  .icon-action.view { color:#0ea5e9; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; text-decoration:none; display:inline-flex; }
+  .icon-action.view:hover { background:rgba(14,165,233,0.12); }
+</style>
 </div>
 
 <div id="addVideoView" style="display:none;">
@@ -231,68 +277,6 @@ include __DIR__ . '/../includes/header.php';
 
 <div id="descToast" style="display:none; position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:10px 16px; border-radius:4px; font-size:14px; z-index:1000;">Teks berhasil disalin ke clipboard!</div>
 
-<div class="modal-overlay" id="detailModal">
-  <div class="modal-content">
-    <div class="modal-header"><h3 class="modal-title">Detail Video</h3><button class="modal-close" onclick="closeDetailModal()">&times;</button></div>
-    <div id="detailContent" style="padding:0;">
-      <div style="max-height:500px; overflow-y:auto;">
-        <!-- Flyer at top without label -->
-        <div id="detail-flyer-group" style="display:none; margin-bottom:0;">
-          <div style="max-height:300px; overflow:hidden;" id="detail-flyer"></div>
-        </div>
-        
-        <!-- Content section -->
-        <div style="padding:20px;">
-          <div id="detail-title" style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:16px;"></div>
-          
-          <div id="detail-namaAcara-group" style="display:none; margin-bottom:12px;">
-            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Nama Acara</div>
-            <div style="font-size:14px; color:var(--text-primary);" id="detail-namaAcara"></div>
-          </div>
-          
-          <div style="margin-bottom:12px;">
-            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Program</div>
-            <div style="font-size:14px; color:var(--text-primary);" id="detail-programa"></div>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:12px;">
-            <div>
-              <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Tanggal</div>
-              <div style="font-size:14px; color:var(--text-primary);" id="detail-date"></div>
-            </div>
-            <div>
-              <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Jam</div>
-              <div style="font-size:14px; color:var(--text-primary);" id="detail-time"></div>
-            </div>
-          </div>
-
-          <div id="detail-penyiar-group" style="display:none; margin-bottom:12px;">
-            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Penyiar</div>
-            <div style="font-size:14px; color:var(--text-primary);" id="detail-penyiar"></div>
-          </div>
-
-          <div id="detail-narasumber-group" style="display:none; margin-bottom:12px;">
-            <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:4px;">Narasumber</div>
-            <div style="font-size:14px; color:var(--text-primary);" id="detail-narasumber"></div>
-          </div>
-          
-          <div id="detail-url-group" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-color);">
-            <!-- <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; margin-bottom:8px;">Link Youtube</div> -->
-            <div style="word-break:break-all;">
-              <a id="detail-url" href="" target="_blank" style="color:var(--primary); text-decoration:none; font-size:13px;"></a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-danger" id="detail-delete-btn" style="background-color: var(--danger); background-color: #ef4444; color: white;" onclick="deleteVideoFromModal()"><i class="ri-delete-bin-line"></i> Hapus Video</button>
-      <button type="button" class="btn btn-secondary" id="detail-edit-btn" onclick="editVideoFromModal()"><i class="ri-edit-line"></i> Edit Video</button>
-      <button type="button" class="btn btn-secondary" onclick="closeDetailModal()">Tutup</button>
-      <a id="detail-open-url" href="" target="_blank" class="btn btn-primary" style="text-decoration:none; display:none;"><i class="ri-external-link-line"></i> Buka Video</a>
-    </div>
-  </div>
-</div>
 <script>
 
 // ===== Tambahkan State untuk file uploads (Kloning dari troubleshoot.php) =====
@@ -728,7 +712,7 @@ function updateJudulVideo(){
     var namaAcaraDisplay = programSelect.selectedIndex >= 0 ? programSelect.options[programSelect.selectedIndex].text : '';
     if (programSelect.value === '') namaAcaraDisplay = '';
 
-    var judul = tema !== '' ? (namaAcaraDisplay + ' - ' + tema) : namaAcaraDisplay;
+    var judul = tema !== '' ? tema : namaAcaraDisplay;
     document.getElementById('judulVideo').value = judul;
     document.getElementById('judulVideoPreview').value = judul;
     document.getElementById('namaAcaraDisplayHidden').value = namaAcaraDisplay;
@@ -838,6 +822,15 @@ function showAddView(){
     document.getElementById('galleryMainView').style.display = 'none';
     document.getElementById('addVideoView').style.display = 'block';
     window.scrollTo(0, 0);
+
+    // Pastikan form benar-benar kosong walau sebelumnya sempat dipakai untuk Edit.
+    // Jangan andalkan hideAddView() sudah dipanggil duluan -- reset di sini juga.
+    document.getElementById('addVideoForm').reset();
+    document.getElementById('teknik').value = '';
+    document.getElementById('pa').value = '';
+    selectedFiles = [];
+    document.getElementById('previewGrid').innerHTML = '';
+
     setAddVideoDefaults();
     populateProgramOptions();
     populatePenyiarOptions();
@@ -846,18 +839,9 @@ function showAddView(){
     generateDescription();
 }
 
-function editVideoFromModal(){
-    if (!activeVideoData) {
-        alert('Data video tidak ditemukan.');
-        return;
-    }
-    openEditView(activeVideoData);
-}
-
 function openEditView(videoData){
   console.log("Data Video dari Notion:", videoData);
     editingPageId = videoData.id;
-    closeDetailModal();
 
     document.getElementById('galleryMainView').style.display = 'none';
     document.getElementById('addVideoView').style.display = 'block';
@@ -944,13 +928,28 @@ function openEditView(videoData){
     //     updatePaHidden();
     // }
 
-    // ---- Tema (diturunkan dari "Nama Acara - Tema") ----
-    var tema = '';
-    var titlePrefix = namaAcara + ' - ';
-    if (videoData.title && namaAcara !== '' && videoData.title.indexOf(titlePrefix) === 0) {
-        tema = videoData.title.substring(titlePrefix.length);
+    // ---- Tema (diambil langsung dari properti "Tema Acara" di Notion) ----
+    var tema = videoData.tema || '';
+
+    if (tema.trim() === '' && videoData.title) {
+        // Fallback untuk data lama yang belum punya properti Tema Acara terisi --
+        // coba turunkan dari judul "Nama Acara - Tema".
+        var rawTitle = videoData.title;
+        var normNamaAcara = (namaAcara || '').trim();
+        var exactRegex = normNamaAcara !== ''
+            ? new RegExp('^' + normNamaAcara.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-–—]\\s*')
+            : null;
+
+        if (exactRegex && exactRegex.test(rawTitle)) {
+            tema = rawTitle.replace(exactRegex, '');
+        } else {
+            var sepMatch = rawTitle.match(/\s[-–—]\s/);
+            if (sepMatch) {
+                tema = rawTitle.substring(sepMatch.index + sepMatch[0].length);
+            }
+        }
     }
-    document.getElementById('tema').value = tema;
+    document.getElementById('tema').value = tema.trim();
 
     // ---- Tanggal & Jam ----
     document.getElementById('tanggal').value = parseTanggalToISO(videoData.date);
@@ -1068,141 +1067,29 @@ async function submitAddVideo(){
     }
 }
 
-var activeNotionPageId = null;
-var activeVideoData = null;
-
-function openDetailModal(videoData) {
-
-    activeNotionPageId = videoData.id;
-    activeVideoData = videoData;
-
-    document.getElementById('detail-title').textContent = videoData.title;
-    
-    var namaAcaraGroup = document.getElementById('detail-namaAcara-group');
-    if (videoData.namaAcara && videoData.namaAcara !== '') {
-        namaAcaraGroup.style.display = 'block';
-        document.getElementById('detail-namaAcara').textContent = videoData.namaAcara;
-    } else {
-        namaAcaraGroup.style.display = 'none';
-    }
-    
-    document.getElementById('detail-programa').textContent = videoData.programa;
-    document.getElementById('detail-date').textContent = videoData.date;
-    document.getElementById('detail-time').textContent = videoData.time;
-
-    var penyiarGroup = document.getElementById('detail-penyiar-group');
-    if (videoData.penyiar && videoData.penyiar !== '') {
-        penyiarGroup.style.display = 'block';
-        document.getElementById('detail-penyiar').textContent = videoData.penyiar;
-    } else {
-        penyiarGroup.style.display = 'none';
-    }
-
-    var narasumberGroup = document.getElementById('detail-narasumber-group');
-    if (videoData.narasumber && Array.isArray(videoData.narasumber) && videoData.narasumber.length > 0) {
-        narasumberGroup.style.display = 'block';
-        var listEl = document.createElement('ul');
-        listEl.style.margin = '0';
-        listEl.style.paddingLeft = '18px';
-        videoData.narasumber.forEach(function(nama) {
-            var li = document.createElement('li');
-            li.textContent = nama;
-            listEl.appendChild(li);
-        });
-        var container = document.getElementById('detail-narasumber');
-        container.innerHTML = '';
-        container.appendChild(listEl);
-    } else {
-        narasumberGroup.style.display = 'none';
-    }
-    
-    var flyerGroup = document.getElementById('detail-flyer-group');
-    if (videoData.flyer && videoData.flyer !== '') {
-        flyerGroup.style.display = 'block';
-        document.getElementById('detail-flyer').innerHTML = '<img src="' + videoData.flyer + '" style="width:100%; height:auto;" alt="Flyer">';
-    } else {
-        flyerGroup.style.display = 'none';
-    }
-    
-    var urlGroup = document.getElementById('detail-url-group');
-    var openUrlBtn = document.getElementById('detail-open-url');
-    if (videoData.url && videoData.url !== '' && videoData.url !== '#') {
-        // urlGroup.style.display = 'block';
-        document.getElementById('detail-url').href = videoData.url;
-        document.getElementById('detail-url').textContent = videoData.url;
-        openUrlBtn.href = videoData.url;
-        openUrlBtn.style.display = 'inline-flex';
-    } else {
-        urlGroup.style.display = 'none';
-        openUrlBtn.style.display = 'none';
-    }
-    
-    document.getElementById('detailModal').classList.add('active');
-}
-
-function closeDetailModal(){
-    document.getElementById('detailModal').classList.remove('active');
-    activeNotionPageId = null;
-}
-
-function deleteVideoFromModal() {
-    if (!activeNotionPageId) {
-        alert('ID Halaman Notion tidak ditemukan.');
-        return;
-    }
-
-    if (!confirm('Apakah Anda yakin ingin menghapus video ini dari rekap?')) {
-        return;
-    }
-
-    var deleteBtn = document.getElementById('detail-delete-btn');
-    deleteBtn.disabled = true;
-    deleteBtn.textContent = 'Menghapus...';
+// Hapus video langsung dari baris tabel (tanpa buka modal detail)
+function deleteVideoRow(pageId, title) {
+    if (!confirm(`Hapus video "${title}" dari rekap?`)) return;
 
     fetch('../api/delete-video.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ page_id: activeNotionPageId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_id: pageId })
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.success) {
             alert('Video berhasil dihapus.');
-            closeDetailModal();
-            location.reload(); // Muat ulang halaman galeri untuk memperbarui list data rekap
+            location.reload();
         } else {
             alert('Gagal menghapus: ' + (data.error || data.details || 'Kesalahan tidak diketahui'));
-            deleteBtn.disabled = false;
-            deleteBtn.textContent = 'Hapus Video';
         }
     })
     .catch(function(err) {
         alert('Terjadi kesalahan jaringan: ' + err);
-        deleteBtn.disabled = false;
-        deleteBtn.textContent = 'Hapus Video';
     });
 }
 
-// Modal overlay click handler
-document.getElementById('detailModal').addEventListener('click', function(e) { 
-    if (e.target === e.currentTarget) closeDetailModal(); 
-});
 
-// Video card click handler
-document.querySelectorAll('.feed-card').forEach(function(card) {
-    card.addEventListener('click', function() {
-        var videoDataStr = this.getAttribute('data-video');
-        if (videoDataStr) {
-            try {
-                var videoData = JSON.parse(videoDataStr);
-                openDetailModal(videoData);
-            } catch(e) {
-                console.error('Error parsing video data:', e);
-            }
-        }
-    });
-});
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
