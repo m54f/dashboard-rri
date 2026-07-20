@@ -240,6 +240,7 @@ include __DIR__ . '/../includes/header.php';
       </div>
       <input type="hidden" name="page_id" value="">
       <input type="hidden" name="action" value="create">
+      <input type="hidden" name="remove_existing_files" value="0">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>
@@ -323,6 +324,7 @@ function openModal(mode){
     form.reset();
     form.page_id.value = '';
     form.elements['action'].value = 'create';
+    form.elements['remove_existing_files'].value = '0';
     document.getElementById('modalTitle').textContent = 'Tambah Agenda';
     document.getElementById('agendaForm').querySelector('button[type=submit]').textContent = 'Simpan Agenda';
     document.getElementById('editFileNote').style.display = 'none';
@@ -334,9 +336,19 @@ function openModal(mode){
   document.getElementById('agendaModal').classList.add('active');
 }
 function closeModal(){ document.getElementById('agendaModal').classList.remove('active'); }
-document.getElementById('agendaModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-// Pastikan saat menutup modal juga membersihkan daftar dokumen sementara
-document.querySelectorAll('.modal-close, .modal-overlay').forEach(el => {
+document.getElementById('agendaModal').addEventListener('click', e => {
+  // HANYA saat klik area gelap di belakang modal (bukan konten di dalamnya,
+  // termasuk tombol Simpan) — sebelumnya ini ke-trigger juga waktu klik
+  // Simpan Agenda karena tombolnya ada di dalam .modal-overlay, jadi file
+  // yang baru dipilih ikut kehapus SEBELUM form sempat submit.
+  if (e.target === e.currentTarget) {
+    closeModal();
+    const existing = document.getElementById('existingDocsList');
+    if (existing) existing.remove();
+    clearSelectedFiles();
+  }
+});
+document.querySelectorAll('.modal-close').forEach(el => {
   el.addEventListener('click', () => {
     const existing = document.getElementById('existingDocsList');
     if (existing) existing.remove();
@@ -360,6 +372,7 @@ function openEditModal(id){
   form.catatan.value = entry.catatan || '';
   form.page_id.value = entry.id;
   form.elements['action'].value = 'update';
+  form.elements['remove_existing_files'].value = '0';
 
   document.getElementById('modalTitle').textContent = 'Edit Agenda';
   form.querySelector('button[type=submit]').textContent = 'Simpan Perubahan';
@@ -382,6 +395,10 @@ function openEditModal(id){
   if (existing.length === 0) {
     container.innerHTML = '<div style="color:#9ca3af; font-size:0.9rem;">Tidak ada dokumen</div>';
   } else {
+    const list = document.createElement('div');
+    list.style.display = 'flex';
+    list.style.gap = '0.5rem';
+    list.style.flexWrap = 'wrap';
     existing.forEach(d => {
       const a = document.createElement('a');
       a.href = d.url;
@@ -393,8 +410,30 @@ function openEditModal(id){
       a.style.borderRadius = '6px';
       a.style.fontSize = '0.85rem';
       a.style.color = '#374151';
-      container.appendChild(a);
+      list.appendChild(a);
     });
+    container.appendChild(list);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-secondary';
+    removeBtn.style.marginTop = '0.4rem';
+    removeBtn.style.fontSize = '0.85rem';
+    removeBtn.textContent = '× Hapus dokumen lama';
+    removeBtn.title = 'Menghapus SEMUA dokumen lama di agenda ini saat disimpan';
+    removeBtn.onclick = () => {
+      form.elements['remove_existing_files'].value = '1';
+      list.style.opacity = '0.4';
+      list.style.textDecoration = 'line-through';
+      removeBtn.textContent = '✓ Akan dihapus saat disimpan (klik utk batal)';
+      removeBtn.onclick = () => {
+        form.elements['remove_existing_files'].value = '0';
+        list.style.opacity = '1';
+        list.style.textDecoration = 'none';
+        openEditModal(id); // termudah: render ulang dari awal
+      };
+    };
+    container.appendChild(removeBtn);
   }
 
   document.getElementById('agendaModal').classList.add('active');
@@ -473,6 +512,29 @@ function formatDateID(ymd){
   return `${d} ${months[mi]} ${y}`;
 }
 
+function renderDokumenCell(docs){
+  if (!docs || !docs.length) return '—';
+  const shown = docs.slice(0, 2);
+  const remaining = docs.length - shown.length;
+  let html = '<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">';
+  shown.forEach(doc => {
+    const ext = (doc.name.split('.').pop() || '').toLowerCase();
+    const isImage = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
+    const safeName = escapeHtml(doc.name);
+    const safeUrl = escapeHtml(doc.url);
+    if (isImage) {
+      html += `<a href="${safeUrl}" target="_blank" rel="noopener" title="${safeName}"><img src="${safeUrl}" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;display:block;" onerror="this.style.display='none';"></a>`;
+    } else {
+      html += `<a href="${safeUrl}" target="_blank" rel="noopener" title="${safeName}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid #e5e7eb;background:#f3f4f6;text-decoration:none;"><i class="ri-file-text-line" style="color:#6b7280;"></i></a>`;
+    }
+  });
+  if (remaining > 0) {
+    html += `<span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#e5e7eb;font-size:0.75rem;font-weight:600;color:#4b5563;">+${remaining}</span>`;
+  }
+  html += '</div>';
+  return html;
+}
+
 function insertRowSorted(tr){
   const tbody = document.querySelector('#agendaTable tbody');
   const newKey = tr.dataset.date + tr.dataset.time;
@@ -492,7 +554,7 @@ function insertRowSorted(tr){
 // lagi aktif, bukan selalu di paling atas. Dokumen yang baru diupload belum
 // langsung muncul di baris ini — baru kelihatan setelah reload, karena kita
 // tidak tahu URL Notion-nya sampai halaman dimuat ulang.
-function addRowToTable(entry, pageId){
+function addRowToTable(entry, pageId, dokumentasi){
   const tr = document.createElement('tr');
   tr.dataset.tag = entry.kategori;
   tr.dataset.id = pageId || '';
@@ -507,7 +569,7 @@ function addRowToTable(entry, pageId){
     <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
     <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
-    <td>—</td>
+    <td>${renderDokumenCell(dokumentasi)}</td>
     <td>
       <a class="icon-action" title="Buka di Notion" href="${notionUrl}" target="_blank" rel="noopener"><i class="ri-external-link-line"></i></a>
       <button class="icon-action edit" title="Edit" onclick="openEditModal('${pageId}')"><i class="ri-pencil-line"></i></button>
@@ -515,6 +577,15 @@ function addRowToTable(entry, pageId){
     </td>
   `;
   insertRowSorted(tr);
+}
+
+// Update baris yang sudah ada (hasil Edit) langsung di tabel tanpa reload.
+function updateRowInTable(pageId, entry, dokumentasi){
+  const tr = document.querySelector(`#agendaTable tbody tr[data-id="${pageId}"]`);
+  if (!tr) return false;
+  tr.remove();
+  addRowToTable(entry, pageId, dokumentasi);
+  return true;
 }
 
 function ensureFilterTab(cat){
@@ -567,9 +638,33 @@ async function handleAgendaForm(event){
     }
 
     if (isUpdate) {
-      // Cara paling aman buat nampilkan hasil edit (termasuk dokumen baru)
-      // dengan benar adalah reload halaman ini.
-      location.reload();
+      const pageId = formData.get('page_id');
+      const entry = {
+        kegiatan: formData.get('kegiatan'),
+        tanggal:  formData.get('tanggal'),
+        waktu:    formData.get('waktu'),
+        lokasi:   formData.get('lokasi_kegiatan'),
+        kategori: formData.get('kategori'),
+        status:   formData.get('status'),
+        catatan:  formData.get('catatan'),
+      };
+      const dokumentasi = data.dokumentasi || [];
+      updateRowInTable(pageId, entry, dokumentasi);
+
+      // Sinkronkan juga ke AGENDA_DATA supaya kalau dibuka Edit lagi datanya sudah yang terbaru
+      const idx = AGENDA_DATA.findIndex(a => a.id === pageId);
+      const updatedRecord = {
+        id: pageId, title: entry.kegiatan, date: entry.tanggal, time: entry.waktu,
+        lokasi: entry.lokasi, kategori: entry.kategori, status: entry.status,
+        catatan: entry.catatan, dokumentasi: dokumentasi,
+      };
+      if (idx >= 0) AGENDA_DATA[idx] = updatedRecord; else AGENDA_DATA.push(updatedRecord);
+
+      ensureFilterTab(entry.kategori);
+      ensureDatalistOption(entry.kategori);
+      closeModal();
+      form.reset();
+      clearSelectedFiles();
       return;
     }
 
@@ -582,7 +677,8 @@ async function handleAgendaForm(event){
       status:   formData.get('status'),
       catatan:  formData.get('catatan'),
     };
-    addRowToTable(entry, data.id);
+    const dokumentasi = data.dokumentasi || [];
+    addRowToTable(entry, data.id, dokumentasi);
     AGENDA_DATA.push({
       id: data.id,
       title: entry.kegiatan,
@@ -592,7 +688,7 @@ async function handleAgendaForm(event){
       kategori: entry.kategori,
       status: entry.status,
       catatan: entry.catatan,
-      dokumentasi: [], // baru kelihatan setelah reload — belum tahu URL-nya di sini
+      dokumentasi: dokumentasi,
     });
     ensureFilterTab(entry.kategori);
     ensureDatalistOption(entry.kategori);

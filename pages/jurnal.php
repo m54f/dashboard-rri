@@ -125,7 +125,7 @@ include __DIR__ . '/../includes/header.php';
   <div class="table-responsive">
     <table class="styled-table">
       <thead>
-        <tr><th>JUDUL KEGIATAN</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>LINK EVIDEN</th><th>STATUS</th><th>TANGGAL LAPOR</th><th>AKSI</th></tr>
+        <tr><th>JUDUL KEGIATAN</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>LINK EVIDEN</th><th>TANGGAL LAPOR</th><th>AKSI</th></tr>
       </thead>
       <tbody id="tableBody">
           <!-- Akan diisi otomatis oleh JS -->
@@ -282,11 +282,11 @@ function renderTable() {
     tbody.innerHTML = '';
 
     if (pageData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 40px; color: #6b7280; font-weight:500;">Tidak ada data ditemukan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 40px; color: #6b7280; font-weight:500;">Tidak ada data ditemukan.</td></tr>`;
     } else {
         pageData.forEach(e => {
             let docsHtml = '';
-            let limit = 2; // Menampilkan max 2 foto highlight
+            let limit = 1; // Menampilkan max 2 foto highlight
             
             // Format URL agar langsung ke situs publik tmbrrimlg.notion.site
             let publicUrl = e.url.replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
@@ -311,7 +311,6 @@ function renderTable() {
                 <td style="max-width: 150px; line-height: 1.5;">${e.op}</td>
                 <td><div class="doc-thumbnails">${docsHtml}</div></td>
                 <td>${linkHtml}</td>
-                <td style="font-weight: 700; color: #111827;">${e.status}</td>
                 <td>${e.date}</td>
                 <td>
                     <div class="action-btns">

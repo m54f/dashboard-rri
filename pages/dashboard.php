@@ -1,24 +1,52 @@
 <?php
-$base = '..'; 
-$pageTitle = 'Dashboard'; 
-$activeMenu = 'dashboard';
+ $base = '..'; 
+ $pageTitle = 'Dashboard'; 
+ $activeMenu = 'dashboard';
 
-$today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
-$hour  = (int) $today->format('H');
-$greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
+require_once __DIR__ . '/../api/agenda.php';
 
-// --- DATA DUMMY (Sesuaikan dengan fetch database Anda) ---
-$agenda = [
-    ['time' => '09.00', 'title' => 'Podcast Luar Studio',        'tag' => 'PODCAST',  'tone'=>'purple', 'pic' => 'Alfan'],
-    ['time' => '11.00', 'title' => 'Persiapan Senam Sore RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Yanuar'],
-    ['time' => '15.30', 'title' => 'Live Youtube: Sore Ceria',   'tag' => 'LIVE',     'tone'=>'red',    'pic' => 'Alif'],
-    ['time' => '19.00', 'title' => 'Produksi Ruatan Malam',      'tag' => 'PRODUKSI', 'tone'=>'blue',   'pic' => 'Yayang'],
-];
+ $today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+ $hour  = (int) $today->format('H');
+ $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
 
-$checklistReady = 18; $checklistTotal = 22;
-$checklistPct = round($checklistReady / $checklistTotal * 100);
+// --- AMBIL DATA AGENDA DARI NOTION (Dengan Fallback Dummy) ---
+ $todayDateStr = $today->format('Y-m-d');
+ $fetchedAgenda = getAgenda($todayDateStr, 'asc');
 
-$checklist = [
+ $agenda = [];
+if (is_array($fetchedAgenda) && !isset($fetchedAgenda['error'])) {
+    foreach ($fetchedAgenda as $a) {
+        $tag = $a['tag'] ?? 'Umum';
+        $tone = match(strtolower($tag)) {
+            'podcast' => 'purple',
+            'live' => 'red',
+            'event' => 'orange',
+            'produksi' => 'blue',
+            default => 'gray'
+        };
+        $agenda[] = [
+            'time' => substr($a['time'], 0, 5),
+            'title' => $a['title'],
+            'tag' => strtoupper($tag),
+            'tone' => $tone,
+            'pic' => $a['pic'] ?? '-'
+        ];
+    }
+} else {
+    // Fallback Dummy jika Notion error
+    $agenda = [
+        ['time' => '09.00', 'title' => 'Podcast Luar Studio',        'tag' => 'PODCAST',  'tone'=>'purple', 'pic' => 'Alfan'],
+        ['time' => '11.00', 'title' => 'Persiapan Senam Sore RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Yanuar'],
+        ['time' => '15.30', 'title' => 'Live Youtube: Sore Ceria',   'tag' => 'LIVE',     'tone'=>'red',    'pic' => 'Alif'],
+        ['time' => '19.00', 'title' => 'Produksi Ruatan Malam',      'tag' => 'PRODUKSI', 'tone'=>'blue',   'pic' => 'Yayang'],
+    ];
+}
+
+// --- DATA DUMMY METRICS (Sesuaikan dengan fetch database Anda nanti) ---
+ $checklistReady = 18; $checklistTotal = 22;
+ $checklistPct = $checklistTotal > 0 ? round($checklistReady / $checklistTotal * 100) : 0;
+
+ $checklist = [
     ['name' => 'Mixer Audio',    'status' => 'Baik', 'ok' => true],
     ['name' => 'Microphone',     'status' => 'Baik', 'ok' => true],
     ['name' => 'PC Streaming',   'status' => 'Baik', 'ok' => true],
@@ -26,26 +54,30 @@ $checklist = [
 ];
 
 // Filter hanya yang belum selesai untuk dashboard
-$troubleshootActive = [
+ $troubleshootActive = [
     ['title' => 'Internet Telkom (IP 60) tidak tersambung', 'status' => 'Belum Selesai', 'cls'=>'belum', 'date' => '8 Jul, 08.45'],
     ['title' => 'Output Radio Kepsta Putus Nyambung',       'status' => 'Proses',        'cls'=>'proses','date' => '7 Jul, 14.20'],
 ];
-$activeTroubleCount = count($troubleshootActive);
+ $activeTroubleCount = count($troubleshootActive);
 
+// --- DATA YOUTUBE GALLERY ---
 require_once __DIR__ . '/../api/youtube.php';
-$fetchedVideos = getYoutubeVideos();
+ $fetchedVideos = getYoutubeVideos();
 
-$gallery = [];
+ $gallery = [];
 if (is_array($fetchedVideos) && !isset($fetchedVideos['error'])) {
-    $sekarang = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+    $sekarang = new DateTime('today', new DateTimeZone('Asia/Jakarta'));
     $semingguLalu = clone $sekarang;
     $semingguLalu->modify('-7 days');
-    $sekarang->modify('+1 day');
+    $sekarang->modify('+1 day'); // Besok
     
     foreach ($fetchedVideos as $v) {
-        $vDate = DateTime::createFromFormat('j M Y', $v['date']);
-        if ($vDate && $vDate >= $semingguLalu && $vDate <= $sekarang) {
-            $gallery[] = $v;
+        $vDate = DateTime::createFromFormat('j M Y', $v['date'], new DateTimeZone('Asia/Jakarta'));
+        if ($vDate) {
+            $vDate->setTime(0, 0, 0); // Set ke jam 00:00 agar perbandingan akurat
+            if ($vDate >= $semingguLalu && $vDate <= $sekarang) {
+                $gallery[] = $v;
+            }
         }
     }
 }
@@ -111,6 +143,7 @@ include __DIR__ . '/../includes/header.php';
   .tag.blue { background: #eff6ff; color: var(--primary); }
   .tag.orange { background: #fff7ed; color: var(--warning); }
   .tag.purple { background: #f5f3ff; color: var(--purple); }
+  .tag.gray { background: #f3f4f6; color: var(--text-secondary); }
   .pic-badge { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
 
   /* Troubleshoot List */
@@ -158,7 +191,7 @@ include __DIR__ . '/../includes/header.php';
     margin-bottom: 0.5rem; 
     display: -webkit-box; 
     -webkit-line-clamp: 2; 
-    line-clamp: 2; /* <-- Tambahan ini menghilangkan warning */
+    line-clamp: 2; 
     -webkit-box-orient: vertical; 
     overflow: hidden; 
   }
@@ -175,7 +208,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- 1. KEY METRICS (Hanya 3 yang paling penting) -->
+<!-- 1. KEY METRICS -->
 <div class="metrics-grid">
   <div class="metric-card">
     <div class="metric-icon blue"><i class="ri-calendar-event-line"></i></div>
@@ -221,7 +254,7 @@ include __DIR__ . '/../includes/header.php';
           <div class="timeline-content">
             <div class="timeline-title"><?= htmlspecialchars($a['title']) ?></div>
             <div class="timeline-meta">
-              <span class="tag <?= $a['tone'] ?>"><?= $a['tag'] ?></span>
+              <span class="tag <?= htmlspecialchars($a['tone']) ?>"><?= htmlspecialchars($a['tag']) ?></span>
               <span class="pic-badge"><i class="ri-user-line"></i> <?= htmlspecialchars($a['pic']) ?></span>
             </div>
           </div>
@@ -250,9 +283,9 @@ include __DIR__ . '/../includes/header.php';
           <div class="trouble-item">
             <div>
               <div class="trouble-title"><?= htmlspecialchars($tr['title']) ?></div>
-              <div class="trouble-date"><span class="status-dot <?= $tr['cls'] ?>"></span><?= htmlspecialchars($tr['date']) ?></div>
+              <div class="trouble-date"><span class="status-dot <?= htmlspecialchars($tr['cls']) ?>"></span><?= htmlspecialchars($tr['date']) ?></div>
             </div>
-            <span class="status-tag <?= $tr['cls'] ?>"><?= htmlspecialchars($tr['status']) ?></span>
+            <span class="status-tag <?= htmlspecialchars($tr['cls']) ?>"><?= htmlspecialchars($tr['status']) ?></span>
           </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -306,7 +339,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- YouTube Recap (Compact) -->
+  <!-- YouTube Recap -->
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-youtube-line" style="color: #ef4444;"></i> Live 7 Hari Terakhir</div>
@@ -319,7 +352,7 @@ include __DIR__ . '/../includes/header.php';
         </div>
       <?php else: ?>
         <div class="yt-slider">
-          <?php foreach (array_slice($gallery, 0, 5) as $g): // Batasi max 5 item untuk performa ?>
+          <?php foreach (array_slice($gallery, 0, 5) as $g): ?>
             <?php
               $title = $g['title'] ?? 'Tanpa Judul';
               $programa = $g['programa'] ?? 'Umum';
