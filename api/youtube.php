@@ -157,6 +157,49 @@ function getYoutubeVideos()
         // $narasumberStr = implode(', ', $narasumber);
         // $narasumber tetap array untuk dikirim sebagai list ke frontend
 
+        // 7. Petugas Teknik
+        // 7. Petugas Teknik (Menggunakan nama kolom dari Notion: "Petugas PT Produksi")
+        $teknik = '';
+        foreach (['Petugas PT Produksi', 'Petugas Teknik', 'Teknik', 'Pengarah Teknik'] as $key) {
+            if (isset($props[$key]['rich_text'][0]['plain_text'])) {
+                $teknik = $props[$key]['rich_text'][0]['plain_text'];
+                break;
+            }
+            if (isset($props[$key]['multi_select'])) {
+                $tempTeknik = [];
+                foreach ($props[$key]['multi_select'] as $msItem) {
+                    if (isset($msItem['name'])) {
+                        $tempTeknik[] = $msItem['name'];
+                    }
+                }
+                if (!empty($tempTeknik)) {
+                    $teknik = implode(', ', $tempTeknik);
+                    break;
+                }
+            }
+        }
+
+        // 8. Petugas PA / Acara (Diasumsikan menggunakan kolom: "Petugas PT Setting")
+        $pa = '';
+        foreach (['Petugas PT Setting', 'Petugas PA', 'PA', 'Pengarah Acara'] as $key) {
+            if (isset($props[$key]['rich_text'][0]['plain_text'])) {
+                $pa = $props[$key]['rich_text'][0]['plain_text'];
+                break;
+            }
+            if (isset($props[$key]['multi_select'])) {
+                $tempPa = [];
+                foreach ($props[$key]['multi_select'] as $msItem) {
+                    if (isset($msItem['name'])) {
+                        $tempPa[] = $msItem['name'];
+                    }
+                }
+                if (!empty($tempPa)) {
+                    $pa = implode(', ', $tempPa);
+                    break;
+                }
+            }
+        }
+
 
         $videos[] = [
             'id'             => $item['id'],
@@ -171,6 +214,8 @@ function getYoutubeVideos()
             'penyiar'        => $penyiarStr,
             'narasumber'     => $narasumber,
             // 'narasumberStr'  => $narasumberStr,
+            'teknik'         => $teknik,
+            'pa'             => $pa,
         ];
     }
 

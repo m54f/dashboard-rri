@@ -42,6 +42,7 @@ $tema             = trim($input['tema'] ?? '');
 $judul            = trim($input['judul'] ?? '');
 $tanggal          = trim($input['tanggal'] ?? '');
 $jamMulai         = trim($input['jamMulai'] ?? '');
+$jamSelesai       = trim($input['jamSelesai'] ?? '');
 $live             = trim($input['live'] ?? '');
 $link             = trim($input['link'] ?? '');
 $penyiarRaw       = trim($input['penyiar'] ?? '');
@@ -118,6 +119,20 @@ function richTextPayload($text)
     return [['type' => 'text', 'text' => ['content' => $text]]];
 }
 
+// "14:00" -> "14.00" (format jam sistem, dipakai juga di deskripsi Youtube)
+function jamKeFormatTitik($raw)
+{
+    return $raw !== '' ? str_replace(':', '.', $raw) : '';
+}
+
+// Gabungkan jam mulai & selesai jadi "00.00-00.00" agar bisa displit lagi saat edit.
+// Kalau jam selesai kosong, simpan jam mulai saja (tanpa tanda "-").
+$jamMulaiFormatted   = jamKeFormatTitik($jamMulai);
+$jamSelesaiFormatted = jamKeFormatTitik($jamSelesai);
+$jamGabung = $jamSelesaiFormatted !== ''
+    ? $jamMulaiFormatted . '-' . $jamSelesaiFormatted
+    : $jamMulaiFormatted;
+
 // ===== Bangun Properties Sesuai Schema Database Notion =====
 $properties = [
     'Tema Acara' => [
@@ -130,7 +145,7 @@ $properties = [
         'date' => ['start' => $tanggal]
     ],
     'Jam' => [
-        'rich_text' => richTextPayload($jamMulai)
+        'rich_text' => richTextPayload($jamGabung)
     ],
     "Acara Pro {$slot}" => [
         'select' => ['name' => $namaAcaraDisplay]
