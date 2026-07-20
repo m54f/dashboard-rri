@@ -3,17 +3,14 @@
  $pageTitle = 'Inventaris'; 
  $activeMenu = 'inventaris';
 
-// Konfigurasi Notion
-// Konfigurasi Notion
 require_once __DIR__ . '/../config/notion.php';
 
-// Hapus kata "global", langsung pakai konstanta NOTION_TOKEN
 function notionCurl($method, $url, $body = []) {
     $ch = curl_init($url);
     $opts = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER     => [
-            'Authorization: Bearer ' . NOTION_TOKEN, // Langsung pakai konstanta
+            'Authorization: Bearer ' . NOTION_TOKEN,
             'Notion-Version: 2022-06-28',
             'Content-Type: application/json',
         ],
@@ -28,7 +25,6 @@ function notionCurl($method, $url, $body = []) {
     return json_decode($res, true);
 }
 
-// Ambil data Inventaris dari Notion
  $search = $_GET['search'] ?? '';
  $inventaris = [];
  $errorMessage = null;
@@ -53,9 +49,8 @@ if (isset($dbData['results'])) {
     foreach ($dbData['results'] as $page) {
         $props = $page['properties'];
         
-        // Helper extract text
         $getTitle = fn($p) => !empty($p['title'][0]['plain_text']) ? $p['title'][0]['plain_text'] : '-';
-        $getText = fn($p) => !empty($p['rich_text'][0]['plain_text']) ? $p['rich_text'][0]['plain_text'] : '-';
+        $getText = fn($p) => !empty($p['rich_text'][0]['plain_text']) ? $p['rich_text'][0]['plain_text'] : '';
         $getSelect = fn($p) => !empty($p['select']['name']) ? $p['select']['name'] : '-';
         $getNumber = fn($p) => isset($p['number']) ? $p['number'] : 0;
 
@@ -63,7 +58,6 @@ if (isset($dbData['results'])) {
         $status = $getSelect($props['Status']);
         $lokasi = $getSelect($props['Lokasi']);
 
-        // Mapping warna untuk tag
         $katTone = match(strtolower($kategori)) {
             'audio' => 'purple', 'kamera' => 'blue', 'komputer' => 'green',
             'kabel' => 'orange', 'lighting' => 'red', 'video' => 'pink',
@@ -88,16 +82,10 @@ if (isset($dbData['results'])) {
         ];
     }
 } else {
-    // TAMPILKAN PESAN ERROR DARI NOTION AGAR KITA TAHU KESALAHANNYA
     $errorMessage = "Gagal memuat data dari Notion.";
-    if (isset($dbData['message'])) {
-        $errorMessage .= " Pesan Notion: " . $dbData['message'];
-    } elseif (isset($dbData['code'])) {
-        $errorMessage .= " Kode Error: " . $dbData['code'];
-    }
+    if (isset($dbData['message'])) $errorMessage .= " Pesan Notion: " . $dbData['message'];
 }
 
-// Statistik
  $totalItems = count($inventaris);
  $tersediaCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Tersedia') !== false));
  $dipinjamCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Dipinjam') !== false));
@@ -107,13 +95,12 @@ if (isset($dbData['results'])) {
     ['label' => 'Total Alat', 'value' => (string)$totalItems, 'sub' => 'Seluruh Inventaris', 'icon' => 'ri-archive-line', 'tone' => 'blue'],
     ['label' => 'Tersedia', 'value' => (string)$tersediaCount, 'sub' => 'Siap dipakai', 'icon' => 'ri-checkbox-circle-line', 'tone' => 'green'],
     ['label' => 'Dipinjam', 'value' => (string)$dipinjamCount, 'sub' => 'Sedang keluar', 'icon' => 'ri-share-forward-line', 'tone' => 'orange'],
-    ['label' => 'Rusak / Perbaikan', 'value' => (string)$rusakCount, 'sub' => 'Tidak可用', 'icon' => 'ri-tools-line', 'tone' => 'red'],
+    ['label' => 'Rusak / Perbaikan', 'value' => (string)$rusakCount, 'sub' => 'Tidak tersedia', 'icon' => 'ri-tools-line', 'tone' => 'red'],
 ];
 
  $categories = array_unique(array_map(fn($i) => $i['tag'], $inventaris));
 sort($categories);
 
-// Pagination
  $perPage = 8;
  $totalPages = max(1, (int)ceil($totalItems / $perPage));
  $currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
@@ -131,7 +118,6 @@ function invPageUrl($page, $search) {
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- CSS Khusus Inventaris (Bisa dipindah ke file css terpisah) -->
 <link rel="stylesheet" href="<?= $base ?>/assets/css/inventaris.css">
 
 <div class="page-head">
@@ -188,12 +174,12 @@ include __DIR__ . '/../includes/header.php';
         <?php foreach ($invPage as $i): ?>
         <tr data-tag="<?= htmlspecialchars($i['tag'], ENT_QUOTES) ?>" data-id="<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>">
           <td class="cell-title"><?= htmlspecialchars($i['title']) ?></td>
-          <td style="font-weight:600; color:#4b5563; font-family:monospace;"><?= htmlspecialchars($i['kode']) ?></td>
+          <td style="font-weight:600; color:#4b5563; font-family:monospace;"><?= htmlspecialchars($i['kode']) ?: '-' ?></td>
           <td><span class="tag <?= $i['tone'] ?>"><?= htmlspecialchars($i['tag']) ?></span></td>
           <td style="text-align:center; font-weight:700;"><?= htmlspecialchars($i['qty']) ?></td>
           <td><span class="avatar-sm"><?= strtoupper(substr($i['lokasi'],0,2)) ?></span> <?= htmlspecialchars($i['lokasi']) ?></td>
           <td><span class="status-tag <?= $i['cls'] ?>"><?= htmlspecialchars($i['status']) ?></span></td>
-          <td class="cell-sub"><?= $i['notes'] !== '-' ? htmlspecialchars($i['notes']) : '—' ?></td>
+          <td class="cell-sub"><?= $i['notes'] ? htmlspecialchars($i['notes']) : '—' ?></td>
           <td>
             <button class="icon-action edit" title="Edit" onclick="openEditModal('<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>')"><i class="ri-pencil-line"></i></button>
             <button class="icon-action delete" title="Hapus" onclick="deleteInvRow('<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>', this)"><i class="ri-delete-bin-line"></i></button>
@@ -271,7 +257,56 @@ include __DIR__ . '/../includes/header.php';
 
 <script>
 const BASE = '<?= $base ?>';
+// Kirim data PHP ke JS agar form Edit bisa terisi otomatis
+const INVENTARIS_DATA = <?= json_encode($invPage) ?>;
 
+// ===== Fungsi Modal =====
+function openModal(mode) {
+  const form = document.getElementById('invForm');
+  form.reset();
+  document.querySelector('input[name="page_id"]').value = '';
+  document.getElementById('modalTitle').textContent = 'Tambah Alat';
+  document.getElementById('invModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('invModal').classList.remove('active');
+}
+
+// Tutup modal jika klik di luar area kotak modal
+document.getElementById('invModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ===== Fungsi Edit =====
+function openEditModal(id) {
+  const item = INVENTARIS_DATA.find(i => i.page_id === id);
+  if (!item) return showToast('Data tidak ditemukan!', 'error');
+
+  const form = document.getElementById('invForm');
+  form.nama_alat.value = item.title;
+  form.kode.value = item.kode;
+  form.qty.value = item.qty;
+  form.kategori.value = item.tag;
+  form.lokasi.value = item.lokasi;
+  form.status.value = item.status;
+  form.catatan.value = item.notes;
+  form.page_id.value = item.page_id;
+
+  document.getElementById('modalTitle').textContent = 'Edit Alat';
+  document.getElementById('invModal').classList.add('active');
+}
+
+// ===== Fungsi Filter Tab =====
+function filterInventaris(tag, el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#invTable tbody tr').forEach(row => {
+    row.style.display = (tag === 'Semua' || row.dataset.tag === tag) ? '' : 'none';
+  });
+}
+
+// ===== Fungsi Submit (Create & Update) =====
 async function handleInvForm(event) {
   event.preventDefault();
   const form = event.target;
@@ -292,21 +327,29 @@ async function handleInvForm(event) {
     const data = await res.json();
     
     if (!res.ok || data.error) {
-      alert('Gagal menyimpan alat: ' + (data.error || 'Unknown error'));
+      // Tampilkan notifikasi gagal
+      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
       console.error(data);
       return;
     }
     
-    // Jika sukses, reload halaman agar data terbaru dari Notion langsung tampil
-    window.location.reload();
+    // Tampilkan notifikasi sukses
+    const msg = isUpdate ? '✅ Data alat berhasil diperbarui!' : '✅ Alat baru berhasil ditambahkan!';
+    showToast(msg, 'success');
+    
+    closeModal();
+    // Delay reload 1.2 detik agar notifikasi sempat terbaca
+    setTimeout(() => location.reload(), 1200);
+
   } catch (err) {
-    alert('Gagal mengirim data: ' + err.message);
+    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
   } finally {
     submitBtn.disabled = false; 
     submitBtn.textContent = origText;
   }
 }
 
+// ===== Fungsi Delete =====
 async function deleteInvRow(id, btn) {
   if (!confirm('Yakin mau hapus alat ini? Data akan dipindah ke Trash Notion.')) return;
   
@@ -321,18 +364,49 @@ async function deleteInvRow(id, btn) {
     const data = await res.json();
     
     if (!res.ok || data.error) {
-      alert('Gagal menghapus alat: ' + (data.error || 'Unknown error'));
+      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
       console.error(data);
       return;
     }
     
+    // Tampilkan notifikasi sukses hapus
+    showToast('🗑️ Alat berhasil dihapus!', 'success');
+    
     row.remove();
-    // Opsional: reload halaman untuk update statistik card di atas
-    // window.location.reload();
+    // Delay reload 1.2 detik agar notifikasi sempat terbaca
+    setTimeout(() => location.reload(), 1200);
+
   } catch (err) {
-    alert('Gagal menghapus alat: ' + err.message);
+    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
   }
+}
+
+// ===== Fungsi Toast Notification =====
+function showToast(message, type) {
+  const existing = document.querySelector('.toast-notification');
+  if (existing) existing.remove();
+  
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification ' + type;
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+    padding: 1rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+    color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    animation: slideInToast 0.4s ease;
+    ${type === 'success' ? 'background: linear-gradient(135deg, #22c55e, #16a34a);' : 'background: linear-gradient(135deg, #ef4444, #dc2626);'}
+  `;
+  document.body.appendChild(toast);
+  
+  // Hilangkan otomatis setelah 3 detik
+  setTimeout(() => { 
+    toast.style.opacity = '0'; 
+    toast.style.transition = 'opacity 0.5s'; 
+    setTimeout(() => toast.remove(), 500); 
+  }, 3000);
+}
 </script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

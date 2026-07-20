@@ -408,8 +408,7 @@ function createAgenda($data, $filesInput = null)
 
     [$fileObjects, $fileErrors] = notionUploadFiles($filesInput);
     if (!empty($fileObjects)) {
-        // Gunakan nama property yang umum di Database Notion: "Surat Tugas / Pengantar"
-        $properties['Surat Tugas / Pengantar'] = ['files' => $fileObjects];
+        $properties['Surat Tugas / Pengantar (Jika Ada)'] = ['files' => $fileObjects];
     }
 
     $payload = json_encode([
@@ -450,9 +449,40 @@ function createAgenda($data, $filesInput = null)
     if (!empty($fileObjects)) {
         $out['uploaded_files'] = array_map(fn($f) => $f['name'] ?? null, $fileObjects);
     }
+    // Notion langsung membalas properti lengkap page yang baru dibuat,
+    // termasuk URL file yang baru diupload — pakai ini supaya tabel bisa
+    // langsung nampilin dokumennya tanpa perlu reload halaman.
+    $out['dokumentasi'] = extractDokumentasiFromPage($result);
     return $out;
 }
 
+/**
+ * Ambil daftar dokumen (name+url) dari objek page Notion (hasil response
+ * create/update), supaya bisa langsung dipakai tanpa query ulang.
+ */
+function extractDokumentasiFromPage($page)
+{
+    $dokumentasi = [];
+    $props = $page['properties'] ?? [];
+    foreach (['Surat Tugas / Pengantar (Jika Ada)', 'Surat Tugas / Pengantar', 'Dokumentasi', 'Dokumentasi Pendukung', 'Lampiran'] as $key) {
+        if (isset($props[$key]['files']) && !empty($props[$key]['files'])) {
+            foreach ($props[$key]['files'] as $file) {
+                $fileUrl = '';
+                $fileName = $file['name'] ?? 'file';
+                if (isset($file['external']['url'])) {
+                    $fileUrl = $file['external']['url'];
+                } elseif (isset($file['file']['url'])) {
+                    $fileUrl = $file['file']['url'];
+                }
+                if ($fileUrl !== '') {
+                    $dokumentasi[] = ['name' => $fileName, 'url' => $fileUrl];
+                }
+            }
+            break;
+        }
+    }
+    return $dokumentasi;
+}
 /**
  * Update page agenda yang sudah ada.
  *
@@ -478,7 +508,12 @@ function updateAgenda($pageId, $data, $filesInput = null)
 
     [$fileObjects, $fileErrors] = notionUploadFiles($filesInput);
     if (!empty($fileObjects)) {
-        $properties['Surat Tugas / Pengantar'] = ['files' => $fileObjects];
+        $properties['Surat Tugas / Pengantar (Jika Ada)'] = ['files' => $fileObjects];
+    } elseif (!empty($data['remove_existing_files'])) {
+        // User klik "Hapus dokumen lama" tanpa upload file baru — kosongkan
+        // property files-nya. Catatan: Notion tidak punya "hapus satu file
+        // saja", jadi ini menghapus SEMUA dokumen lama di agenda ini.
+        $properties['Surat Tugas / Pengantar (Jika Ada)'] = ['files' => []];
     }
 
     $headers = [
@@ -514,6 +549,7 @@ function updateAgenda($pageId, $data, $filesInput = null)
     if (!empty($fileObjects)) {
         $out['uploaded_files'] = array_map(fn($f) => $f['name'] ?? null, $fileObjects);
     }
+    $out['dokumentasi'] = extractDokumentasiFromPage($result);
     return $out;
 }
 
