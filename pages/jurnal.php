@@ -36,7 +36,7 @@ include __DIR__ . '/../includes/header.php';
   .btn-filter { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; }
   .btn-filter.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
   .search-box { position: relative; }
-  .search-box i { position: absolute; left: 28px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 16px; }
+  .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 16px; }
   .search-box input { padding: 10px 14px 10px 36px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; width: 280px; transition: 0.2s; }
   .search-box input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
   
@@ -53,13 +53,12 @@ include __DIR__ . '/../includes/header.php';
   .styled-table tbody tr { transition: background-color 0.2s ease; }
   .styled-table tbody tr:hover { background-color: #f1f5f9; }
   
-  .item-id { font-weight: 600; color: #6b7280; }
   .item-title { font-weight: 700; color: #111827; max-width: 250px; line-height: 1.4; }
   .badge-kategori { background: #f3f4f6; color: #6b7280; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
   
   .doc-thumbnails { display: flex; flex-wrap: wrap; gap: 4px; max-width: 90px; }
   
-  /* Efek popup zoom dihilangkan, diganti opacity saat dihover agar simpel */
+  /* Efek opacity saat dihover agar simpel */
   .doc-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #e5e7eb; border: 1px solid #f3f4f6; cursor: pointer; transition: 0.2s; }
   .doc-thumb:hover { opacity: 0.7; }
   
@@ -108,7 +107,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <div class="search-box">
         <i class="ri-search-line"></i>
-        <input type="text" id="searchInput" placeholder="Cari kegiatan, ID, atau petugas..." onkeyup="handleSearch(this.value)">
+        <input type="text" id="searchInput" placeholder="Cari kegiatan atau petugas..." onkeyup="handleSearch(this.value)">
     </div>
 </div>
 
@@ -126,7 +125,7 @@ include __DIR__ . '/../includes/header.php';
   <div class="table-responsive">
     <table class="styled-table">
       <thead>
-        <tr><th>ID</th><th>JUDUL KEGIATAN</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>STATUS</th><th>TANGGAL LAPOR</th><th>AKSI</th></tr>
+        <tr><th>JUDUL KEGIATAN</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>LINK EVIDEN</th><th>STATUS</th><th>TANGGAL LAPOR</th><th>AKSI</th></tr>
       </thead>
       <tbody id="tableBody">
           <!-- Akan diisi otomatis oleh JS -->
@@ -263,10 +262,10 @@ function renderTable() {
         temp = temp.filter(item => item.status.toLowerCase() === currentFilter.toLowerCase());
     }
     
-    // Filter by Search
+    // Filter by Search (sudah tidak mencari berdasarkan ID)
     if (searchQuery.trim() !== '') {
         let q = searchQuery.toLowerCase();
-        temp = temp.filter(item => item.id.toLowerCase().includes(q) || item.title.toLowerCase().includes(q) || item.op.toLowerCase().includes(q) || item.tag.toLowerCase().includes(q));
+        temp = temp.filter(item => item.title.toLowerCase().includes(q) || item.op.toLowerCase().includes(q) || item.tag.toLowerCase().includes(q));
     }
     
     filteredEntries = temp;
@@ -287,30 +286,36 @@ function renderTable() {
     } else {
         pageData.forEach(e => {
             let docsHtml = '';
-            let limit = 2; // Hanya tampilkan max 2 foto highlight
+            let limit = 2; // Menampilkan max 2 foto highlight
+            
+            // Format URL agar langsung ke situs publik tmbrrimlg.notion.site
+            let publicUrl = e.url.replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
             
             for(let i=0; i < Math.min(e.docs.length, limit); i++) {
                 // onClick panggil Lightbox simpel dengan URL gambar
                 docsHtml += `<img src="${e.docs[i]}" class="doc-thumb" onclick="openImageLightbox('${e.docs[i]}')" onerror="this.src='https://via.placeholder.com/36x36?text=IMG'">`;
             }
             if(e.docs.length > limit) {
-                // Tombol +x langsung diarahkan membuka halaman Notion di tab baru
-                docsHtml += `<div class="doc-more" onclick="window.open('${e.url}', '_blank')" title="Buka Notion untuk melihat semua foto">+${e.docs.length - limit}</div>`;
+                // Tombol +x diarahkan ke publicUrl
+                docsHtml += `<div class="doc-more" onclick="window.open('${publicUrl}', '_blank')" title="Buka di Notion untuk melihat semua foto">+${e.docs.length - limit}</div>`;
             }
             if(e.docs.length === 0) docsHtml = `<span style="color:#9ca3af;font-size:12px;">-</span>`;
 
+            // Setup Link Eviden UI
+            let linkHtml = e.eviden_3 ? `<a href="${e.eviden_3}" target="_blank" style="color:#2563eb; text-decoration:none; font-weight:600;"><i class="ri-link"></i> Buka</a>` : `<span style="color:#9ca3af;font-size:12px;">-</span>`;
+
             tbody.innerHTML += `
             <tr>
-                <td class="item-id">${e.id}</td>
                 <td class="item-title">${e.title}</td>
                 <td><span class="badge-kategori">${e.tag}</span></td>
                 <td style="max-width: 150px; line-height: 1.5;">${e.op}</td>
                 <td><div class="doc-thumbnails">${docsHtml}</div></td>
+                <td>${linkHtml}</td>
                 <td style="font-weight: 700; color: #111827;">${e.status}</td>
                 <td>${e.date}</td>
                 <td>
                     <div class="action-btns">
-                      <a href="${e.url}" target="_blank" class="btn-icon" title="Buka di Notion"><i class="ri-external-link-line"></i></a>
+                      <a href="${publicUrl}" target="_blank" class="btn-icon" title="Buka di Notion"><i class="ri-external-link-line"></i></a>
                       <button class="btn-icon edit" title="Edit" onclick="openEditModal('${e.full_id}')"><i class="ri-pencil-line"></i></button>
                       <button class="btn-icon delete" title="Hapus" onclick="deleteJurnal('${e.full_id}')"><i class="ri-delete-bin-line"></i></button>
                     </div>
