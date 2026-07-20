@@ -1,118 +1,122 @@
 <?php
-/**
- * API Endpoint: Update Peminjaman Alat di Notion
- * Body JSON sama seperti create-peminjaman.php, ditambah:
- *   - page_id (string, required)
- */
-
 header('Content-Type: application/json; charset=utf-8');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed. Use POST.']);
-    exit;
-}
-
 require_once __DIR__ . '/../config/notion.php';
 
-$input = json_decode(file_get_contents('php://input'), true);
-if (!$input) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid JSON body.']);
+if (!defined('NOTION_TOKEN') || !defined('DATABASE_ID_PEMINJAMAN') || !defined('DATABASE_ID_INVENTARIS')) {
+    echo json_encode(['error' => 'Konfigurasi Notion belum lengkap.']);
     exit;
 }
 
-$pageId       = trim($input['page_id'] ?? '');
-$kegiatan     = trim($input['kegiatan'] ?? '');
-$pic          = trim($input['pic'] ?? '');
-$lokasi       = trim($input['lokasi'] ?? '');
-$tglKegiatan  = trim($input['tgl_kegiatan'] ?? '');
-$tglPinjam    = trim($input['tgl_pinjam'] ?? '');
-$durasi       = $input['durasi'] ?? null;
-$keterangan   = trim($input['keterangan'] ?? '');
-$alat         = $input['alat'] ?? [];
+function notionCurl($method, $url, $body = []) {
+    $ch = curl_init($url);
+    $opts = [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . NOTION_TOKEN,
+            'Notion-Version: 2022-06-28',
+            'Content-Type: application/json',
+        ],
+    ];
+    if ($method === 'GET') $opts[CURLOPT_HTTPGET] = true;
+    elseif ($method === 'POST') {
+        $opts[CURLOPT_POST] = true;
+        $opts[CURLOPT_POSTFIELDS] = json_encode($body, JSON_UNESCAPED_UNICODE);
+    } elseif ($method === 'PATCH') {
+        $opts[CURLOPT_CUSTOMREQUEST] = 'PATCH';
+        $opts[CURLOPT_POSTFIELDS] = json_encode($body, JSON_UNESCAPED_UNICODE);
+    }
+    curl_setopt_array($ch, $opts);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return ['code' => curl_getinfo($ch, CURLINFO_HTTP_CODE), 'data' => json_decode($res, true)];
+}
+
+ $payload = json_decode(file_get_contents('php://input'), true);
+ $pageId = $payload['page_id'] ?? '';
 
 if (empty($pageId)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Field "page_id" wajib diisi.']);
-    exit;
-}
-if (empty($kegiatan) || empty($pic) || empty($tglPinjam)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Field kegiatan, pic, dan tgl_pinjam wajib diisi.']);
-    exit;
-}
-if (!is_array($alat) || count($alat) === 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Minimal pilih satu alat.']);
+    echo json_encode(['error' => 'Page ID wajib diisi untuk update.']);
     exit;
 }
 
-$alatNames = [];
-$detailParts = [];
-foreach ($alat as $row) {
-    $namaAlat = trim($row['alat'] ?? '');
-    $jenis    = trim($row['jenis'] ?? '');
-    $qty      = trim((string)($row['qty'] ?? ''));
-    if (empty($namaAlat)) continue;
+// 1. Ambil data lama untuk melepas stok sebelumnya
+ $oldPageData = notionCurl('GET', 'https://api.notion.com/v1/pages/' . $pageId);
+ $oldRelations = $oldPageData['data']['properties']['Inventaris Terkait']['relation'] ?? [];
 
-    $alatNames[] = $namaAlat;
-    $label = $namaAlat;
-    if (!empty($jenis)) $label .= " ({$jenis})";
-    if (!empty($qty))   $label .= " x{$qty}";
-    $detailParts[] = $label;
-}
-$alatNames = array_values(array_unique($alatNames));
-$detailAlatText = implode(", ", $detailParts);
-
-$properties = [
-    "Nama Kegiatan"  => ["title" => [["text" => ["content" => $kegiatan]]]],
-    "Nama PIC PT"    => ["select" => ["name" => $pic]],
-    "Alat Dipinjam"  => ["multi_select" => array_map(fn($n) => ["name" => $n], $alatNames)],
-    "Lokasi"         => ["rich_text" => !empty($lokasi) ? [["text" => ["content" => $lokasi]]] : []],
-    "Tanggal Pinjam" => ["date" => ["start" => $tglPinjam]],
-    "Durasi (jam)"   => $durasi !== null && $durasi !== '' ? ["number" => (float)$durasi] : ["number" => null],
-    "Keterangan"     => ["rich_text" => !empty($keterangan) ? [["text" => ["content" => $keterangan]]] : []],
-    "Detail Alat"    => ["rich_text" => !empty($detailAlatText) ? [["text" => ["content" => $detailAlatText]]] : []],
-];
-
-$properties["Tanggal Kegiatan"] = !empty($tglKegiatan)
-    ? ["date" => ["start" => $tglKegiatan]]
-    : ["date" => null];
-
-$payload = ["properties" => $properties];
-
-$ch = curl_init("https://api.notion.com/v1/pages/" . $pageId);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Bearer " . NOTION_TOKEN,
-    "Notion-Version: " . NOTION_VERSION,
-    "Content-Type: application/json"
-]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-
-$response = curl_exec($ch);
-
-if (curl_errno($ch)) {
-    $error = curl_error($ch);
-    curl_close($ch);
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'cURL Error: ' . $error]);
-    exit;
-}
-
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-$responseData = json_decode($response, true);
-
-if ($httpCode === 200) {
-    echo json_encode(['success' => true, 'message' => 'Data peminjaman berhasil diperbarui!']);
-} else {
-    http_response_code($httpCode);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Notion API Error (HTTP ' . $httpCode . ')',
-        'details' => $responseData['message'] ?? $response
+// Kembalikan status Inventaris lama menjadi Tersedia
+foreach ($oldRelations as $rel) {
+    notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $rel['id'], [
+        "properties" => ["Status" => ["select" => ["name" => "Tersedia"]]]
     ]);
+}
+
+// 2. Susun properti Peminjaman baru
+ $pic = $payload['pic'] ?? '';
+ $alatTags = array_unique(array_map(fn($a) => $a['alat'], $payload['alat'] ?? []));
+ $detailAlat = implode(', ', array_map(fn($a) => "{$a['alat']} ({$a['jenis']}) ({$a['qty']})", $payload['alat'] ?? []));
+
+ $properties = [
+    'Nama Kegiatan' => ['title' => [['text' => ['content' => $payload['kegiatan'] ?? '']]]],
+    'Nama PIC PT' => ['select' => ['name' => $pic]],
+    'Lokasi' => ['rich_text' => [['text' => ['content' => $payload['lokasi'] ?? '']]]],
+    'Tanggal Kegiatan' => ['date' => ['start' => $payload['tgl_kegiatan'] ?? null]],
+    'Tanggal Pinjam' => ['date' => ['start' => $payload['tgl_pinjam'] ?? null]],
+    'Alat Dipinjam' => ['multi_select' => array_map(fn($t) => ['name' => $t], $alatTags)],
+    'Detail Alat' => ['rich_text' => [['text' => ['content' => $detailAlat]]]],
+    'Durasi (jam)' => ['number' => (int)($payload['durasi'] ?? 0)],
+    'Keterangan' => ['rich_text' => [['text' => ['content' => $payload['keterangan'] ?? '']]]],
+    'Status' => ['select' => ['name' => $payload['status'] ?? 'Dipinjam']]
+];
+ $properties = array_filter($properties, fn($v) => $v !== null);
+
+// Kosongkan relasi lama di Peminjaman (akan diisi ulang jika ada)
+ $properties['Inventaris Terkait'] = ['relation' => []];
+
+ $res = notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $pageId, ['properties' => $properties]);
+
+if ($res['code'] === 200) {
+    // 3. Cari & Hubungkan stok baru jika status masih Dipinjam
+    if (($payload['status'] ?? 'Dipinjam') === 'Dipinjam') {
+        $relationIds = [];
+        foreach ($payload['alat'] as $alatItem) {
+            $filter = [
+                "and" => [
+                    ["property" => "Nama Alat", "title" => ["contains" => $alatItem['alat']]],
+                    ["property" => "Status", "select" => ["equals" => "Tersedia"]]
+                ]
+            ];
+            if (!empty($alatItem['jenis'])) {
+                $filter['and'][] = ["property" => "Keterangan", "rich_text" => ["contains" => $alatItem['jenis']]];
+            }
+            
+            $invQuery = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', [
+                "filter" => $filter,
+                "page_size" => (int)$alatItem['qty']
+            ]);
+            
+            if (isset($invQuery['data']['results'])) {
+                foreach ($invQuery['data']['results'] as $invPage) {
+                    $invPageId = $invPage['id'];
+                    $relationIds[] = $invPageId;
+                    notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $invPageId, [
+                        "properties" => ["Status" => ["select" => ["name" => "Dipinjam"]]]
+                    ]);
+                }
+            }
+        }
+        
+        if (!empty($relationIds)) {
+            notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $pageId, [
+                "properties" => [
+                    "Inventaris Terkait" => [
+                        "relation" => array_map(fn($id) => ["id" => $id], $relationIds)
+                    ]
+                ]
+            ]);
+        }
+    }
+    
+    echo json_encode(['success' => true, 'message' => 'Peminjaman diupdate & stok disinkronisasi ulang!']);
+} else {
+    echo json_encode(['error' => 'Gagal update peminjaman', 'detail' => $res['data']]);
 }
