@@ -1,66 +1,65 @@
 <?php
-/**
- * API Endpoint: Tandai Peminjaman sebagai "Dikembalikan"
- * Body JSON: { page_id }
- */
-
 header('Content-Type: application/json; charset=utf-8');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed. Use POST.']);
-    exit;
-}
-
 require_once __DIR__ . '/../config/notion.php';
 
-$input = json_decode(file_get_contents('php://input'), true);
-$pageId = trim($input['page_id'] ?? '');
-
-if (empty($pageId)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Field "page_id" wajib diisi.']);
+if (!defined('NOTION_TOKEN') || !defined('DATABASE_ID_PEMINJAMAN')) {
+    echo json_encode(['error' => 'Konfigurasi Notion belum lengkap.']);
     exit;
 }
 
-$payload = [
+function notionCurl($method, $url, $body = []) {
+    $ch = curl_init($url);
+    $opts = [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . NOTION_TOKEN,
+            'Notion-Version: 2022-06-28',
+            'Content-Type: application/json',
+        ],
+    ];
+    if ($method === 'GET') $opts[CURLOPT_HTTPGET] = true;
+    elseif ($method === 'PATCH') {
+        $opts[CURLOPT_CUSTOMREQUEST] = 'PATCH';
+        $opts[CURLOPT_POSTFIELDS] = json_encode($body, JSON_UNESCAPED_UNICODE);
+    }
+    curl_setopt_array($ch, $opts);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return ['code' => curl_getinfo($ch, CURLINFO_HTTP_CODE), 'data' => json_decode($res, true)];
+}
+
+ $payload = json_decode(file_get_contents('php://input'), true);
+ $pageId = $payload['page_id'] ?? '';
+
+if (empty($pageId)) {
+    echo json_encode(['error' => 'Page ID hilang.']);
+    exit;
+}
+
+// 1. Ambil data Peminjaman untuk mengetahui alat apa saja yang dipinjam (melalui relasi)
+ $pageData = notionCurl('GET', 'https://api.notion.com/v1/pages/' . $pageId);
+ $relations = $pageData['data']['properties']['Inventaris Terkait']['relation'] ?? [];
+
+// 2. Kembalikan status semua alat terkait menjadi "Tersedia"
+foreach ($relations as $rel) {
+    notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $rel['id'], [
+        "properties" => ["Status" => ["select" => ["name" => "Tersedia"]]]
+    ]);
+}
+
+// 3. Update Peminjaman menjadi Dikembalikan & hapus relasi agar inventaris bersih
+ $updateBody = [
     "properties" => [
         "Status" => ["select" => ["name" => "Dikembalikan"]],
         "Tanggal Kembali" => ["date" => ["start" => date('Y-m-d')]],
+        "Inventaris Terkait" => ["relation" => []] // Kosongkan relasi
     ]
 ];
 
-$ch = curl_init("https://api.notion.com/v1/pages/" . $pageId);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Bearer " . NOTION_TOKEN,
-    "Notion-Version: " . NOTION_VERSION,
-    "Content-Type: application/json"
-]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+ $res = notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $pageId, $updateBody);
 
-$response = curl_exec($ch);
-
-if (curl_errno($ch)) {
-    $error = curl_error($ch);
-    curl_close($ch);
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'cURL Error: ' . $error]);
-    exit;
-}
-
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-$responseData = json_decode($response, true);
-
-if ($httpCode === 200) {
-    echo json_encode(['success' => true, 'message' => 'Alat ditandai sudah dikembalikan.']);
+if ($res['code'] === 200) {
+    echo json_encode(['success' => true, 'message' => 'Alat dikembalikan & stok inventaris diperbarui!']);
 } else {
-    http_response_code($httpCode);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Notion API Error (HTTP ' . $httpCode . ')',
-        'details' => $responseData['message'] ?? $response
-    ]);
+    echo json_encode(['error' => 'Gagal menandai dikembalikan', 'detail' => $res['data']]);
 }

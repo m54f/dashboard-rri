@@ -3,7 +3,6 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Muat konfigurasi Notion
  $configPath = __DIR__ . '/../config/notion.php';
 if (!file_exists($configPath)) {
     http_response_code(500);
@@ -18,7 +17,6 @@ if (!defined('NOTION_TOKEN') || !defined('DATABASE_ID_INVENTARIS')) {
     exit;
 }
 
-// Fungsi bantu untuk kirim request ke Notion API
 function notionCurl($method, $url, $body = []) {
     $ch = curl_init($url);
     $opts = [
@@ -39,16 +37,13 @@ function notionCurl($method, $url, $body = []) {
     curl_setopt_array($ch, $opts);
     $res = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
     curl_close($ch);
-    return ['code' => $code, 'data' => json_decode($res, true), 'err' => $err];
+    return ['code' => $code, 'data' => json_decode($res, true)];
 }
 
-// Hanya proses jika metode POST (dari form/fetch UI)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
-    // Ambil data form dengan aman
     $namaAlat = trim($_POST['nama_alat'] ?? '');
     $kode     = trim($_POST['kode'] ?? '');
     $kategori = trim($_POST['kategori'] ?? '');
@@ -57,25 +52,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status   = trim($_POST['status'] ?? '');
     $catatan  = trim($_POST['catatan'] ?? '');
 
-    // Validasi dasar
     if (empty($namaAlat) && $action !== 'delete') {
         http_response_code(400);
         echo json_encode(['error' => 'Nama Alat wajib diisi.']);
         exit;
     }
 
-    // Susun payload properties Notion (kecuali untuk delete)
+    // Notion API menerima array kosong [] jika text dikosongkan
+    $textKode = !empty($kode) ? [['text' => ['content' => $kode]]] : [];
+    $textCatatan = !empty($catatan) ? [['text' => ['content' => $catatan]]] : [];
+
     $properties = [
         'Nama Alat'    => ['title' => [['text' => ['content' => $namaAlat]]]],
-        'Kode'         => ['rich_text' => [['text' => ['content' => $kode]]]],
+        'Kode'         => ['rich_text' => $textKode],
         'Kategori'     => ['select' => ['name' => $kategori]],
         'Qty'          => ['number' => $qty],
         'Lokasi'       => ['select' => ['name' => $lokasi]],
         'Status'       => ['select' => ['name' => $status]],
-        'Keterangan'   => ['rich_text' => [['text' => ['content' => $catatan]]]]
+        'Keterangan'   => ['rich_text' => $textCatatan]
     ];
 
-    // ===== ACTION: CREATE =====
     if ($action === 'create') {
         $body = [
             'parent' => ['database_id' => DATABASE_ID_INVENTARIS],
@@ -91,8 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-    
-    // ===== ACTION: UPDATE =====
     elseif ($action === 'update') {
         $pageId = $_POST['page_id'] ?? '';
         if (empty($pageId)) {
@@ -112,8 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-    
-    // ===== ACTION: DELETE (Archive) =====
     elseif ($action === 'delete') {
         $pageId = $_POST['page_id'] ?? '';
         if (empty($pageId)) {
@@ -122,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Notion tidak benar-benar menghapus permanen, tapi mengarsipkan (Trash)
         $body = ['archived' => true];
         $res = notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $pageId, $body);
         
@@ -135,12 +126,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // Jika action tidak dikenali
     http_response_code(400);
     echo json_encode(['error' => 'Action tidak valid.']);
     exit;
 }
 
-// Jika bukan POST (misal diakses langsung lewat GET)
 http_response_code(405);
 echo json_encode(['error' => 'Method Not Allowed. Gunakan POST.']);
