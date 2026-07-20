@@ -177,7 +177,7 @@ include __DIR__ . '/../includes/header.php';
           <td style="font-weight:600; color:#4b5563; font-family:monospace;"><?= htmlspecialchars($i['kode']) ?: '-' ?></td>
           <td><span class="tag <?= $i['tone'] ?>"><?= htmlspecialchars($i['tag']) ?></span></td>
           <td style="text-align:center; font-weight:700;"><?= htmlspecialchars($i['qty']) ?></td>
-          <td><span class="avatar-sm"><?= strtoupper(substr($i['lokasi'],0,2)) ?></span> <?= htmlspecialchars($i['lokasi']) ?></td>
+          <td><?= htmlspecialchars($i['lokasi']) ?></td>
           <td><span class="status-tag <?= $i['cls'] ?>"><?= htmlspecialchars($i['status']) ?></span></td>
           <td class="cell-sub"><?= $i['notes'] ? htmlspecialchars($i['notes']) : '—' ?></td>
           <td>

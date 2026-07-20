@@ -1,53 +1,36 @@
 <?php
-$base = '..'; $pageTitle = 'Dashboard'; $activeMenu = 'dashboard';
+$base = '..'; 
+$pageTitle = 'Dashboard'; 
+$activeMenu = 'dashboard';
 
 $today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
 $hour  = (int) $today->format('H');
 $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
 
-$stats = [
-    ['label' => 'Total Kegiatan Hari Ini',   'value' => '6',     'sub' => 'Agenda terjadwal',       'icon' => 'ri-calendar-line',       'tone' => 'blue'],
-    ['label' => 'Checklist Selesai',         'value' => '18/22', 'sub' => '82% perangkat siap',       'icon' => 'ri-checkbox-circle-line','tone' => 'green'],
-    ['label' => 'Troubleshoot Bulan Ini',    'value' => '12',    'sub' => '4 kasus belum selesai',    'icon' => 'ri-tools-line',          'tone' => 'orange'],
-    ['label' => 'Live Streaming Bulan Ini',  'value' => '15',    'sub' => '+3 dari bulan lalu',       'icon' => 'ri-play-circle-line',    'tone' => 'purple'],
-    ['label' => 'Jurnal Kegiatan',           'value' => '28',    'sub' => 'Total dokumentasi',        'icon' => 'ri-file-text-line',      'tone' => 'blue'],
-    ['label' => 'Pemadaman PLN Bulan Ini',   'value' => '4',     'sub' => 'Total kejadian',           'icon' => 'ri-flashlight-line',     'tone' => 'orange'],
-];
-
+// --- DATA DUMMY (Sesuaikan dengan fetch database Anda) ---
 $agenda = [
     ['time' => '09.00', 'title' => 'Podcast Luar Studio',        'tag' => 'PODCAST',  'tone'=>'purple', 'pic' => 'Alfan'],
     ['time' => '11.00', 'title' => 'Persiapan Senam Sore RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Yanuar'],
-    ['time' => '13.00', 'title' => 'Persiapan Senam Pagi RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Saiful'],
     ['time' => '15.30', 'title' => 'Live Youtube: Sore Ceria',   'tag' => 'LIVE',     'tone'=>'red',    'pic' => 'Alif'],
     ['time' => '19.00', 'title' => 'Produksi Ruatan Malam',      'tag' => 'PRODUKSI', 'tone'=>'blue',   'pic' => 'Yayang'],
-    ['time' => '21.00', 'title' => 'Live Youtube: Simphoni Keroncong', 'tag' => 'LIVE', 'tone'=>'red',  'pic' => 'Yanuar'],
 ];
 
-$checklist = [
-    ['name' => 'Mixer Audio',    'status' => 'Baik',       'ok' => true],
-    ['name' => 'Microphone',     'status' => 'Baik',       'ok' => true],
-    ['name' => 'PC Streaming',   'status' => 'Baik',       'ok' => true],
-    ['name' => 'Encoder',        'status' => 'Perlu Dicek','ok' => false],
-    ['name' => 'Internet',       'status' => 'Baik',       'ok' => true],
-];
 $checklistReady = 18; $checklistTotal = 22;
 $checklistPct = round($checklistReady / $checklistTotal * 100);
 
-$troubleshootDist = [
-    ['label' => 'Internet / Jaringan', 'pct' => 42, 'color' => '#2563eb'],
-    ['label' => 'Perangkat Audio',     'pct' => 25, 'color' => '#10b981'],
-    ['label' => 'PC / Komputer',       'pct' => 17, 'color' => '#f59e0b'],
-    ['label' => 'Output Siaran',       'pct' => 11, 'color' => '#8b5cf6'],
-    ['label' => 'Lainnya',             'pct' => 5,  'color' => '#94a3b8'],
+$checklist = [
+    ['name' => 'Mixer Audio',    'status' => 'Baik', 'ok' => true],
+    ['name' => 'Microphone',     'status' => 'Baik', 'ok' => true],
+    ['name' => 'PC Streaming',   'status' => 'Baik', 'ok' => true],
+    ['name' => 'Encoder',        'status' => 'Perlu Dicek', 'ok' => false],
 ];
-$troubleshootTotal = 12;
 
-$troubleshootRecent = [
-    ['title' => 'Internet Telkom (IP 60) tidak tersambung', 'status' => 'Belum Selesai', 'cls'=>'belum', 'date' => '8 Jul 2026, 08.45'],
-    ['title' => 'Output Radio Kepsta Putus Nyambung',       'status' => 'Proses',        'cls'=>'proses','date' => '7 Jul 2026, 14.20'],
-    ['title' => 'Modulasi dari Music 1',                    'status' => 'Selesai',       'cls'=>'selesai','date' => '6 Jul 2026, 09.15'],
-    ['title' => 'Internet PC dias tidak ada internet',      'status' => 'Selesai',       'cls'=>'selesai','date' => '5 Jul 2026, 11.30'],
+// Filter hanya yang belum selesai untuk dashboard
+$troubleshootActive = [
+    ['title' => 'Internet Telkom (IP 60) tidak tersambung', 'status' => 'Belum Selesai', 'cls'=>'belum', 'date' => '8 Jul, 08.45'],
+    ['title' => 'Output Radio Kepsta Putus Nyambung',       'status' => 'Proses',        'cls'=>'proses','date' => '7 Jul, 14.20'],
 ];
+$activeTroubleCount = count($troubleshootActive);
 
 require_once __DIR__ . '/../api/youtube.php';
 $fetchedVideos = getYoutubeVideos();
@@ -55,326 +38,318 @@ $fetchedVideos = getYoutubeVideos();
 $gallery = [];
 if (is_array($fetchedVideos) && !isset($fetchedVideos['error'])) {
     $sekarang = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
-    
-    // Pisahkan proses clone dan modify agar tidak terjadi syntax error
     $semingguLalu = clone $sekarang;
     $semingguLalu->modify('-7 days');
-    
-    $sekarang->modify('+1 day'); // Memastikan kegiatan hari ini ikut masuk batas akhir
+    $sekarang->modify('+1 day');
     
     foreach ($fetchedVideos as $v) {
-        // Karena di youtube.php tanggal diformat 'j M Y', kita ubah lagi jadi objek waktu
         $vDate = DateTime::createFromFormat('j M Y', $v['date']);
-        
-        if ($vDate) {
-            $vDate->setTime(0, 0, 0); // Reset jam agar akurat
-            
-            // Cek apakah tanggal berada di rentang 7 hari terakhir
-            if ($vDate >= $semingguLalu && $vDate <= $sekarang) {
-                $gallery[] = $v;
-            }
+        if ($vDate && $vDate >= $semingguLalu && $vDate <= $sekarang) {
+            $gallery[] = $v;
         }
     }
 }
 
 include __DIR__ . '/../includes/header.php';
 ?>
-<div class="page-head">
+
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #8b5cf6;
+  }
+
+  body { background: var(--bg); color: var(--text-primary); }
+  
+  /* Header */
+  .dash-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+  .dash-header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+  .dash-header p { color: var(--text-secondary); margin: 0.25rem 0 0; font-size: 0.95rem; }
+  .date-badge { background: var(--card-bg); border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem; }
+
+  /* Key Metrics (3 Cards) */
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .metric-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: flex; align-items: flex-start; gap: 1rem; transition: transform 0.2s; }
+  .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .metric-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+  .metric-icon.blue { background: #eff6ff; color: var(--primary); }
+  .metric-icon.green { background: #ecfdf5; color: var(--success); }
+  .metric-icon.orange { background: #fff7ed; color: var(--warning); }
+  .metric-info h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin: 0 0 0.25rem; font-weight: 600; }
+  .metric-info .value { font-size: 1.75rem; font-weight: 800; line-height: 1; margin-bottom: 0.25rem; }
+  .metric-info .sub { font-size: 0.8rem; color: var(--text-secondary); }
+
+  /* Main Layout */
+  .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .card-title { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card-body { padding: 1.25rem; }
+  .link-btn { font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+  .link-btn:hover { text-decoration: underline; }
+
+  /* Agenda Timeline */
+  .timeline-item { display: flex; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-time { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); width: 50px; flex-shrink: 0; padding-top: 2px; }
+  .timeline-content { flex: 1; }
+  .timeline-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; }
+  .timeline-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .tag { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+  .tag.red { background: #fef2f2; color: var(--danger); }
+  .tag.blue { background: #eff6ff; color: var(--primary); }
+  .tag.orange { background: #fff7ed; color: var(--warning); }
+  .tag.purple { background: #f5f3ff; color: var(--purple); }
+  .pic-badge { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+
+  /* Troubleshoot List */
+  .trouble-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.75rem; background: #fff; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem; }
+  .trouble-item:last-child { margin-bottom: 0; }
+  .trouble-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .trouble-date { font-size: 0.75rem; color: var(--text-secondary); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.belum { background: var(--danger); }
+  .status-dot.proses { background: var(--warning); }
+  .status-tag { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+  .status-tag.belum { background: #fef2f2; color: var(--danger); }
+  .status-tag.proses { background: #fff7ed; color: var(--warning); }
+
+  /* Checklist Progress */
+  .progress-wrap { margin-bottom: 1.25rem; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--success); border-radius: 99px; transition: width 0.5s ease; }
+  .checklist-mini { display: flex; flex-direction: column; gap: 0.5rem; }
+  .check-mini-item { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.5rem; background: var(--bg); border-radius: 6px; }
+  .check-mini-item.ok { color: var(--success); }
+  .check-mini-item.not-ok { color: var(--danger); font-weight: 600; }
+
+  /* Quick Actions */
+  .quick-actions { display: grid; gap: 0.75rem; }
+  .btn-action { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.85rem; border: 1px solid var(--border); background: var(--card-bg); border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; text-align: left; text-decoration: none; color: var(--text-primary); }
+  .btn-action:hover { background: var(--bg); border-color: var(--primary); color: var(--primary); }
+  .btn-action i { font-size: 1.25rem; }
+
+  /* YouTube Compact Slider */
+  .yt-section { margin-top: 1.5rem; }
+  .yt-slider { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 1rem; scrollbar-width: thin; }
+  .yt-slider::-webkit-scrollbar { height: 6px; }
+  .yt-slider::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  .yt-card { flex: 0 0 280px; scroll-snap-align: start; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .yt-thumb { height: 140px; background: #e2e8f0; position: relative; }
+  .yt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .yt-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+  .yt-info { padding: 0.75rem; }
+  .yt-title { 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    line-height: 1.3; 
+    margin-bottom: 0.5rem; 
+    display: -webkit-box; 
+    -webkit-line-clamp: 2; 
+    line-clamp: 2; /* <-- Tambahan ini menghilangkan warning */
+    -webkit-box-orient: vertical; 
+    overflow: hidden; 
+  }
+  .yt-meta { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem; }
+</style>
+
+<div class="dash-header">
   <div>
     <h2><?= htmlspecialchars($greeting) ?>, TMB Team! 👋</h2>
-    <p>Pantau kegiatan operasional dan pastikan semua berjalan dengan baik.</p>
+    <p>Pantau ringkasan operasional dan pastikan semua perangkat siap.</p>
   </div>
-  <div class="date-chip"><i class="ri-calendar-line"></i> <?= $today->format('l, j F Y') ?></div>
+  <div class="date-badge">
+    <i class="ri-calendar-line"></i> <?= $today->format('l, j F Y') ?>
+  </div>
 </div>
 
-<div class="stats-row">
-  <?php foreach ($stats as $s): ?>
-  <div class="stat-card">
-    <div class="stat-info">
-      <h3><?= htmlspecialchars($s['label']) ?></h3>
-      <div class="stat-value"><?= htmlspecialchars($s['value']) ?></div>
-      <div class="stat-sub"><?= htmlspecialchars($s['sub']) ?></div>
+<!-- 1. KEY METRICS (Hanya 3 yang paling penting) -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-icon blue"><i class="ri-calendar-event-line"></i></div>
+    <div class="metric-info">
+      <h3>Agenda Hari Ini</h3>
+      <div class="value"><?= count($agenda) ?></div>
+      <div class="sub">Kegiatan terjadwal</div>
     </div>
-    <div class="stat-icon <?= $s['tone'] ?>"><i class="<?= $s['icon'] ?>"></i></div>
   </div>
-  <?php endforeach; ?>
+  <div class="metric-card">
+    <div class="metric-icon green"><i class="ri-checkbox-circle-line"></i></div>
+    <div class="metric-info">
+      <h3>Kesiapan Perangkat</h3>
+      <div class="value"><?= $checklistPct ?>%</div>
+      <div class="sub"><?= $checklistReady ?> dari <?= $checklistTotal ?> perangkat siap</div>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-icon orange"><i class="ri-tools-line"></i></div>
+    <div class="metric-info">
+      <h3>Troubleshoot Aktif</h3>
+      <div class="value"><?= $activeTroubleCount ?></div>
+      <div class="sub">Kasus belum selesai</div>
+    </div>
+  </div>
 </div>
 
-<div class="grid-3">
+<!-- 2. MAIN CONTENT: Agenda & Troubleshoot -->
+<div class="main-grid">
+  <!-- Left Column: Agenda -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title"><i class="ri-calendar-line"></i>Daily Agenda Hari Ini</div>
+      <div class="card-title"><i class="ri-time-line"></i> Jadwal Hari Ini</div>
       <a class="link-btn" href="<?= $base ?>/pages/agenda.php">Lihat Semua</a>
     </div>
-    <?php foreach ($agenda as $a): ?>
-    <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-color);">
-      <div style="width:48px;flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--text-secondary);"><?= htmlspecialchars($a['time']) ?></div>
-      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:13.5px;font-weight:600;"><?= htmlspecialchars($a['title']) ?></span>
-        <span class="tag <?= $a['tone'] ?>"><?= $a['tag'] ?></span>
-      </div>
-      <div style="font-size:11px;color:var(--text-secondary);text-align:right;flex-shrink:0;">
-        <span style="display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;">PIC</span><?= htmlspecialchars($a['pic']) ?>
-      </div>
-    </div>
-    <?php endforeach; ?>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ri-line-chart-line"></i>Ringkasan Aktivitas</div>
-      <a class="link-btn" href="#">7 Hari Terakhir</a>
-    </div>
-    <div style="display:flex;gap:16px;font-size:11.5px;color:var(--text-secondary);margin-bottom:6px;">
-      <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:50%;background:var(--primary);display:inline-block;"></i>Kegiatan</span>
-      <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;"></i>Live Streaming</span>
-      <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:50%;background:var(--warning);display:inline-block;"></i>Troubleshoot</span>
-    </div>
-    <div style="position:relative;height:230px;"><canvas id="activityChart"></canvas></div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ri-checkbox-circle-line"></i>Checklist Perangkat</div>
-      <a class="link-btn" href="<?= $base ?>/pages/checklist.php">Lihat Semua</a>
-    </div>
-    <div class="ring-wrap">
-      <div class="ring">
-        <svg width="74" height="74" viewBox="0 0 74 74">
-          <circle cx="37" cy="37" r="31" fill="none" stroke="#e2e8f0" stroke-width="8"/>
-          <circle cx="37" cy="37" r="31" fill="none" stroke="var(--primary)" stroke-width="8"
-            stroke-dasharray="<?= round(2 * pi() * 31) ?>"
-            stroke-dashoffset="<?= round(2 * pi() * 31 * (1 - $checklistPct / 100)) ?>"
-            stroke-linecap="round"/>
-        </svg>
-        <div class="ring-pct"><?= $checklistPct ?>%</div>
-      </div>
-      <div class="ring-label"><h4>Perangkat Siap</h4><p><?= $checklistReady ?> dari <?= $checklistTotal ?> perangkat</p></div>
-    </div>
-    <?php foreach ($checklist as $c): ?>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-color);font-size:12.5px;">
-      <span style="display:flex;align-items:center;gap:9px;font-weight:500;"><i class="ri-checkbox-blank-circle-fill" style="font-size:6px;color:var(--text-secondary);"></i><?= htmlspecialchars($c['name']) ?></span>
-      <span style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;color:<?= $c['ok'] ? 'var(--success)' : 'var(--warning)' ?>">
-        <?= htmlspecialchars($c['status']) ?><i class="<?= $c['ok'] ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill' ?>"></i>
-      </span>
-    </div>
-    <?php endforeach; ?>
-  </div>
-
-  <div class="card" style="grid-column: span 1;">
-    <div class="card-header">
-      <div class="card-title"><i class="ri-flashlight-line"></i>Log Pemadaman PLN</div>
-      <a class="link-btn" href="<?= $base ?>/pages/pemadaman.php">Kelola</a>
-    </div>
-    <div style="padding: 1rem 0;">
-      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
-        <div style="flex:1;">
-          <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Pemadaman Terbaru</div>
-          <div style="font-weight:600; font-size:13px;">Pemancar Studio</div>
-          <div style="font-size:11px; color:var(--text-secondary);">10 Mei 2026, 07:12 - 07:17</div>
-        </div>
-        <span class="tag orange">Aktif</span>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="location.href='<?= $base ?>/pages/pemadaman.php?action=create'" style="width:100%;">
-        <i class="ri-add-line"></i> Catat Pemadaman
-      </button>
-    </div>
-  </div>
-</div>
-
-<div class="grid-2" style="margin-bottom:18px;">
-  <div class="card">
-    <div class="card-header"><div class="card-title"><i class="ri-pie-chart-line"></i>Distribusi Troubleshoot</div></div>
-    <div style="display:flex;align-items:center;gap:20px;">
-      <div style="position:relative;width:150px;height:150px;flex-shrink:0;">
-        <canvas id="troubleDonut"></canvas>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <span style="font-size:22px;font-weight:800;"><?= $troubleshootTotal ?></span>
-          <span style="font-size:10px;color:var(--text-secondary);">Total Kasus</span>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:9px;flex:1;">
-        <?php foreach ($troubleshootDist as $t): ?>
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
-          <span style="display:flex;align-items:center;gap:8px;font-weight:500;"><i style="width:8px;height:8px;border-radius:50%;display:inline-block;background:<?= $t['color'] ?>"></i><?= htmlspecialchars($t['label']) ?></span>
-          <span style="font-weight:700;color:var(--text-secondary);"><?= $t['pct'] ?>%</span>
-        </div>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="ri-history-line"></i>Troubleshoot Terbaru</div>
-      <a class="link-btn" href="<?= $base ?>/pages/troubleshoot.php">Lihat Semua</a>
-    </div>
-    <?php foreach ($troubleshootRecent as $tr): ?>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color);gap:10px;">
-      <div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:3px;"><?= htmlspecialchars($tr['title']) ?></div>
-        <div style="font-size:11px;color:var(--text-secondary);"><?= htmlspecialchars($tr['date']) ?></div>
-      </div>
-      <span class="status-tag <?= $tr['cls'] ?>"><?= htmlspecialchars($tr['status']) ?></span>
-    </div>
-    <?php endforeach; ?>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <div class="card-title"><i class="ri-youtube-line"></i>Recap Youtube Live On This Week</div>
-    <a class="link-btn" href="<?= $base ?>/pages/gallery.php">Lihat Semua</a>
-  </div>
-  <div class="slider-wrapper" style="position: relative;">
-    <!-- Tombol Navigasi Kiri -->
-    <button id="slideLeftBtn" onclick="scrollGallery(-1)" style="display:flex; opacity:0; visibility:hidden; transition:all 0.3s ease; position:absolute; left:-15px; top:50%; transform:translateY(-50%); z-index:10; background:var(--primary, #2563eb); color:#fff; border:none; width:34px; height:34px; border-radius:50%; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.3); align-items:center; justify-content:center;">
-      <i class="ri-arrow-left-s-line" style="font-size:22px;"></i>
-    </button>
-
-    <!-- Kontainer Slider (overflow-x: hidden agar mouse/touchpad tidak bisa scroll) -->
-    <div id="youtubeSlider" style="display:flex; gap:16px; overflow-x:hidden; padding-bottom: 5px; padding-top: 5px; scroll-behavior: smooth;">
-      
-      <?php if (empty($gallery)): ?>
-        <div style="width:100%; text-align:center; color: var(--text-secondary); padding: 2rem;">
-          Data video untuk seminggu kebelakang belum tersedia.
-        </div>
+    <div class="card-body" style="padding-top: 0.5rem;">
+      <?php if (empty($agenda)): ?>
+        <div style="text-align:center; padding: 2rem; color: var(--text-secondary);">Tidak ada agenda hari ini.</div>
       <?php else: ?>
-        <?php foreach ($gallery as $g): ?>
-          <?php
-            $title = isset($g['title']) && $g['title'] !== '' ? $g['title'] : 'Tanpa Judul';
-            $namaAcara = isset($g['namaAcara']) && $g['namaAcara'] !== '' ? $g['namaAcara'] : '';
-            $programa = isset($g['programa']) && $g['programa'] !== '' ? $g['programa'] : 'Umum';
-            $programaColor = isset($g['programaColor']) ? $g['programaColor'] : 'gray';
-            $date = isset($g['date']) && $g['date'] !== '' ? $g['date'] : 'TBA';
-            $time = isset($g['time']) && $g['time'] !== '' ? $g['time'] : 'TBA';
-            $flyer = isset($g['flyer']) && $g['flyer'] !== '' ? $g['flyer'] : '';
-            
-            $colorMap = [
-                'gray'    => '#64748b', 'brown'   => '#92400e', 'orange'  => '#f59e0b',
-                'yellow'  => '#fbbf24', 'green'   => '#10b981', 'blue'    => '#2563eb',
-                'purple'  => '#8b5cf6', 'pink'    => '#ec4899', 'red'     => '#ef4444',
-                'default' => '#64748b'
-            ];
-            $bgColor = isset($colorMap[$programaColor]) ? $colorMap[$programaColor] : $colorMap['default'];
-          ?>
-          
-          <!-- ITEM SLIDER: Lebar dinamis (25% minus porsi gap) agar pas 4 kotak tanpa terpotong -->
-          <div class="feed-card" style="display:flex; flex-direction:column; flex: 0 0 calc(25% - 12px); width: calc(25% - 12px);">
-            <div class="feed-thumb" style="display:block; position:relative; overflow:hidden; background:#f0f0f0; min-height:180px;">
-              <?php if ($flyer !== ''): ?>
-                <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" style="width:100%; height:100%; object-fit:cover; position:absolute;">
-              <?php else: ?>
-                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; position:absolute;">
-                  <i class="ri-image-line" style="font-size:3rem;"></i>
-                </div>
-              <?php endif; ?>
-              <span class="overlay-label" style="position:absolute; top:10px; left:10px; background:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; color:#fff; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:bold; z-index:2;">
-                <?= htmlspecialchars($programa, ENT_QUOTES, 'UTF-8') ?>
-              </span>
-            </div>
-            <div class="feed-info" style="flex:1; display:flex; flex-direction:column;">
-              <div style="flex:1;">
-                <?php if ($namaAcara !== ''): ?>
-                  <div style="font-size:12px; color:<?= htmlspecialchars($bgColor, ENT_QUOTES, 'UTF-8') ?>; font-weight:bold; margin-bottom:4px;">
-                    <?= htmlspecialchars($namaAcara, ENT_QUOTES, 'UTF-8') ?>
-                  </div>
-                <?php endif; ?>
-                <div class="title" style="white-space:normal;"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></div>
-              </div>
-              <div class="meta" style="font-size:13px; color:var(--text-secondary); border-top:1px solid var(--border-color); padding-top:12px; margin-top:12px;">
-                <span><i class="ri-calendar-line"></i> <?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
-                <span><i class="ri-time-line"></i> <?= htmlspecialchars($time, ENT_QUOTES, 'UTF-8') ?></span>
-              </div>
+        <?php foreach ($agenda as $a): ?>
+        <div class="timeline-item">
+          <div class="timeline-time"><?= htmlspecialchars($a['time']) ?></div>
+          <div class="timeline-content">
+            <div class="timeline-title"><?= htmlspecialchars($a['title']) ?></div>
+            <div class="timeline-meta">
+              <span class="tag <?= $a['tone'] ?>"><?= $a['tag'] ?></span>
+              <span class="pic-badge"><i class="ri-user-line"></i> <?= htmlspecialchars($a['pic']) ?></span>
             </div>
           </div>
+        </div>
         <?php endforeach; ?>
       <?php endif; ?>
     </div>
-
-    <!-- Tombol Navigasi Kanan -->
-    <button id="slideRightBtn" onclick="scrollGallery(1)" style="display:flex; opacity:1; visibility:visible; transition:all 0.3s ease; position:absolute; right:-15px; top:50%; transform:translateY(-50%); z-index:10; background:var(--primary, #2563eb); color:#fff; border:none; width:34px; height:34px; border-radius:50%; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.3); align-items:center; justify-content:center;">
-      <i class="ri-arrow-right-s-line" style="font-size:22px;"></i>
-    </button>
   </div>
 
-  <!-- Script untuk mekanisme scroll horizontal dan hide/show tombol panah dengan animasi -->
-  <script>
-  function scrollGallery(direction) {
-      const slider = document.getElementById('youtubeSlider');
-      const card = slider.querySelector('.feed-card');
-      
-      if (!card) return;
+  <!-- Right Column: Active Issues & Quick Actions -->
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    
+    <!-- Active Troubleshoot -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="ri-alert-line" style="color: var(--danger);"></i> Perlu Perhatian</div>
+      </div>
+      <div class="card-body">
+        <?php if (empty($troubleshootActive)): ?>
+          <div style="text-align:center; padding: 1.5rem; color: var(--success); font-weight: 600;">
+            <i class="ri-checkbox-circle-line" style="font-size: 1.5rem; display:block; margin-bottom:0.5rem;"></i>
+            Semua sistem aman
+          </div>
+        <?php else: ?>
+          <?php foreach ($troubleshootActive as $tr): ?>
+          <div class="trouble-item">
+            <div>
+              <div class="trouble-title"><?= htmlspecialchars($tr['title']) ?></div>
+              <div class="trouble-date"><span class="status-dot <?= $tr['cls'] ?>"></span><?= htmlspecialchars($tr['date']) ?></div>
+            </div>
+            <span class="status-tag <?= $tr['cls'] ?>"><?= htmlspecialchars($tr['status']) ?></span>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
 
-      // Ambil lebar kotak secara dinamis ditambah gap (16px), lalu dikali 4
-      const scrollAmount = (card.offsetWidth + 16) * 4; 
-      
-      // Lakukan scroll smooth
-      slider.scrollBy({ left: direction * scrollAmount });
-  }
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-body">
+        <div class="quick-actions">
+          <a href="<?= $base ?>/pages/troubleshoot.php?action=create" class="btn-action">
+            <i class="ri-add-circle-line" style="color: var(--danger);"></i> Laporkan Gangguan
+          </a>
+          <a href="<?= $base ?>/pages/checklist.php" class="btn-action">
+            <i class="ri-clipboard-line" style="color: var(--primary);"></i> Isi Checklist Harian
+          </a>
+        </div>
+      </div>
+    </div>
 
-  function updateSliderButtons() {
-      const slider = document.getElementById('youtubeSlider');
-      const leftBtn = document.getElementById('slideLeftBtn');
-      const rightBtn = document.getElementById('slideRightBtn');
-
-      if (!slider || !leftBtn || !rightBtn) return;
-
-      // Animasi Tombol Kiri
-      if (slider.scrollLeft <= 5) { // Diberi toleransi 5px untuk presisi browser
-          leftBtn.style.opacity = '0';
-          leftBtn.style.visibility = 'hidden';
-      } else {
-          leftBtn.style.opacity = '1';
-          leftBtn.style.visibility = 'visible';
-      }
-
-      // Animasi Tombol Kanan
-      if (slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 5) { // Diberi toleransi 5px
-          rightBtn.style.opacity = '0';
-          rightBtn.style.visibility = 'hidden';
-      } else {
-          rightBtn.style.opacity = '1';
-          rightBtn.style.visibility = 'visible';
-      }
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-      const slider = document.getElementById('youtubeSlider');
-      if (slider) {
-          // Menggunakan 'scrollend' agar tombol dicek TEPAT setelah animasi geser selesai berhenti
-          slider.addEventListener('scrollend', updateSliderButtons);
-          
-          window.addEventListener('resize', updateSliderButtons);
-          
-          // Jalankan pengecekan pertama saat halaman dimuat
-          setTimeout(updateSliderButtons, 100); 
-      }
-  });
-  </script>
+  </div>
 </div>
 
+<!-- 3. BOTTOM SECTION: Checklist Detail & YouTube Recap -->
+<div class="main-grid">
+  
+  <!-- Checklist Detail -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="ri-equipment-line"></i> Status Perangkat Kritis</div>
+      <a class="link-btn" href="<?= $base ?>/pages/checklist.php">Detail</a>
+    </div>
+    <div class="card-body">
+      <div class="progress-wrap">
+        <div class="progress-header">
+          <span>Tingkat Kesiapan</span>
+          <span style="color: var(--success);"><?= $checklistPct ?>%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: <?= $checklistPct ?>%;"></div>
+        </div>
+      </div>
+      <div class="checklist-mini">
+        <?php foreach ($checklist as $c): ?>
+        <div class="check-mini-item <?= $c['ok'] ? 'ok' : 'not-ok' ?>">
+          <span><?= htmlspecialchars($c['name']) ?></span>
+          <span><?= htmlspecialchars($c['status']) ?></span>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
 
-<script>
-new Chart(document.getElementById('activityChart'), {
-  type: 'line',
-  data: {
-    labels: ['2 Jul','3 Jul','4 Jul','5 Jul','6 Jul','7 Jul','8 Jul'],
-    datasets: [
-      { label:'Kegiatan', data:[10,17,13,20,18,24,22], borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.06)', tension:.4, fill:true, pointRadius:3 },
-      { label:'Live Streaming', data:[6,9,8,12,10,15,13], borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.06)', tension:.4, fill:true, pointRadius:3 },
-      { label:'Troubleshoot', data:[2,4,3,6,4,7,5], borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.06)', tension:.4, fill:true, pointRadius:3 }
-    ]
-  },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true, grid:{color:'#f1f5f9'}}, x:{grid:{display:false}} } }
-});
-new Chart(document.getElementById('troubleDonut'), {
-  type: 'doughnut',
-  data: {
-    labels: <?= json_encode(array_column($troubleshootDist, 'label')) ?>,
-    datasets: [{ data: <?= json_encode(array_column($troubleshootDist, 'pct')) ?>, backgroundColor: <?= json_encode(array_column($troubleshootDist, 'color')) ?>, borderWidth: 0 }]
-  },
-  options: { cutout: '72%', plugins: { legend: { display: false } } }
-});
-</script>
+  <!-- YouTube Recap (Compact) -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="ri-youtube-line" style="color: #ef4444;"></i> Live 7 Hari Terakhir</div>
+      <a class="link-btn" href="<?= $base ?>/pages/gallery.php">Arsip</a>
+    </div>
+    <div class="card-body" style="padding: 1rem;">
+      <?php if (empty($gallery)): ?>
+        <div style="text-align:center; color: var(--text-secondary); font-size: 0.85rem; padding: 1rem;">
+          Belum ada data live streaming minggu ini.
+        </div>
+      <?php else: ?>
+        <div class="yt-slider">
+          <?php foreach (array_slice($gallery, 0, 5) as $g): // Batasi max 5 item untuk performa ?>
+            <?php
+              $title = $g['title'] ?? 'Tanpa Judul';
+              $programa = $g['programa'] ?? 'Umum';
+              $date = $g['date'] ?? 'TBA';
+              $flyer = $g['flyer'] ?? '';
+            ?>
+            <div class="yt-card">
+              <div class="yt-thumb">
+                <?php if ($flyer): ?>
+                  <img src="<?= htmlspecialchars($flyer) ?>" alt="Thumbnail">
+                <?php else: ?>
+                  <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8;">
+                    <i class="ri-image-line" style="font-size:2rem;"></i>
+                  </div>
+                <?php endif; ?>
+                <span class="yt-badge"><?= htmlspecialchars($programa) ?></span>
+              </div>
+              <div class="yt-info">
+                <div class="yt-title"><?= htmlspecialchars($title) ?></div>
+                <div class="yt-meta">
+                  <i class="ri-calendar-line"></i> <?= htmlspecialchars($date) ?>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+
+</div>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>
