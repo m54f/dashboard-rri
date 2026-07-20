@@ -1,26 +1,34 @@
 <?php
 $base = '..'; $pageTitle = 'Dashboard'; $activeMenu = 'dashboard';
 
+require_once __DIR__ . '/../api/agenda.php';
+
 $today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
 $hour  = (int) $today->format('H');
 $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
 
-$stats = [
-    ['label' => 'Total Kegiatan Hari Ini',   'value' => '6',     'sub' => 'Agenda terjadwal',       'icon' => 'ri-calendar-line',       'tone' => 'blue'],
-    ['label' => 'Checklist Selesai',         'value' => '18/22', 'sub' => '82% perangkat siap',       'icon' => 'ri-checkbox-circle-line','tone' => 'green'],
-    ['label' => 'Troubleshoot Bulan Ini',    'value' => '12',    'sub' => '4 kasus belum selesai',    'icon' => 'ri-tools-line',          'tone' => 'orange'],
-    ['label' => 'Live Streaming Bulan Ini',  'value' => '15',    'sub' => '+3 dari bulan lalu',       'icon' => 'ri-play-circle-line',    'tone' => 'purple'],
-    ['label' => 'Jurnal Kegiatan',           'value' => '28',    'sub' => 'Total dokumentasi',        'icon' => 'ri-file-text-line',      'tone' => 'blue'],
-    ['label' => 'Pemadaman PLN Bulan Ini',   'value' => '4',     'sub' => 'Total kejadian',           'icon' => 'ri-flashlight-line',     'tone' => 'orange'],
-];
+$todayStr = $today->format('Y-m-d');
+$todayAgenda = getAgenda($todayStr, 'asc');
+$agendaError = null;
+$agendaErrorRaw = null;
+if (!is_array($todayAgenda) || isset($todayAgenda['error'])) {
+    $agendaError = $todayAgenda['error'] ?? 'Gagal memuat data agenda dari Notion';
+    $agendaErrorRaw = $todayAgenda['raw'] ?? null;
+    $agenda = [];
+} else {
+    $agenda = $todayAgenda;
+}
 
-$agenda = [
-    ['time' => '09.00', 'title' => 'Podcast Luar Studio',        'tag' => 'PODCAST',  'tone'=>'purple', 'pic' => 'Alfan'],
-    ['time' => '11.00', 'title' => 'Persiapan Senam Sore RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Yanuar'],
-    ['time' => '13.00', 'title' => 'Persiapan Senam Pagi RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Saiful'],
-    ['time' => '15.30', 'title' => 'Live Youtube: Sore Ceria',   'tag' => 'LIVE',     'tone'=>'red',    'pic' => 'Alif'],
-    ['time' => '19.00', 'title' => 'Produksi Ruatan Malam',      'tag' => 'PRODUKSI', 'tone'=>'blue',   'pic' => 'Yayang'],
-    ['time' => '21.00', 'title' => 'Live Youtube: Simphoni Keroncong', 'tag' => 'LIVE', 'tone'=>'red',  'pic' => 'Yanuar'],
+$agendaCount = count($agenda);
+$liveCount = count(array_filter($agenda, fn($a) => stripos($a['tag'], 'live') !== false));
+
+$stats = [
+    ['label' => 'Total Kegiatan Hari Ini',   'value' => (string)$agendaCount, 'sub' => 'Terjadwal',               'icon' => 'ri-calendar-line',       'tone' => 'blue'],
+    ['label' => 'Checklist Selesai',         'value' => '18/22',                 'sub' => '82% perangkat siap',      'icon' => 'ri-checkbox-circle-line','tone' => 'green'],
+    ['label' => 'Troubleshoot Bulan Ini',    'value' => '12',                    'sub' => '4 kasus belum selesai',   'icon' => 'ri-tools-line',          'tone' => 'orange'],
+    ['label' => 'Live Streaming Hari Ini',   'value' => (string)$liveCount,     'sub' => 'Acara live hari ini',      'icon' => 'ri-play-circle-line',    'tone' => 'purple'],
+    ['label' => 'Jurnal Kegiatan',           'value' => '28',                    'sub' => 'Total dokumentasi',       'icon' => 'ri-file-text-line',      'tone' => 'blue'],
+    ['label' => 'Pemadaman PLN Bulan Ini',   'value' => '4',                     'sub' => 'Total kejadian',          'icon' => 'ri-flashlight-line',     'tone' => 'orange'],
 ];
 
 $checklist = [
@@ -106,18 +114,32 @@ include __DIR__ . '/../includes/header.php';
       <div class="card-title"><i class="ri-calendar-line"></i>Daily Agenda Hari Ini</div>
       <a class="link-btn" href="<?= $base ?>/pages/agenda.php">Lihat Semua</a>
     </div>
-    <?php foreach ($agenda as $a): ?>
-    <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-color);">
-      <div style="width:48px;flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--text-secondary);"><?= htmlspecialchars($a['time']) ?></div>
-      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:13.5px;font-weight:600;"><?= htmlspecialchars($a['title']) ?></span>
-        <span class="tag <?= $a['tone'] ?>"><?= $a['tag'] ?></span>
-      </div>
-      <div style="font-size:11px;color:var(--text-secondary);text-align:right;flex-shrink:0;">
-        <span style="display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;">PIC</span><?= htmlspecialchars($a['pic']) ?>
-      </div>
+    <?php if ($agendaError): ?>
+    <div style="padding:1rem; border-radius:12px; background:#fef3c7; color:#92400e; margin-bottom:0.75rem;">
+      <strong>Agenda hari ini gagal dimuat.</strong><br>
+      <?= htmlspecialchars($agendaError) ?>
+      <?php if (!empty($agendaErrorRaw)): ?>
+      <div style="margin-top:0.5rem; font-size:0.9rem; color:#7c2d12;">Detail: <?= htmlspecialchars($agendaErrorRaw) ?></div>
+      <?php endif; ?>
     </div>
-    <?php endforeach; ?>
+    <?php elseif (empty($agenda)): ?>
+    <div style="padding:1.5rem; text-align:center; color:var(--text-secondary);">
+      Tidak ada agenda yang terdaftar untuk hari ini.
+    </div>
+    <?php else: ?>
+      <?php foreach ($agenda as $a): ?>
+      <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-color);">
+        <div style="width:48px;flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--text-secondary);"><?= htmlspecialchars($a['time']) ?></div>
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13.5px;font-weight:600;"><?= htmlspecialchars($a['title']) ?></span>
+          <span class="tag <?= $a['tone'] ?>"><?= $a['tag'] ?></span>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);text-align:right;flex-shrink:0;">
+          <span style="display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;">PIC</span><?= htmlspecialchars($a['pic']) ?>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 
   <div class="card">
