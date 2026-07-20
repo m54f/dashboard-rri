@@ -11,11 +11,11 @@ define('DATABASE_ID_PIJAT', '3a01ca6157e180f5825ac169bd7f0f32');
 
 
 define('NOTION_VERSION', '2022-06-28');
-<<<<<<< HEAD
-define('DATABASE_ID_PEMINJAMAN', "2a31ca61-57e1-8007-9476-c4897368e037");//isi disini untuk id table peminjaman alat jika sudah ada
-=======
+
+// define('DATABASE_ID_PEMINJAMAN', "2a31ca61-57e1-8007-9476-c4897368e037");//isi disini untuk id table peminjaman alat jika sudah ada
+
 
 
 define('DATABASE_ID_PEMINJAMAN', '3a01ca6157e180f5825ac169bd7f0f32');//isi disini untuk id table peminjaman alat jika sudah ada
 define('DATABASE_ID_INVENTARIS','3a01ca6157e1808cabbccd89c39a32f5');//isi disini untuk id table master inventaris jika sudah ada
->>>>>>> 0dc9cdc91725a2787877f83fa33918f434b8c6f6
+// 0dc9cdc91725a2787877f83fa33918f434b8c6f6

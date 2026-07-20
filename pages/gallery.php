@@ -32,8 +32,22 @@ include __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <div class="card">
-  <div class="card-header">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <div class="card-title"><i class="ri-play-list-2-line"></i> Daftar Video</div>
+    
+    <div class="table-filters" style="display:flex; gap:10px;">
+        <select id="filterPrograma" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua Programa</option>
+            <option value="Pro 1">Pro 1</option>
+            <option value="Pro 2">Pro 2</option>
+            <option value="Pro 4">Pro 4</option>
+        </select>
+        <!-- Filter Petugas Menggunakan Select -->
+        <select id="filterPetugas" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua Petugas</option>
+            <!-- Opsi akan diisi otomatis oleh JS -->
+        </select>
+    </div>
   </div>
   <div class="table-wrap">
     <table class="data-table" id="videoTable">
@@ -297,6 +311,7 @@ async function loadMasterData(){
         if (data.success) {
             // Perbaikan: Ambil data.petugas langsung dari hasil respons JSON
             masterData = { acara: data.acara, pemandu: data.pemandu, petugas: data.petugas };
+            initFilterPetugas(); // Inisialisasi dropdown filter petugas setelah data dimuat
         } else {
             console.error('Gagal memuat master data:', data.error);
         }
@@ -310,6 +325,39 @@ async function loadMasterData(){
         populateTeknikOptions();
         populatePaOptions();
     }
+}
+
+// Fungsi untuk mengisi dropdown filter petugas saat master data selesai dimuat
+function initFilterPetugas() {
+    var select = document.getElementById('filterPetugas');
+    var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
+    
+    petugasList.forEach(function(nama) {
+        var opt = document.createElement('option');
+        opt.value = nama;
+        opt.textContent = nama;
+        select.appendChild(opt);
+    });
+}
+
+// Update fungsi filterTable untuk menangani select
+function filterTable() {
+    var programFilter = document.getElementById('filterPrograma').value.toLowerCase();
+    var petugasFilter = document.getElementById('filterPetugas').value.toLowerCase();
+    var rows = document.querySelectorAll('.video-row');
+
+    rows.forEach(function(row) {
+        var videoData = JSON.parse(row.dataset.video);
+        
+        var matchPrograma = programFilter === "" || videoData.programa.toLowerCase().includes(programFilter);
+        
+        // Memeriksa apakah nama petugas ada di dalam string PT atau PA
+        var matchPetugas = petugasFilter === "" || 
+                           videoData.teknik.toLowerCase().includes(petugasFilter) || 
+                           videoData.pa.toLowerCase().includes(petugasFilter);
+
+        row.style.display = (matchPrograma && matchPetugas) ? "" : "none";
+    });
 }
 
 function getProgramaLabelFromLive(){
@@ -1090,6 +1138,28 @@ function deleteVideoRow(pageId, title) {
     });
 }
 
+function filterTable() {
+    var programFilter = document.getElementById('filterPrograma').value.toLowerCase();
+    var petugasFilter = document.getElementById('filterPetugas').value.toLowerCase();
+    var rows = document.querySelectorAll('.video-row');
+
+    rows.forEach(function(row) {
+        var videoData = JSON.parse(row.dataset.video);
+        
+        // Cek Programa
+        var matchPrograma = programFilter === "" || videoData.programa.toLowerCase().includes(programFilter);
+        
+        // Cek Petugas (Gabungkan PT dan PA untuk pencarian)
+        var petugasGabung = (videoData.teknik + " " + videoData.pa).toLowerCase();
+        var matchPetugas = petugasFilter === "" || petugasGabung.includes(petugasFilter);
+
+        if (matchPrograma && matchPetugas) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
 
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
