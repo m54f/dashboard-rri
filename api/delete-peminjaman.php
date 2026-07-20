@@ -1,59 +1,48 @@
 <?php
-/**
- * API Endpoint: Delete (Archive) Peminjaman Alat di Notion
- * Body JSON: { page_id }
- */
-
-header('Content-Type: application/json; charset=utf-8');
+header('Content-Type: application/json');
+require_once __DIR__ . '/../config/notion.php'; 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed. Use POST.']);
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
     exit;
 }
 
-require_once __DIR__ . '/../config/notion.php';
+ $input = json_decode(file_get_contents('php://input'), true);
 
-$input = json_decode(file_get_contents('php://input'), true);
-$pageId = trim($input['page_id'] ?? '');
-
-if (empty($pageId)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Field "page_id" wajib diisi.']);
+if (empty($input['page_id'])) {
+    echo json_encode(['success' => false, 'error' => 'ID Halaman tidak ditemukan.']);
     exit;
 }
 
-$ch = curl_init("https://api.notion.com/v1/pages/" . $pageId);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Bearer " . NOTION_TOKEN,
-    "Notion-Version: " . NOTION_VERSION,
+ $pageId = $input['page_id'];
+ $notionToken = NOTION_TOKEN;
+ $url = "https://api.notion.com/v1/pages/{$pageId}";
+
+ $headers = [
+    "Authorization: Bearer {$notionToken}",
+    "Notion-Version: 2022-06-28",
     "Content-Type: application/json"
-]);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(["archived" => true]));
+];
 
-$response = curl_exec($ch);
+// Notion melakukan soft-delete dengan mengubah status arsip
+ $body = ['archived' => true];
 
-if (curl_errno($ch)) {
-    $error = curl_error($ch);
-    curl_close($ch);
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'cURL Error: ' . $error]);
+ $ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+
+ $response = curl_exec($ch);
+ $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode !== 200) {
+    $error = json_decode($response, true);
+    echo json_encode(['success' => false, 'error' => $error['message'] ?? "Gagal menghapus data (HTTP {$httpCode})"]);
     exit;
 }
 
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-$responseData = json_decode($response, true);
-
-if ($httpCode === 200) {
-    echo json_encode(['success' => true, 'message' => 'Data peminjaman berhasil dihapus.']);
-} else {
-    http_response_code($httpCode);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Notion API Error (HTTP ' . $httpCode . ')',
-        'details' => $responseData['message'] ?? $response
-    ]);
-}
+echo json_encode(['success' => true, 'message' => 'Data berhasil dihapus (diarsipkan)!']);
+?>

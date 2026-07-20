@@ -8,26 +8,31 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-$notionToken = NOTION_TOKEN;
-$databaseId  = DATABASE_ID_PADAM_PLN;
+ $input = json_decode(file_get_contents('php://input'), true);
+ $notionToken = NOTION_TOKEN;
+ $databaseId  = DATABASE_ID_PADAM_PLN;
 
-if (empty($input['pemancar']) || empty($input['tanggal']) || empty($input['start_time']) || empty($input['end_time']) || empty($input['petugas'])) {
-    echo json_encode(['success' => false, 'error' => 'Data tidak lengkap.']);
+// Validasi data utama
+if (empty($input['pemancar']) || empty($input['tanggal']) || empty($input['start_time']) || empty($input['end_time'])) {
+    echo json_encode(['success' => false, 'error' => 'Data tidak lengkap (Tanggal/Waktu/Pemancar wajib diisi).']);
     exit;
 }
 
-$startDate = $input['tanggal'] . 'T' . $input['start_time'] . ':00+07:00';
-$endDate   = $input['tanggal'] . 'T' . $input['end_time'] . ':00+07:00';
+// Aman dari Undefined Index
+ $startDate = $input['tanggal'] . 'T' . $input['start_time'] . ':00+07:00';
+ $endDate   = $input['tanggal'] . 'T' . $input['end_time'] . ':00+07:00';
 
-// Format sebagai multi_select (array of objects)
-$pemancarSelect = [['name' => $input['pemancar']]];
-$petugasSelect  = array_map(fn($nama) => ['name' => trim($nama)], $input['petugas']);
+ $pemancarSelect = [['name' => $input['pemancar']]];
 
-$body = [
+// Pastikan petugas adalah array
+ $petugasInput = $input['petugas'] ?? [];
+if (!is_array($petugasInput)) $petugasInput = [];
+ $petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
+
+ $body = [
     'parent' => ['database_id' => $databaseId],
     'properties' => [
-        'Pemancar' => ['multi_select' => $pemancarSelect], // <-- PERUBAHAN DI SINI
+        'Pemancar' => ['multi_select' => $pemancarSelect],
         'Date' => [
             'date' => [
                 'start' => $startDate,
@@ -38,21 +43,21 @@ $body = [
     ]
 ];
 
-$url = "https://api.notion.com/v1/pages";
-$headers = [
+ $url = "https://api.notion.com/v1/pages";
+ $headers = [
     "Authorization: Bearer {$notionToken}",
     "Notion-Version: 2022-06-28",
     "Content-Type: application/json"
 ];
 
-$ch = curl_init($url);
+ $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
 
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+ $response = curl_exec($ch);
+ $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 if ($httpCode !== 200) {
@@ -61,5 +66,5 @@ if ($httpCode !== 200) {
     exit;
 }
 
-echo json_encode(['success' => true, 'message' => 'Data pemadaman berhasil dicatat!']);
+echo json_encode(['success' => true, 'message' => 'Data aktivitas berhasil dicatat!']);
 ?>

@@ -4,7 +4,7 @@ $menuOperasional = [
     'agenda'      => ['Daily Agenda',        'ri-calendar-line',          '/pages/agenda.php'],
     'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/pages/checklist.php'],
     'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
-    'logbook'     => ['Logbook Digital',     'ri-book-2-line',            '/pages/logbook.php'],
+    'Maintenance' => ['Log Pemadaman PLN', 'ri-flashlight-line', '/pages/pemadaman.php'],
     'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/pages/peminjaman.php'],
     'inventaris'  => ['Inventaris',     'ri-book-shelf-line',           '/pages/inventaris.php'],
 ];
@@ -15,7 +15,6 @@ $menuDokumentasi = [
 ];
 $menuPersonal = [
     'petugas'  => ['Petugas',        'ri-team-line',      '/pages/petugas.php'],
-    'personal' => ['Log Pemadaman PLN', 'ri-flashlight-line', '/pages/pemadaman.php'],
 ];
 
 function render_menu_group($items, $base, $activeMenu) {

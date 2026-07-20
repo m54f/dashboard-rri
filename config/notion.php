@@ -9,7 +9,12 @@ define('DATABASE_ID_AGENDA', '2a31ca61-57e1-8007-9476-c4897368e037');
 define('DATABASE_ID_PADAM_PLN', '31e1ca6157e180d9ac43f26d71a0e2fe');
 define('DATABASE_ID_PIJAT', '3a01ca6157e180f5825ac169bd7f0f32');
 
+
 define('NOTION_VERSION', '2022-06-28');
 
 define('DATABASE_ID_PEMINJAMAN', '3a01ca6157e180f5825ac169bd7f0f32');//isi disini untuk id table peminjaman alat jika sudah ada
 define('DATABASE_ID_INVENTARIS','3a01ca6157e1808cabbccd89c39a32f5');//isi disini untuk id table master inventaris jika sudah ada
+define('DATABASE_ID_USER','3a31ca6157e18025856cf0d403573ec5');
+
+
+
