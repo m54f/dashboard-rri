@@ -169,10 +169,7 @@ function getYoutubeVideos()
                 $narasumber[] = $props[$key]['rich_text'][0]['plain_text'];
             }
         }
-        // $narasumberStr = implode(', ', $narasumber);
-        // $narasumber tetap array untuk dikirim sebagai list ke frontend
 
-        // 7. Petugas Teknik
         // 7. Petugas Teknik (Menggunakan nama kolom dari Notion: "Petugas PT Produksi")
         $teknik = '';
         foreach (['Petugas PT Produksi', 'Petugas Teknik', 'Teknik', 'Pengarah Teknik'] as $key) {

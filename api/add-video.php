@@ -38,11 +38,9 @@ if (!$input) {
 }
 
 $namaAcaraDisplay = trim($input['namaAcaraDisplay'] ?? '');
-$tema             = trim($input['tema'] ?? '');
 $judul            = trim($input['judul'] ?? '');
 $tanggal          = trim($input['tanggal'] ?? '');
 $jamMulai         = trim($input['jamMulai'] ?? '');
-$jamSelesai       = trim($input['jamSelesai'] ?? '');
 $live             = trim($input['live'] ?? '');
 $link             = trim($input['link'] ?? '');
 $penyiarRaw       = trim($input['penyiar'] ?? '');
