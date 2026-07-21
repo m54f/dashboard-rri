@@ -66,6 +66,6 @@ Edit file `config/notion.php` untuk mengatur:
 | Backend     | PHP (vanilla, tanpa framework)|
 | Frontend    | HTML, CSS, JavaScript         |
 | Font        | Inter (Google Fonts)          |
-| Icons       | Remix Icon 3.5               |
+| Icons       | Remix Icon 3.5                |
 | Charts      | Chart.js                      |
-| Data Source  | Notion API                   |
+| Data Source | Notion API                    |
