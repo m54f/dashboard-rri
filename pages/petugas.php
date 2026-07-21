@@ -20,6 +20,11 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- ===== MODERN CSS STYLES ===== -->
 <style>
+  .filter-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .filter-tab { padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); border: 1px solid var(--border); background: #fff; transition: 0.2s; }
+  .filter-tab:hover { background: #f1f5f9; }
+  .filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
   :root {
     --primary: #4f46e5; --primary-hover: #4338ca; --bg-page: #f8fafc; --bg-card: #ffffff;
     --text-main: #0f172a; --text-muted: #64748b; --border: #e2e8f0; --radius: 12px;
@@ -145,14 +150,20 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <!-- ===== REPORT VIEW (LAPORAN INDIVIDU) ===== -->
+<!-- ===== REPORT VIEW (LAPORAN INDIVIDU) ===== -->
 <div id="reportView">
-  <div class="page-head">
-    <div>
-      <h2>Laporan Kinerja: <span id="reportNama" style="color: var(--primary);"></span></h2>
-      <p>Rekap aktivitas dari seluruh logbook (Listrik, Troubleshoot, Checklist, Jurnal).</p>
+    <div class="page-head">
+        <div>
+          <h2>Laporan Kinerja: <span id="reportNama" style="color: var(--primary);"></span></h2>
+          <p>Rekap aktivitas dari seluruh logbook (Listrik, Troubleshoot, Checklist, Jurnal).</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary" onclick="exportToExcel()" id="btnExport" style="display: none;">
+            <i class="ri-file-excel-line"></i> Export Excel
+          </button>
+          <button class="btn btn-secondary" onclick="closeReportView()"><i class="ri-arrow-left-line"></i> Kembali</button>
+        </div>
     </div>
-    <button class="btn btn-secondary" onclick="closeReportView()"><i class="ri-arrow-left-line"></i> Kembali ke Daftar Petugas</button>
-  </div>
 
   <div class="stats-row">
     <div class="stat-card">
@@ -169,8 +180,43 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <div style="background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); padding: 1.5rem;">
-    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 700;"><i class="ri-history-line"></i> Riwayat Aktivitas Gabungan</h3>
+  <div style="background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;"><i class="ri-history-line"></i> Riwayat Aktivitas</h3>
+      
+            <!-- FILTER TABS (KATEGORI & WAKTU) -->
+            <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+        
+        <!-- Filter Kategori Logbook -->
+        <div class="filter-tabs" id="reportFilterTabs" style="display: none;">
+          <div class="filter-tab active" onclick="filterReport('Semua', this)">Semua Kategori</div>
+          <div class="filter-tab" onclick="filterReport('Pemadaman Listrik', this)">Pemadaman</div>
+          <div class="filter-tab" onclick="filterReport('Troubleshoot', this)">Troubleshoot</div>
+          <div class="filter-tab" onclick="filterReport('Checklist', this)">Checklist</div>
+          <div class="filter-tab" onclick="filterReport('Jurnal Kegiatan', this)">Jurnal</div>
+        </div>
+
+        <!-- Filter Tahun & Triwulan -->
+        <div id="timeFilterWrap" style="display: none; flex-direction: column; gap: 0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin:0;">Tahun:</label>
+            <select id="filterTahun" onchange="renderReportTable()" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; background: #fff; cursor: pointer;">
+              <option value="Semua">Semua Tahun</option>
+            </select>
+          </div>
+          <div class="filter-tabs">
+            <div class="filter-tab active" onclick="filterTriwulan('Semua', this)">Semua Waktu</div>
+            <div class="filter-tab" onclick="filterTriwulan('1', this)">TW 1</div>
+            <div class="filter-tab" onclick="filterTriwulan('2', this)">TW 2</div>
+            <div class="filter-tab" onclick="filterTriwulan('3', this)">TW 3</div>
+            <div class="filter-tab" onclick="filterTriwulan('4', this)">TW 4</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
     <div style="overflow-x: auto;">
       <table class="data-table">
         <thead>
@@ -218,6 +264,33 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
+// Variabel global
+let currentReportData = null;
+let currentFilter = 'Semua';
+let currentTahun = 'Semua';
+let currentTriwulan = 'Semua';
+
+// ===== PARSER TANGGAL (Mendukung format ISO & Bahasa Indonesia) =====
+function parseTanggalToParts(str) {
+  if (!str || str === '-') return null;
+  str = String(str).replace(',', '');
+  
+  // Cek format ISO (2026-07-17)
+  let matchIso = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (matchIso) return { year: parseInt(matchIso[1]), month: parseInt(matchIso[2]) };
+  
+  // Cek format Indo (17 Juli 2026 / 17 Jul 2026)
+  const months = {'Januari':1,'Februari':2,'Maret':3,'April':4,'Mei':5,'Juni':6,'Juli':7,'Agustus':8,'September':9,'Oktober':10,'November':11,'Desember':12, 'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12};
+  let parts = str.split(/[\s]+/);
+  if (parts.length >= 3) {
+    let monthStr = parts[1];
+    let year = parseInt(parts[parts.length-1]);
+    let month = months[monthStr] || 0;
+    if (year > 2000 && month > 0) return { year: year, month: month };
+  }
+  return null;
+}
+
 // ===== VIEW SWITCHING =====
 function loadLaporan(nama) {
   document.getElementById('mainView').style.display = 'none';
@@ -232,10 +305,41 @@ function loadLaporan(nama) {
     .then(data => {
       if (data.error) { alert(data.error); return; }
       
+      currentReportData = data;
+      currentFilter = 'Semua';
+      currentTriwulan = 'Semua';
+      currentTahun = 'Semua';
+      
+      // Tampilkan UI Filter & Tombol Export
+      document.getElementById('reportFilterTabs').style.display = 'flex';
+      document.getElementById('timeFilterWrap').style.display = 'flex';
+      document.getElementById('btnExport').style.display = 'inline-flex';
+      
+      // Reset tombol filter ke "Semua"
+      document.querySelectorAll('#reportFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('#reportFilterTabs .filter-tab').classList.add('active');
+      
+      document.querySelectorAll('#timeFilterWrap .filter-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('#timeFilterWrap .filter-tab').classList.add('active');
+      
+      // Isi Dropdown Tahun berdasarkan data yang ada
+      let years = new Set();
+      data.riwayat.forEach(r => {
+        let parts = parseTanggalToParts(r.tanggal);
+        if (parts) years.add(parts.year);
+      });
+      
+      let yearSelect = document.getElementById('filterTahun');
+      yearSelect.innerHTML = '<option value="Semua">Semua Tahun</option>';
+      Array.from(years).sort((a,b) => b-a).forEach(y => {
+        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+      });
+      yearSelect.value = 'Semua';
+      
+      // Update Statistik
       document.getElementById('rTotalTugas').textContent = data.total_tugas;
       document.getElementById('rTotalDurasi').textContent = data.total_durasi;
       
-      // Cari kategori terbanyak
       let maxKat = '-', maxVal = 0;
       for (const [k, v] of Object.entries(data.statistik)) {
         if (v > maxVal) { maxVal = v; maxKat = k; }
@@ -243,30 +347,7 @@ function loadLaporan(nama) {
       document.getElementById('rKategori').textContent = maxKat;
       document.getElementById('rKategoriDetail').textContent = `Ditangani ${maxVal} kali`;
       
-      // Render Tabel
-      tbody.innerHTML = '';
-      if (data.riwayat.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">Tidak ada riwayat aktivitas ditemukan.</td></tr>';
-        return;
-      }
-      
-      data.riwayat.forEach(r => {
-        let katColor = 'blue';
-        if (r.kategori.includes('Troubleshoot')) katColor = 'red';
-        if (r.kategori.includes('Checklist')) katColor = 'purple';
-        if (r.kategori.includes('Jurnal')) katColor = 'green';
-        
-        tbody.innerHTML += `
-          <tr>
-            <td style="font-weight: 600;">${r.tanggal}</td>
-            <td><span class="tag" style="background: #f1f5f9; color: #475569; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">${r.kategori}</span></td>
-            <td>${r.deskripsi}</td>
-            <td><span class="mini-badge">${r.durasi}</span></td>
-            <td style="font-size: 0.85rem; color: ${r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316'};">${r.status}</td>
-            <td><a href="${r.url}" target="_blank" class="icon-action view" style="flex: none; width: 32px; height: 32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>
-          </tr>
-        `;
-      });
+      renderReportTable();
     })
     .catch(err => alert('Gagal memuat laporan: ' + err));
 }
@@ -274,9 +355,86 @@ function loadLaporan(nama) {
 function closeReportView() {
   document.getElementById('reportView').style.display = 'none';
   document.getElementById('mainView').style.display = 'block';
+  document.getElementById('btnExport').style.display = 'none';
+  document.getElementById('reportFilterTabs').style.display = 'none';
+  document.getElementById('timeFilterWrap').style.display = 'none';
+  currentReportData = null;
 }
 
-// ===== MODAL & CRUD (Sama seperti sebelumnya) =====
+// ===== FILTER HANDLERS =====
+function filterReport(kategori, el) {
+  currentFilter = kategori;
+  document.querySelectorAll('#reportFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderReportTable();
+}
+
+function filterTriwulan(tw, el) {
+  currentTriwulan = tw;
+  document.querySelectorAll('#timeFilterWrap .filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderReportTable();
+}
+
+// ===== RENDER TABEL (DENGAN FILTER GABUNGAN) =====
+function getFilteredData() {
+  if (!currentReportData) return [];
+  
+  return currentReportData.riwayat.filter(r => {
+    // Filter Kategori
+    let matchKat = (currentFilter === 'Semua' || r.kategori === currentFilter);
+    if (!matchKat) return false;
+    
+    // Filter Tahun & Triwulan
+    if (currentTahun === 'Semua' && currentTriwulan === 'Semua') return true;
+    
+    let parts = parseTanggalToParts(r.tanggal);
+    if (!parts) return false;
+    
+    let matchYear = (currentTahun === 'Semua' || parts.year == currentTahun);
+    let matchTriwulan = true;
+    
+    if (currentTriwulan !== 'Semua') {
+      let tw = Math.ceil(parts.month / 3); // 1-3=1, 4-6=2, 7-9=3, 10-12=4
+      matchTriwulan = (tw == currentTriwulan);
+    }
+    
+    return matchYear && matchTriwulan;
+  });
+}
+
+function renderReportTable() {
+  const tbody = document.getElementById('reportTableBody');
+  if (!currentReportData) return;
+
+  let filteredData = getFilteredData();
+
+  tbody.innerHTML = '';
+  if (filteredData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada filter ini.</td></tr>';
+    return;
+  }
+
+  filteredData.forEach(r => {
+    let katColor = 'blue';
+    if (r.kategori.includes('Troubleshoot')) katColor = 'red';
+    if (r.kategori.includes('Checklist')) katColor = 'purple';
+    if (r.kategori.includes('Jurnal')) katColor = 'green';
+    
+    tbody.innerHTML += `
+      <tr>
+        <td style="font-weight: 600;">${r.tanggal}</td>
+        <td><span class="tag" style="background: #f1f5f9; color: #475569; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">${r.kategori}</span></td>
+        <td>${r.deskripsi}</td>
+        <td><span class="mini-badge">${r.durasi}</span></td>
+        <td style="font-size: 0.85rem; color: ${r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316'};">${r.status}</td>
+        <td><a href="${r.url}" target="_blank" class="icon-action view" style="flex: none; width: 32px; height: 32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>
+      </tr>
+    `;
+  });
+}
+
+// ===== MODAL & CRUD =====
 function openModal(){ document.getElementById('petugasModal').style.visibility = 'visible'; document.getElementById('petugasModal').style.opacity = '1'; }
 function closeModal(){ document.getElementById('petugasModal').style.visibility = 'hidden'; document.getElementById('petugasModal').style.opacity = '0'; }
 document.getElementById('petugasModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
@@ -340,6 +498,89 @@ async function deletePetugas(pageId, name) {
 const style = document.createElement('style');
 style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
 document.head.appendChild(style);
+
+// ===== FUNGSI EXPORT KE EXCEL (DENGAN FILTER GABUNGAN) =====
+function exportToExcel() {
+    let dataToExport = getFilteredData();
+    
+    if (dataToExport.length === 0) {
+      alert("Tidak ada data pada filter ini untuk diexport!");
+      return;
+    }
+
+    const nama = currentReportData.nama;
+    const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    
+    // Buat teks deskripsi filter
+    let filterDesc = [];
+    if (currentFilter !== 'Semua') filterDesc.push(currentFilter);
+    if (currentTahun !== 'Semua') filterDesc.push("Tahun " + currentTahun);
+    if (currentTriwulan !== 'Semua') filterDesc.push("Triwulan " + currentTriwulan);
+    let filterText = filterDesc.length > 0 ? filterDesc.join(' - ') : 'Semua Data';
+
+    let html = `
+        <meta charset="UTF-8">
+        <h2>Laporan Kinerja Petugas</h2>
+        <p><strong>Nama:</strong> ${nama}</p>
+        <p><strong>Tanggal Cetak:</strong> ${tanggalCetak}</p>
+        <p><strong>Filter Diterapkan:</strong> ${filterText}</p>
+        <p><strong>Total Tugas Ditampilkan:</strong> ${dataToExport.length}</p>
+        <br>
+        <table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px;">
+            <thead style="background: #4f46e5; color: #ffffff; text-align: center;">
+                <tr>
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>Kategori Logbook</th>
+                    <th>Deskripsi Aktivitas</th>
+                    <th>Durasi</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    dataToExport.forEach((r, index) => {
+        html += `
+            <tr>
+                <td style="text-align: center;">${index + 1}</td>
+                <td style="text-align: left;">${r.tanggal}</td>
+                <td style="text-align: left;">${r.kategori}</td>
+                <td style="text-align: left;">${r.deskripsi}</td>
+                <td style="text-align: center;">${r.durasi}</td>
+                <td style="text-align: center;">${r.status}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    const uri = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
+    const link = document.createElement("a");
+    link.href = uri;
+    link.style = "visibility:hidden";
+    
+    // Nama file disesuaikan dengan filter
+    let fileName = `Laporan_${nama.replace(/\s+/g, '_')}`;
+    if (currentTahun !== 'Semua') fileName += `_${currentTahun}`;
+    if (currentTriwulan !== 'Semua') fileName += `_TW${currentTriwulan}`;
+    if (currentFilter !== 'Semua') fileName += `_${currentFilter.replace(/\s+/g, '_')}`;
+    
+    link.download = fileName + ".xls";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Listener untuk dropdown Tahun
+document.getElementById('filterTahun').addEventListener('change', function() {
+  currentTahun = this.value;
+  renderReportTable();
+});
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

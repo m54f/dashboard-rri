@@ -125,7 +125,7 @@ if (function_exists('getChecklist')) {
                 $statistik['Checklist']++;
                 $riwayat[] = [
                     'tanggal' => $c['tanggal'] ?? '-',
-                    'kategori' => 'Checklist ' . ($c['checklist_type'] ?? ''),
+                    'kategori' => 'Checklist ',
                     'deskripsi' => 'Cek ' . ($c['done_items'] ?? 0) . '/5 Perangkat',
                     'status' => ($c['is_complete'] ?? false) ? 'Lengkap' : 'Belum Lengkap',
                     'durasi' => '-',
@@ -147,7 +147,7 @@ if (function_exists('getJurnal')) {
                 $statistik['Jurnal Kegiatan']++;
                 $riwayat[] = [
                     'tanggal' => $j['date'] ?? '-',
-                    'kategori' => $j['tag'] ?? 'Jurnal',
+                    'kategori' => 'Jurnal Kegiatan',
                     'deskripsi' => $j['title'] ?? '-',
                     'status' => $j['status'] ?? '-',
                     'durasi' => '-',
