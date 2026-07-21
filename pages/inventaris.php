@@ -24,66 +24,83 @@ function notionCurl($method, $url, $body = []) {
     curl_close($ch);
     return json_decode($res, true);
 }
+$search = $_GET['search'] ?? '';
+$inventaris = [];
+$errorMessage = null;
 
- $search = $_GET['search'] ?? '';
- $inventaris = [];
- $errorMessage = null;
-
- $queryBody = [
-    "page_size" => 100,
-    "sorts" => [["property" => "Nama Alat", "direction" => "ascending"]]
+// Base query body (tanpa page_size agar Notion pakai default 100 per halaman)
+$baseQueryBody = [
+   "sorts" => [["property" => "Nama Alat", "direction" => "ascending"]]
 ];
 
 if (!empty($search)) {
-    $queryBody["filter"] = [
-        "or" => [
-            ["property" => "Nama Alat", "title" => ["contains" => $search]],
-            ["property" => "Kode", "rich_text" => ["contains" => $search]]
-        ]
-    ];
+   $baseQueryBody["filter"] = [
+       "or" => [
+           ["property" => "Nama Alat", "title" => ["contains" => $search]],
+           ["property" => "Kode", "rich_text" => ["contains" => $search]]
+       ]
+   ];
 }
 
- $dbData = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', $queryBody);
+// Variabel untuk pagination
+$has_more = true;
+$start_cursor = null;
 
-if (isset($dbData['results'])) {
-    foreach ($dbData['results'] as $page) {
-        $props = $page['properties'];
-        
-        $getTitle = fn($p) => !empty($p['title'][0]['plain_text']) ? $p['title'][0]['plain_text'] : '-';
-        $getText = fn($p) => !empty($p['rich_text'][0]['plain_text']) ? $p['rich_text'][0]['plain_text'] : '';
-        $getSelect = fn($p) => !empty($p['select']['name']) ? $p['select']['name'] : '-';
-        $getNumber = fn($p) => isset($p['number']) ? $p['number'] : 0;
+while ($has_more) {
+   $queryBody = $baseQueryBody;
+   
+   // Tambahkan start_cursor jika ini bukan halaman pertama
+   if ($start_cursor !== null) {
+       $queryBody["start_cursor"] = $start_cursor;
+   }
 
-        $kategori = $getSelect($props['Kategori']);
-        $status = $getSelect($props['Status']);
-        $lokasi = $getSelect($props['Lokasi']);
+   $dbData = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', $queryBody);
 
-        $katTone = match(strtolower($kategori)) {
-            'audio' => 'purple', 'kamera' => 'blue', 'komputer' => 'green',
-            'kabel' => 'orange', 'lighting' => 'red', 'video' => 'pink',
-            default => 'gray'
-        };
-        $statCls = match(strtolower($status)) {
-            'tersedia' => 'green', 'dipinjam' => 'orange', 'rusak' => 'red',
-            'perbaikan' => 'yellow', default => 'gray'
-        };
+   if (isset($dbData['results'])) {
+       foreach ($dbData['results'] as $page) {
+           $props = $page['properties'];
+           
+           $getTitle = fn($p) => !empty($p['title'][0]['plain_text']) ? $p['title'][0]['plain_text'] : '-';
+           $getText = fn($p) => !empty($p['rich_text'][0]['plain_text']) ? $p['rich_text'][0]['plain_text'] : '';
+           $getSelect = fn($p) => !empty($p['select']['name']) ? $p['select']['name'] : '-';
+           $getNumber = fn($p) => isset($p['number']) ? $p['number'] : 0;
 
-        $inventaris[] = [
-            'page_id' => $page['id'],
-            'title'   => $getTitle($props['Nama Alat']),
-            'kode'    => $getText($props['Kode']),
-            'tag'     => $kategori,
-            'tone'    => $katTone,
-            'qty'     => $getNumber($props['Qty']),
-            'lokasi'  => $lokasi,
-            'status'  => $status,
-            'cls'     => $statCls,
-            'notes'   => $getText($props['Keterangan'])
-        ];
-    }
-} else {
-    $errorMessage = "Gagal memuat data dari Notion.";
-    if (isset($dbData['message'])) $errorMessage .= " Pesan Notion: " . $dbData['message'];
+           $kategori = $getSelect($props['Kategori']);
+           $status = $getSelect($props['Status']);
+           $lokasi = $getSelect($props['Lokasi']);
+
+           $katTone = match(strtolower($kategori)) {
+               'audio' => 'purple', 'kamera' => 'blue', 'komputer' => 'green',
+               'kabel' => 'orange', 'lighting' => 'red', 'video' => 'pink',
+               default => 'gray'
+           };
+           $statCls = match(strtolower($status)) {
+               'tersedia' => 'green', 'dipinjam' => 'orange', 'rusak' => 'red',
+               'perbaikan' => 'yellow', default => 'gray'
+           };
+
+           $inventaris[] = [
+               'page_id' => $page['id'],
+               'title'   => $getTitle($props['Nama Alat']),
+               'kode'    => $getText($props['Kode']),
+               'tag'     => $kategori,
+               'tone'    => $katTone,
+               'qty'     => $getNumber($props['Qty']),
+               'lokasi'  => $lokasi,
+               'status'  => $status,
+               'cls'     => $statCls,
+               'notes'   => $getText($props['Keterangan'])
+           ];
+       }
+       
+       // Cek apakah masih ada halaman berikutnya
+       $has_more = $dbData['has_more'] ?? false;
+       $start_cursor = $dbData['next_cursor'] ?? null;
+   } else {
+       $errorMessage = "Gagal memuat data dari Notion.";
+       if (isset($dbData['message'])) $errorMessage .= " Pesan Notion: " . $dbData['message'];
+       $has_more = false; // Hentikan loop jika terjadi error agar tidak infinite loop
+   }
 }
 
  $totalItems = count($inventaris);

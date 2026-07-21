@@ -57,43 +57,7 @@ $dows = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 
 include __DIR__ . '/../includes/header.php';
 ?>
-<style>
-  /* Override supaya kalender tidak melebar ke luar layar */
-  .cal-grid {
-    display: grid !important;
-    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-    gap: 4px !important;
-    width: 100% !important;
-    box-sizing: border-box;
-  }
-  .cal-dow {
-    font-size: 0.72rem !important;
-    padding: 4px 2px !important;
-    text-align: center;
-  }
-  .cal-cell {
-    min-width: 0 !important;
-    min-height: 78px !important;
-    padding: 4px !important;
-    overflow: hidden;
-    box-sizing: border-box;
-  }
-  .cal-daynum {
-    font-size: 0.75rem !important;
-    margin-bottom: 2px !important;
-  }
-  .cal-event {
-    font-size: 0.62rem !important;
-    line-height: 1.25 !important;
-    padding: 1px 4px !important;
-    margin-bottom: 2px !important;
-    border-radius: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .table-wrap, .card { overflow-x: hidden !important; }
-</style>
+
 
 <div class="page-head">
   <div>
