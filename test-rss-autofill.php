@@ -237,7 +237,8 @@ function mapPetugasToMaster($rawString) {
     <title>Auto-Fill RSS YouTube Harian</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; color: #333; }
-        .container { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
+        .container { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .table-wrapper { overflow-x: auto; width: 100%; } /* Class baru khusus untuk tabel */
         h2 { margin-top: 0; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; }
         .control-panel { background: #e0f2fe; border: 1px solid #bae6fd; padding: 16px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
         .form-group { display: flex; flex-direction: column; }
@@ -290,31 +291,38 @@ function mapPetugasToMaster($rawString) {
         </div>
         <div id="loadingStatus" class="loading">Menghubungi YouTube & Mengekstrak Data...</div>
     </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th width="20%">Acara & Tema</th>
-                <th width="15%">Jadwal & Programa</th>
-                <th width="20%">Pemandu & Narasumber</th>
-                <th width="20%">Petugas (PT & PA)</th>
-                <th width="15%">Media (URL & Flyer)</th>
-                <th width="10%">Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            <tr><td colspan="6" style="text-align:center; color:#999; padding:30px;">Belum ada data ditarik. Masukkan ID Channel dan klik Tarik Data.</td></tr>
-        </tbody>
-    </table>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th width="3%">No.</th> <!-- TAMBAHAN KODE: Kolom Nomor -->
+                    <th width="19%">Acara & Tema</th>
+                    <th width="15%">Jadwal & Programa</th>
+                    <th width="20%">Pemandu & Narasumber</th>
+                    <th width="20%">Petugas (PT & PA)</th>
+                    <th width="15%">Media (URL & Flyer)</th>
+                    <th width="8%">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="7" style="text-align:center; color:#999; padding:30px;">Belum ada data ditarik. Masukkan ID Channel dan klik Tarik Data.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- TAMBAHAN KODE: Tombol Tambah Baris Manual -->
+    <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="tambahBarisKosong()">+ Tambah Baris Kosong</button>
+    </div>
 </div>
 
 <script>
-// --- TAMBAHAN KODE: Mengambil data acara dan pemetaan programanya ---
-const acaraToProgramaMap = <?php 
+// --- TAMBAHAN KODE: Mengambil data acara dan penyiar terkelompok ---
+const { acaraToProgramaMap, masterAcaraGrouped, masterPenyiarGrouped } = <?php 
     $masterDataPath = __DIR__ . '/data/master-data.json'; 
     $mapAcaraProg = [];
+    $groupedAcara = [];
+    $groupedPenyiar = [];
     
-    // Pemetaan nama agar sesuai dengan value dropdown Programa di tabel
     $programaFullNames = [
         'Pro 1' => 'Pro 1 FM 94.6 Mhz',
         'Pro 2' => 'Pro 2 FM 87.9 Mhz',
@@ -323,26 +331,54 @@ const acaraToProgramaMap = <?php
     
     if (file_exists($masterDataPath)) {
         $masterData = json_decode(file_get_contents($masterDataPath), true);
+        
+        // Ekstrak acara
         if (isset($masterData['acara']) && is_array($masterData['acara'])) {
             foreach ($masterData['acara'] as $prog => $listAcara) {
+                sort($listAcara);
+                $groupedAcara[$prog] = $listAcara;
                 $fullProgValue = isset($programaFullNames[$prog]) ? $programaFullNames[$prog] : $prog;
                 foreach ($listAcara as $acara) {
                     $mapAcaraProg[$acara] = $fullProgValue;
                 }
             }
         }
+        
+        // Ekstrak penyiar (Dikelompokkan per programa)
+        if (isset($masterData['pemandu']) && is_array($masterData['pemandu'])) {
+            foreach ($masterData['pemandu'] as $prog => $list) {
+                if (is_array($list)) {
+                    sort($list);
+                    $groupedPenyiar[$prog] = $list;
+                }
+            }
+        }
     }
-    echo json_encode($mapAcaraProg);
+    
+    echo json_encode([
+        'acaraToProgramaMap' => $mapAcaraProg,
+        'masterAcaraGrouped' => $groupedAcara,
+        'masterPenyiarGrouped' => $groupedPenyiar
+    ]);
 ?>;
 
-// Mengambil daftar nama acara saja (Keys dari map di atas)
-const masterAcaraList = Object.keys(acaraToProgramaMap);
+// 1. Fungsi Pembersih Teks (dipindah ke luar agar bisa dipakai semua fungsi)
+function normalizeText(text) {
+    if (!text) return '';
+    return String(text).toLowerCase()
+               .replace(/&/g, 'dan')
+               .replace(/berbicara/g, 'bicara')
+               .replace(/talkshow/g, 'dialog')
+               .replace(/[^a-z0-9]/g, '');
+}
 
-// Fungsi untuk mengganti programa otomatis saat dropdown acara diubah
+// 2. Fungsi untuk mengganti programa otomatis saat Acara diubah
 function updatePrograma(index, selectedAcara) {
     const progSelect = document.getElementById(`programa_${index}`);
     if (progSelect && acaraToProgramaMap[selectedAcara]) {
         progSelect.value = acaraToProgramaMap[selectedAcara];
+        // Ikut perbarui daftar pemandu sesuai programa yang baru
+        updatePemanduOptions(index, progSelect.value);
     }
 }
 
@@ -397,7 +433,7 @@ async function tarikRss() {
 
     document.getElementById('loadingStatus').style.display = 'block';
     const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Memproses RSS...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Memproses RSS...</td></tr>';
 
     const formData = new URLSearchParams();
     formData.append('action', 'fetch_rss');
@@ -455,23 +491,58 @@ function renderTabel(videos) {
 
         const normalizedTitle = normalizeText(extractedTitle);
         let optionsAcara = '<option value="">-- Pilih Acara --</option>';
-        
-        masterAcaraList.forEach(acara => {
-            const normalizedAcara = normalizeText(acara);
-            
-            // Pencocokan: Cek apakah setelah dibersihkan teksnya saling mengandung
-            let isSelected = '';
-            if (normalizedTitle !== '' && normalizedAcara !== '') {
-                if (normalizedTitle.includes(normalizedAcara) || normalizedAcara.includes(normalizedTitle)) {
-                    isSelected = 'selected';
+
+        // --- Render opsi dropdown Pemandu (dengan sekat per programa) ---
+        const extractedPenyiar = vid.penyiar || '';
+        const normalizedPenyiarTitle = normalizeText(extractedPenyiar);
+        let optionsPenyiar = '<option value="">-- Pilih Pemandu --</option>';
+
+        for (const [programa, penyiarList] of Object.entries(masterPenyiarGrouped)) {
+            optionsPenyiar += `<optgroup label="=== ${programa} ===">`;
+            penyiarList.forEach(penyiar => {
+                const normalizedMaster = normalizeText(penyiar);
+                let isSelected = '';
+                
+                if (normalizedPenyiarTitle !== '' && normalizedMaster !== '') {
+                    if (normalizedPenyiarTitle.includes(normalizedMaster) || normalizedMaster.includes(normalizedPenyiarTitle)) {
+                        isSelected = 'selected';
+                    }
                 }
-            }
+                optionsPenyiar += `<option value="${penyiar}" ${isSelected}>${penyiar}</option>`;
+            });
+            optionsPenyiar += `</optgroup>`;
+        }
+
+        // Looping per kelompok program (Pro 1, Pro 2, Pro 4)
+        for (const [programa, acaraList] of Object.entries(masterAcaraGrouped)) {
+            // Buat label pembatas / kategori di dropdown
+            optionsAcara += `<optgroup label="=== ${programa} ===">`;
             
-            optionsAcara += `<option value="${acara}" ${isSelected}>${acara}</option>`;
-        });
+            // Looping isi acara di dalam program tersebut
+            acaraList.forEach(acara => {
+                const normalizedAcara = normalizeText(acara);
+                
+                // Pencocokan otomatis (auto-select)
+                let isSelected = '';
+                if (normalizedTitle !== '' && normalizedAcara !== '') {
+                    if (normalizedTitle.includes(normalizedAcara) || normalizedAcara.includes(normalizedTitle)) {
+                        isSelected = 'selected';
+                    }
+                }
+                
+                optionsAcara += `<option value="${acara}" ${isSelected}>${acara}</option>`;
+            });
+            
+            // Tutup pembatas kategori
+            optionsAcara += `</optgroup>`;
+        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <!-- TAMBAHAN KODE: Cetak nomor urut (index + 1) -->
+            <td style="text-align:center; font-weight:bold; font-size:14px; vertical-align:middle;">
+                ${index + 1}
+            </td>
             <td>
                 <div class="row-group">
                     <label class="tabel-label">Nama Acara</label>
@@ -510,9 +581,9 @@ function renderTabel(videos) {
             <td>
                 <div class="row-group">
                     <label class="tabel-label">Pemandu / Host / Penyiar</label>
-                    <div style="display:flex; gap:4px;">
-                        <input type="text" placeholder="Nama Pemandu" value="${vid.penyiar}">
-                    </div>
+                    <select id="pemandu_${index}" style="padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;">
+                        ${optionsPenyiar} <!-- Masukkan opsi pemandu dengan sekat di sini -->
+                    </select>
                     
                     <label class="tabel-label" style="margin-top:6px;">Narasumber</label>
                     <!-- Wadah untuk list narasumber dinamis -->
@@ -548,7 +619,10 @@ function renderTabel(videos) {
                 </div>
             </td>
             <td style="vertical-align:middle; text-align:center;">
-                <button class="btn btn-success" onclick="alert('Ini simulasi. Tombol ini nantinya mengirim data baris ini ke database Notion.')">Simpan</button>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button class="btn btn-success" onclick="alert('Ini simulasi. Tombol ini nantinya mengirim data baris ini ke database Notion.')">Simpan</button>
+                    <button class="btn" style="background:#ef4444; color:white;" onclick="hapusBaris(this)">Hapus</button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -570,6 +644,9 @@ function renderTabel(videos) {
         createCustomMultiSelect(idPT, hidPT, mockPetugas);
         createCustomMultiSelect(idPA, hidPA, mockPetugas);
     });
+
+    // TAMBAHAN KODE: Panggil nomor urut setelah semua RSS dirender
+    perbaruiNomorUrut();
 }
 
 // ==========================================
@@ -681,6 +758,175 @@ document.addEventListener('click', e => {
         document.querySelectorAll('.custom-dropdown-menu').forEach(d => d.style.display = 'none');
     }
 });
+
+// ==========================================
+// FUNGSI TAMBAH BARIS KOSONG & NOMOR URUT
+// ==========================================
+function tambahBarisKosong() {
+    const tbody = document.getElementById('tableBody');
+    
+    // Jika tabel sedang menampilkan pesan kosong/loading (ditandai dengan atribut colspan), bersihkan dulu
+    if (tbody.firstElementChild && tbody.firstElementChild.innerHTML.includes('colspan')) {
+        tbody.innerHTML = '';
+    }
+
+    // Gunakan timestamp (waktu saat ini) agar ID elemen di baris baru selalu unik
+    const uniqueId = 'm_' + Date.now();
+    const idPT = `pt_${uniqueId}`;
+    const idPA = `pa_${uniqueId}`;
+    const hidPT = `hidden_pt_${uniqueId}`;
+    const hidPA = `hidden_pa_${uniqueId}`;
+
+    // 1. Buat Opsi Acara Kosong
+    let optionsAcara = '<option value="">-- Pilih Acara --</option>';
+    for (const [programa, acaraList] of Object.entries(masterAcaraGrouped)) {
+        optionsAcara += `<optgroup label="=== ${programa} ===">`;
+        acaraList.forEach(acara => {
+            optionsAcara += `<option value="${acara}">${acara}</option>`;
+        });
+        optionsAcara += `</optgroup>`;
+    }
+
+    // 2. Buat Opsi Penyiar Kosong (Dengan Sekat)
+    let optionsPenyiar = '<option value="">-- Pilih Pemandu --</option>';
+    for (const [programa, penyiarList] of Object.entries(masterPenyiarGrouped)) {
+        optionsPenyiar += `<optgroup label="=== ${programa} ===">`;
+        penyiarList.forEach(penyiar => {
+            optionsPenyiar += `<option value="${penyiar}">${penyiar}</option>`;
+        });
+        optionsPenyiar += `</optgroup>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="text-align:center; font-weight:bold; font-size:14px; vertical-align:middle;">
+            <!-- Nomor diisi otomatis lewat fungsi perbaruiNomorUrut -->
+        </td>
+        <td>
+            <div class="row-group">
+                <label class="tabel-label">Nama Acara</label>
+                <select id="acara_${uniqueId}" onchange="updatePrograma('${uniqueId}', this.value)" style="font-weight:bold; padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;">
+                    ${optionsAcara}
+                </select>
+                
+                <label class="tabel-label" style="margin-top:6px;">Tema</label>
+                <textarea rows="3" placeholder="Tema Acara" style="resize: none;"></textarea>
+            </div>
+        </td>
+        <td>
+            <div class="row-group">
+                <label class="tabel-label">Programa</label>
+                <select id="programa_${uniqueId}">
+                    <option value="Pro 1 FM 94.6 Mhz">Pro 1</option>
+                    <option value="Pro 2 FM 87.9 Mhz">Pro 2</option>
+                    <option value="Pro 4 FM 105.3 Mhz">Pro 4</option>
+                </select>
+                
+                <label class="tabel-label" style="margin-top:6px;">Tanggal Tayang</label>
+                <!-- Set tanggal default sesuai tanggal di panel atas -->
+                <input type="date" value="${document.getElementById('targetDate').value}">
+                
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <div style="flex:1;">
+                        <label class="tabel-label">Mulai</label>
+                        <input type="time">
+                    </div>
+                    <div style="flex:1;">
+                        <label class="tabel-label">Selesai</label>
+                        <input type="time">
+                    </div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <div class="row-group">
+                <label class="tabel-label">Pemandu / Host / Penyiar</label>
+                <select id="pemandu_${uniqueId}" style="padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;">
+                    ${optionsPenyiar}
+                </select>
+                
+                <label class="tabel-label" style="margin-top:6px;">Narasumber</label>
+                <div id="narasumber_container_${uniqueId}" style="display:flex; flex-direction:column; gap:4px;"></div>
+                <button type="button" onclick="addNarasumberField('${uniqueId}')" style="margin-top:4px; font-size:11px; padding:4px 8px; cursor:pointer; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; color:#334155; font-weight:600;">+ Tambah Narasumber</button>
+            </div>
+        </td>
+        <td>
+            <div class="row-group">
+                <label class="tabel-label">Teknik (PT)</label>
+                <div id="${idPT}"></div>
+                <input type="hidden" id="${hidPT}" value="">
+                
+                <label class="tabel-label" style="margin-top:6px;">PA / Acara</label>
+                <div id="${idPA}"></div>
+                <input type="hidden" id="${hidPA}" value="">
+            </div>
+        </td>
+        <td>
+            <div class="row-group">
+                <label class="tabel-label">Link YouTube</label>
+                <input type="url" placeholder="URL YouTube">
+                
+                <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
+                <div class="dropzone-mini" style="padding: 0; overflow: hidden; position: relative; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 2px dashed #cbd5e1;">
+                    <span style="padding:10px;">Pilih / Tarik Flyer</span>
+                </div>
+                <input type="hidden" class="hidden-flyer-url" value="">
+            </div>
+        </td>
+        <td style="vertical-align:middle; text-align:center;">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button class="btn btn-success" onclick="alert('Baris manual ini siap disimpan.')">Simpan</button>
+                <button class="btn" style="background:#ef4444; color:white;" onclick="hapusBaris(this)">Hapus</button>
+            </div>
+        </td>
+        
+    `;
+    
+    // Tambahkan baris baru ke bawah tabel
+    tbody.appendChild(tr);
+
+    // Aktifkan dropdown narasumber & petugas untuk baris baru ini
+    addNarasumberField(uniqueId, '');
+    createCustomMultiSelect(idPT, hidPT, mockPetugas);
+    createCustomMultiSelect(idPA, hidPA, mockPetugas);
+
+    // Hitung ulang nomor tabel
+    perbaruiNomorUrut();
+}
+
+// Fungsi untuk menghitung ulang angka di kolom "No." agar tetap berurutan
+function perbaruiNomorUrut() {
+    const rows = document.querySelectorAll('#tableBody tr');
+    let counter = 1;
+    rows.forEach(row => {
+        const cell = row.querySelector('td:first-child');
+        // Hanya beri nomor pada baris yang valid (bukan pesan loading yang punya colspan)
+        if (cell && !cell.hasAttribute('colspan')) {
+            cell.innerHTML = counter++;
+        }
+    });
+}
+
+// Panggil fungsi saat halaman pertama kali dibuka
+window.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = ''; // Kosongkan pesan default bawaan HTML
+    tambahBarisKosong();  // Langsung munculkan 1 baris kosong
+});
+
+// ==========================================
+// FUNGSI HAPUS BARIS
+// ==========================================
+function hapusBaris(btn) {
+    if (confirm("Apakah Anda yakin ingin menghapus baris ini?")) {
+        // Cari elemen <tr> (baris) tempat tombol ini berada
+        const row = btn.closest('tr');
+        if (row) {
+            row.remove(); // Hapus baris dari tabel
+            perbaruiNomorUrut(); // Hitung ulang nomor urut agar tidak loncat
+        }
+    }
+}
 </script>
 </body>
 </html>
