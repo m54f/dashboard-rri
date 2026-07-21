@@ -45,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $url = (string)$entry->link['href'];
         $description = (string)$media->group->description;
         
+        // --- TAMBAHAN KODE: Ambil Thumbnail / Flyer dari RSS ---
+        $thumbnailUrl = '';
+        if (isset($media->group->thumbnail)) {
+            $attrs = $media->group->thumbnail->attributes();
+            $thumbnailUrl = (string)$attrs['url'];
+        }
+        
         // 1. Ekstrak data dari deskripsi (termasuk mencari tanggal asli yang tertulis)
         $parsed = parseDeskripsi($description);
         
@@ -61,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $parsed['title_asli'] = $title;
             $parsed['url'] = $url;
             $parsed['tanggal'] = $realDate;
+            
+            // --- TAMBAHAN KODE: Simpan url thumbnail ke data yang dikirim ---
+            $parsed['flyer'] = $thumbnailUrl; 
+            
             $videos[] = $parsed;
         }
     }
@@ -100,8 +111,8 @@ function parseDeskripsi($description) {
     elseif (preg_match('/Pro\s*2/i', $cleanDesc)) $data['programa'] = 'Pro 2 FM 87.9 Mhz';
     elseif (preg_match('/Pro\s*4/i', $cleanDesc)) $data['programa'] = 'Pro 4 FM 105.3 Mhz';
 
-    // 3. Ekstrak Jam (Contoh: 15.00 - 16.00 atau 06.00 s/d Selesai)
-    if (preg_match('/(\d{2}[.:]\d{2})\s*(?:s\/d|-|sd)\s*(Selesai|\d{2}[.:]\d{2})?/i', $cleanDesc, $m)) {
+    // 3. Ekstrak Jam (Contoh: 15.00 - 16.00, 15.00 – 16.00, atau 06.00 s/d Selesai)
+    if (preg_match('/(\d{2}[.:]\d{2})\s*(?:s\/d|-|–|—|sd)\s*(Selesai|\d{2}[.:]\d{2})?/i', $cleanDesc, $m)) {
         $data['jamMulai'] = str_replace('.', ':', $m[1]);
         if (isset($m[2]) && strtolower($m[2]) !== 'selesai') {
             $data['jamSelesai'] = str_replace('.', ':', $m[2]);
@@ -116,27 +127,105 @@ function parseDeskripsi($description) {
     }
 
     // 5. PT
-    if (preg_match('/(?:Petugas Teknik|Petugas PT|Pengarah Teknik|\bPT\b)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
-        $data['pt'] = array_map('trim', explode(',', $m[1]));
+    if (preg_match('/(?:Petugas Teknik|Petugas PT|Pengarah Teknik)\s*[:\-]?\s*([^\n\r]+)|\bPT\b\s*[:\-]\s*([^\n\r]+)/i', $cleanDesc, $m)) {
+        // Ambil nama dari grup regex pertama atau kedua yang berhasil cocok
+        $ptString = !empty($m[1]) ? $m[1] : (isset($m[2]) ? $m[2] : '');
+        $data['pt'] = mapPetugasToMaster($ptString);
     }
 
     // 6. PA
     if (preg_match('/(?:Petugas PA|Pengarah Acara|\bPA\b)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
-        $data['pa'] = array_map('trim', explode(',', $m[1]));
+        $data['pa'] = mapPetugasToMaster($m[1]);
     }
 
     // 7. Tema
     if (preg_match('/Tema\s*[:\-]?\s*"?([^"\n\r]+)"?/i', $cleanDesc, $m)) {
+        // Jika ada tulisan eksplisit "Tema : "
         $data['tema'] = trim($m[1], " \t\n\r\0\x0B\"");
+    } else {
+        // Fallback: Ambil baris kedua dari deskripsi jika kata "Tema" tidak ditulis
+        $lines = preg_split('/\r\n|\r|\n/', $cleanDesc);
+        // Bersihkan baris-baris yang kosong
+        $nonEmptyLines = array_values(array_filter(array_map('trim', $lines)));
+        
+        if (count($nonEmptyLines) >= 2) {
+            $potensiTema = $nonEmptyLines[1];
+            
+            // Pastikan baris kedua ini bukan baris tanggal atau jam tayang
+            if (!preg_match('/(?:Senin|Selasa|Rabu|Kamis|Jum\'?at|Sabtu|Minggu|Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember|\d{2}[.:]\d{2})/i', $potensiTema)) {
+                // Hapus tanda kutip " atau ' jika ada di awal/akhir tema
+                $data['tema'] = trim($potensiTema, " \t\n\r\0\x0B\"'”’“‘");
+            }
+        }
     }
 
     // 8. Narasumber
-    if (preg_match('/Narasumber\s*[:\-]?\s*\r?\n?([\s\S]*?)(?=\r?\n(?:Petugas|Telepon|WhatsApp|Dapatkan|PT|PA|Pengarah|Line)|$)/i', $cleanDesc, $m)) {
-        $narasumberBersih = trim($m[1]);
-        $data['narasumber'] = ($narasumberBersih === ':' || $narasumberBersih === '') ? '' : ltrim($narasumberBersih, ": \t\n\r\0\x0B");
+    // Ditambahkan \s* setelah \n agar spasi sisa penghapusan emoji tidak menggagalkan batas berhenti
+    if (preg_match('/(?:Narasumber|Bersama)\s*[:\-]?\s*\r?\n?([\s\S]*?)(?=\r?\n\s*(?:Dipandu|Presenter|Penyiar|Host|Petugas|Telepon|WhatsApp|Dapatkan|PT|PA|Pengarah|Line|Pro\s*[124])|$)/i', $cleanDesc, $m)) {
+        $rawNarasumber = ltrim(trim($m[1]), ": \t\n\r\0\x0B");
+        
+        // Membersihkan icon, emoji, bullet point (- / * / •), dan penomoran (1. 2.) di setiap baris
+        $lines = explode("\n", $rawNarasumber);
+        $cleanLines = [];
+        
+        foreach ($lines as $line) {
+            $line = trim($line);
+            // Regex ini menghapus semua simbol (\p{S}), tanda baca (\p{P}), dan angka (\d) di awal kalimat
+            $line = preg_replace('/^[\p{So}\p{S}\p{P}\d]+\s*/u', '', $line);
+            
+            if (!empty($line)) {
+                $cleanLines[] = $line;
+            }
+        }
+        
+        $data['narasumber'] = implode("\n", $cleanLines);
     }
 
     return $data;
+}
+
+// Fungsi untuk mencocokkan nama dengan master data (Fuzzy Matching)
+function mapPetugasToMaster($rawString) {
+    // Array master data petugas
+    $masterPetugas = [
+        "Dicky", "Priyo", "Anggi", "Ludfi", "Deny", "Shofirin", 
+        "Yhanuar", "Yudha", "Dayat", "Dedy", "Winsa", "Yayank", 
+        "Syukur", "Saiful", "Alif", "Selvy", "Alfian"
+    ];
+    
+    $results = [];
+    // Pisahkan nama berdasarkan koma, karakter '&', atau kata 'dan'
+    $rawNames = array_map('trim', preg_split('/[,&]|\bdan\b/i', $rawString));
+    
+    foreach ($rawNames as $name) {
+        if (empty($name)) continue;
+        
+        $bestMatch = ucwords(strtolower($name)); // Default: gunakan teks asli yang dirapikan
+        $highestSim = 0;
+        $nameLower = strtolower($name);
+        
+        foreach ($masterPetugas as $master) {
+            $masterLower = strtolower($master);
+            
+            // 1. Cek apakah ada kecocokan bagian teks (contoh: "Yhanuar M." langsung jadi "Yhanuar")
+            if (strpos($nameLower, $masterLower) !== false) {
+                $bestMatch = $master;
+                break;
+            }
+            
+            // 2. Cek kemiripan string (Fuzzy match) untuk mengatasi salah ketik
+            similar_text($nameLower, $masterLower, $percent);
+            if ($percent > $highestSim) {
+                $highestSim = $percent;
+                // Jika tingkat kemiripan minimal 65%, anggap itu nama dari master data
+                if ($percent >= 65) {
+                    $bestMatch = $master;
+                }
+            }
+        }
+        $results[] = $bestMatch;
+    }
+    return $results;
 }
 ?>
 
@@ -160,7 +249,7 @@ function parseDeskripsi($description) {
         .btn-success { background: #16a34a; color: #fff; }
         
         /* Tabel Layout */
-        table { width: 100%; min-width: 1500px; border-collapse: collapse; margin-top: 10px; }
+        table { width: 100%; min-width: 1200px;border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #dee2e6; padding: 12px; vertical-align: top; }
         th { background: #f1f5f9; font-size: 13px; text-align: left; }
         
@@ -169,6 +258,16 @@ function parseDeskripsi($description) {
         
         /* Dropzone Mini */
         .dropzone-mini { border: 2px dashed #cbd5e1; padding: 10px; text-align: center; border-radius: 4px; cursor: pointer; background: #f8fafc; font-size: 12px; color: #64748b; }
+        /* Label Input Tabel */
+        .tabel-label { 
+            font-size: 11px; 
+            font-weight: 600; 
+            color: #64748b; 
+            margin-bottom: -2px; /* Mendekatkan label ke input */
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
     </style>
 </head>
 <body>
@@ -179,12 +278,12 @@ function parseDeskripsi($description) {
     <div class="control-panel">
         <div class="form-group" style="flex: 2; min-width: 250px;">
             <label>ID Channel YouTube</label>
-            <input type="text" id="channelId" placeholder="Misal: UCPX... (Cari di link channel RRI Malang)" value="">
+            <input type="text" id="channelId" placeholder="Misal: UCPX... (Cari di link channel RRI Malang)" value="UCa45qWSDXbdgLBjrGfQ7tmA">
         </div>
         <div class="form-group" style="flex: 1; min-width: 150px;">
             <label>Pilih Tanggal</label>
             <!-- Menggunakan tanggal hari ini berdasarkan context server -->
-            <input type="date" id="targetDate" value="2026-07-20">
+            <input type="date" id="targetDate" value="<?php echo date('Y-m-d'); ?>">
         </div>
         <div class="form-group">
             <button class="btn btn-primary" onclick="tarikRss()">Tarik Data Video</button>
@@ -210,8 +309,85 @@ function parseDeskripsi($description) {
 </div>
 
 <script>
+// --- TAMBAHAN KODE: Mengambil data acara dan pemetaan programanya ---
+const acaraToProgramaMap = <?php 
+    $masterDataPath = __DIR__ . '/data/master-data.json'; 
+    $mapAcaraProg = [];
+    
+    // Pemetaan nama agar sesuai dengan value dropdown Programa di tabel
+    $programaFullNames = [
+        'Pro 1' => 'Pro 1 FM 94.6 Mhz',
+        'Pro 2' => 'Pro 2 FM 87.9 Mhz',
+        'Pro 4' => 'Pro 4 FM 105.3 Mhz'
+    ];
+    
+    if (file_exists($masterDataPath)) {
+        $masterData = json_decode(file_get_contents($masterDataPath), true);
+        if (isset($masterData['acara']) && is_array($masterData['acara'])) {
+            foreach ($masterData['acara'] as $prog => $listAcara) {
+                $fullProgValue = isset($programaFullNames[$prog]) ? $programaFullNames[$prog] : $prog;
+                foreach ($listAcara as $acara) {
+                    $mapAcaraProg[$acara] = $fullProgValue;
+                }
+            }
+        }
+    }
+    echo json_encode($mapAcaraProg);
+?>;
+
+// Mengambil daftar nama acara saja (Keys dari map di atas)
+const masterAcaraList = Object.keys(acaraToProgramaMap);
+
+// Fungsi untuk mengganti programa otomatis saat dropdown acara diubah
+function updatePrograma(index, selectedAcara) {
+    const progSelect = document.getElementById(`programa_${index}`);
+    if (progSelect && acaraToProgramaMap[selectedAcara]) {
+        progSelect.value = acaraToProgramaMap[selectedAcara];
+    }
+}
+
+// ==========================================
+// FUNGSI DINAMIS NARASUMBER
+// ==========================================
+function addNarasumberField(index, value = '') {
+    const container = document.getElementById(`narasumber_container_${index}`);
+    if (!container) return;
+    
+    // Wrapper (Bungkus) untuk 1 baris input + tombol hapus
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex; gap:4px; align-items:center;';
+    
+    // Input teks
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Nama Narasumber & Jabatan';
+    input.value = value;
+    input.style.cssText = 'flex:1; padding:6px 8px; border:1px solid #ced4da; border-radius:4px; font-size:12px;';
+    
+    // Tombol Hapus (Silang)
+    const btnRemove = document.createElement('button');
+    btnRemove.type = 'button';
+    btnRemove.innerHTML = '&times;';
+    btnRemove.title = "Hapus baris ini";
+    btnRemove.style.cssText = 'background:#ef4444; color:white; border:none; border-radius:4px; padding:0 8px; height:28px; cursor:pointer; font-weight:bold; font-size:14px;';
+    
+    // Logika ketika tombol hapus diklik
+    btnRemove.onclick = function() {
+        container.removeChild(wrapper);
+    };
+    
+    wrapper.appendChild(input);
+    wrapper.appendChild(btnRemove);
+    container.appendChild(wrapper);
+}
+
 // Mock data untuk dropdown petugas
-const mockPetugas = ["Dicky", "Priyo", "Anggi", "Ludfi", "Deny", "Shofirin", "Yhanuar", "Yudha", "Dayat", "Dedy", "Winsa", "Yayang", "Syukur", "Saiful", "Alif", "Selvy", "Alfian", "Firman", "Roni", "Ari"];
+// Data untuk dropdown petugas (disesuaikan dengan master-data.php)
+const mockPetugas = [
+    "Dicky", "Priyo", "Anggi", "Ludfi", "Deny", "Shofirin", 
+    "Yhanuar", "Yudha", "Dayat", "Dedy", "Winsa", "Yayank", 
+    "Syukur", "Saiful", "Alif", "Selvy", "Alfian"
+];
 
 async function tarikRss() {
     const channelId = document.getElementById('channelId').value.trim();
@@ -264,52 +440,111 @@ function renderTabel(videos) {
         const hidPT = `hidden_pt_${index}`;
         const hidPA = `hidden_pa_${index}`;
 
+        // --- TAMBAHAN KODE: Render opsi dropdown Nama Acara dengan Normalisasi ---
+        const extractedTitle = vid.title_asli.split('-')[0].trim();
+        
+        // Fungsi untuk membersihkan teks agar pencocokan lebih akurat
+        // Fungsi untuk membersihkan teks agar pencocokan lebih akurat
+        const normalizeText = (text) => {
+            return text.toLowerCase()
+                       .replace(/&/g, 'dan')
+                       .replace(/berbicara/g, 'bicara') // Alias: menyamakan 'berbicara' dengan 'bicara'
+                       .replace(/talkshow/g, 'dialog')  // Alias tambahan: menyamakan 'talkshow' dengan 'dialog' (opsional)
+                       .replace(/[^a-z0-9]/g, ''); // Hapus karakter selain huruf dan angka
+        };
+
+        const normalizedTitle = normalizeText(extractedTitle);
+        let optionsAcara = '<option value="">-- Pilih Acara --</option>';
+        
+        masterAcaraList.forEach(acara => {
+            const normalizedAcara = normalizeText(acara);
+            
+            // Pencocokan: Cek apakah setelah dibersihkan teksnya saling mengandung
+            let isSelected = '';
+            if (normalizedTitle !== '' && normalizedAcara !== '') {
+                if (normalizedTitle.includes(normalizedAcara) || normalizedAcara.includes(normalizedTitle)) {
+                    isSelected = 'selected';
+                }
+            }
+            
+            optionsAcara += `<option value="${acara}" ${isSelected}>${acara}</option>`;
+        });
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>
                 <div class="row-group">
-                    <input type="text" placeholder="Nama Program / Acara" value="${vid.title_asli.split('-')[0].trim()}" style="font-weight:bold;">
-                    <input type="text" placeholder="Tema Acara" value="${vid.tema}">
+                    <label class="tabel-label">Nama Acara</label>
+                    <select id="acara_${index}" onchange="updatePrograma(${index}, this.value)" style="font-weight:bold; padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;">
+                        ${optionsAcara}
+                    </select>
+                    
+                    <label class="tabel-label" style="margin-top:6px;">Tema</label>
+                    <textarea rows="3" placeholder="Tema Acara" style="resize: none;">${vid.tema}</textarea>
                 </div>
             </td>
             <td>
                 <div class="row-group">
-                    <select>
+                    <label class="tabel-label">Programa</label>
+                    <select id="programa_${index}">
                         <option value="Pro 1 FM 94.6 Mhz" ${vid.programa.includes('Pro 1') ? 'selected' : ''}>Pro 1</option>
                         <option value="Pro 2 FM 87.9 Mhz" ${vid.programa.includes('Pro 2') ? 'selected' : ''}>Pro 2</option>
                         <option value="Pro 4 FM 105.3 Mhz" ${vid.programa.includes('Pro 4') ? 'selected' : ''}>Pro 4</option>
                     </select>
+                    
+                    <label class="tabel-label" style="margin-top:6px;">Tanggal Tayang</label>
                     <input type="date" value="${vid.tanggal}">
-                    <div style="display:flex; gap:4px;">
-                        <input type="time" value="${vid.jamMulai}" title="Jam Mulai">
-                        <input type="time" value="${vid.jamSelesai}" title="Jam Selesai">
+                    
+                    <div style="display:flex; gap:8px; margin-top:6px;">
+                        <div style="flex:1;">
+                            <label class="tabel-label">Mulai</label>
+                            <input type="time" value="${vid.jamMulai}" title="Jam Mulai">
+                        </div>
+                        <div style="flex:1;">
+                            <label class="tabel-label">Selesai</label>
+                            <input type="time" value="${vid.jamSelesai}" title="Jam Selesai">
+                        </div>
                     </div>
                 </div>
             </td>
             <td>
                 <div class="row-group">
+                    <label class="tabel-label">Pemandu / Host / Penyiar</label>
                     <div style="display:flex; gap:4px;">
-                        <select style="width:100px;"><option>Presenter</option><option>Penyiar</option><option>Host</option></select>
                         <input type="text" placeholder="Nama Pemandu" value="${vid.penyiar}">
                     </div>
-                    <textarea rows="3" placeholder="Narasumber">${vid.narasumber}</textarea>
+                    
+                    <label class="tabel-label" style="margin-top:6px;">Narasumber</label>
+                    <!-- Wadah untuk list narasumber dinamis -->
+                    <div id="narasumber_container_${index}" style="display:flex; flex-direction:column; gap:4px;"></div>
+                    <!-- Tombol Tambah Narasumber -->
+                    <button type="button" onclick="addNarasumberField(${index})" style="margin-top:4px; font-size:11px; padding:4px 8px; cursor:pointer; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; color:#334155; font-weight:600;">+ Tambah Narasumber</button>
                 </div>
             </td>
             <td>
                 <div class="row-group">
-                    <div style="font-size:11px; font-weight:bold; color:#666;">Teknik (PT)</div>
+                    <label class="tabel-label">Teknik (PT)</label>
                     <div id="${idPT}"></div>
                     <input type="hidden" id="${hidPT}" value="${vid.pt.join(', ')}">
                     
-                    <div style="font-size:11px; font-weight:bold; color:#666; margin-top:8px;">PA / Acara</div>
+                    <label class="tabel-label" style="margin-top:6px;">PA / Acara</label>
                     <div id="${idPA}"></div>
                     <input type="hidden" id="${hidPA}" value="${vid.pa.join(', ')}">
                 </div>
             </td>
             <td>
                 <div class="row-group">
+                    <label class="tabel-label">Link YouTube</label>
                     <input type="url" value="${vid.url}" placeholder="URL YouTube">
-                    <div class="dropzone-mini">Pilih / Tarik Flyer</div>
+                    
+                    <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
+                    <div class="dropzone-mini" style="padding: 0; overflow: hidden; position: relative; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 2px dashed #cbd5e1;">
+                        ${vid.flyer 
+                            ? `<img src="${vid.flyer}" style="width: 100%; height: 100%; object-fit: cover; position: absolute;" alt="Flyer">` 
+                            : `<span style="padding:10px;">Pilih / Tarik Flyer</span>`
+                        }
+                    </div>
+                    <input type="hidden" class="hidden-flyer-url" value="${vid.flyer || ''}">
                 </div>
             </td>
             <td style="vertical-align:middle; text-align:center;">
@@ -317,6 +552,19 @@ function renderTabel(videos) {
             </td>
         `;
         tbody.appendChild(tr);
+
+        // --- TAMBAHAN KODE: Render input narasumber dinamis ---
+        const narasumberList = vid.narasumber ? vid.narasumber.split('\n') : [''];
+        narasumberList.forEach(nama => {
+            if (nama.trim() !== '') {
+                addNarasumberField(index, nama.trim());
+            }
+        });
+        // Jika kosong sama sekali, tampilkan minimal 1 input kosong
+        const narasumberContainer = document.getElementById(`narasumber_container_${index}`);
+        if (narasumberContainer && narasumberContainer.children.length === 0) {
+            addNarasumberField(index, '');
+        }
 
         // Render Custom Dropdown untuk tiap baris setelah elemen HTML dimuat
         createCustomMultiSelect(idPT, hidPT, mockPetugas);
