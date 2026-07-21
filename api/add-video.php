@@ -38,11 +38,9 @@ if (!$input) {
 }
 
 $namaAcaraDisplay = trim($input['namaAcaraDisplay'] ?? '');
-$tema             = trim($input['tema'] ?? '');
 $judul            = trim($input['judul'] ?? '');
 $tanggal          = trim($input['tanggal'] ?? '');
 $jamMulai         = trim($input['jamMulai'] ?? '');
-$jamSelesai       = trim($input['jamSelesai'] ?? '');
 $live             = trim($input['live'] ?? '');
 $link             = trim($input['link'] ?? '');
 $penyiarRaw       = trim($input['penyiar'] ?? '');
@@ -128,10 +126,6 @@ function jamKeFormatTitik($raw)
 // Gabungkan jam mulai & selesai jadi "00.00-00.00" agar bisa displit lagi saat edit.
 // Kalau jam selesai kosong, simpan jam mulai saja (tanpa tanda "-").
 $jamMulaiFormatted   = jamKeFormatTitik($jamMulai);
-$jamSelesaiFormatted = jamKeFormatTitik($jamSelesai);
-$jamGabung = $jamSelesaiFormatted !== ''
-    ? $jamMulaiFormatted . '-' . $jamSelesaiFormatted
-    : $jamMulaiFormatted;
 
 // ===== Bangun Properties Sesuai Schema Database Notion =====
 $properties = [
@@ -145,7 +139,7 @@ $properties = [
         'date' => ['start' => $tanggal]
     ],
     'Jam' => [
-        'rich_text' => richTextPayload($jamGabung)
+        'rich_text' => richTextPayload($jamMulaiFormatted)
     ],
     "Acara Pro {$slot}" => [
         'select' => ['name' => $namaAcaraDisplay]

@@ -32,8 +32,22 @@ include __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <div class="card">
-  <div class="card-header">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <div class="card-title"><i class="ri-play-list-2-line"></i> Daftar Video</div>
+    
+    <div class="table-filters" style="display:flex; gap:10px;">
+        <select id="filterPrograma" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua Programa</option>
+            <option value="Pro 1">Pro 1</option>
+            <option value="Pro 2">Pro 2</option>
+            <option value="Pro 4">Pro 4</option>
+        </select>
+        <!-- Filter Petugas Menggunakan Select -->
+        <select id="filterPetugas" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua Petugas</option>
+            <!-- Opsi akan diisi otomatis oleh JS -->
+        </select>
+    </div>
   </div>
   <div class="table-wrap">
     <table class="data-table" id="videoTable">
@@ -167,7 +181,7 @@ include __DIR__ . '/../includes/header.php';
       <button class="btn btn-secondary" onclick="hideAddView()"><i class="ri-arrow-left-line"></i> Kembali</button>
     </div>
   </div>
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+  <div style="display:grid; grid-template-columns:1fr; gap:20px; align-items:start;">
     <div>
     <h2 id="addVideoTitle" style="margin-bottom:4px;">Tambah Video</h2>
     <p style="color:var(--text-secondary); margin-bottom:24px;">Isi detail video yang akan ditambahkan ke rekap.</p>
@@ -196,16 +210,16 @@ include __DIR__ . '/../includes/header.php';
 
       <div class="form-group">
         <label>Tema Acara</label>
-        <input type="text" id="tema" name="tema" placeholder="Contoh: MPLS Ramah 2026, Tanpa Perploncoan" oninput="generateDescription()">
+        <input type="text" id="tema" name="tema" placeholder="Contoh: MPLS Ramah 2026, Tanpa Perploncoan">
       </div>
 
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="form-group">
           <label>Tanggal</label>
-          <input type="date" id="tanggal" name="tanggal" required oninput="generateDescription()">
+          <input type="date" id="tanggal" name="tanggal" required>
         </div>
-        <div class="form-group"><label>Jam Mulai</label><input type="time" id="jamMulai" name="jamMulai" required oninput="generateDescription()"></div>
-        <div class="form-group"><label>Jam Selesai</label><input type="time" id="jamSelesai" name="jamSelesai" oninput="generateDescription()"></div>
+        <div class="form-group"><label>Jam Mulai</label><input type="time" id="jamMulai" name="jamMulai" required></div>
+        <div class="form-group"><label>Jam Selesai</label><input type="time" id="jamSelesai" name="jamSelesai"></div>
       </div>
 
       <div class="form-group">
@@ -224,7 +238,7 @@ include __DIR__ . '/../includes/header.php';
 
       <div class="form-group">
         <label>Narasumber</label>
-        <textarea id="narasumber" name="narasumber" rows="2" placeholder="1. Nama (Jabatan)&#10;2. Nama (Jabatan)" style="width:100%; padding:10px; border:1px solid var(--border-color); border-radius:4px; font-size:14px;" oninput="generateDescription()"></textarea>
+        <textarea id="narasumber" name="narasumber" rows="2" placeholder="1. Nama (Jabatan)&#10;2. Nama (Jabatan)" style="width:100%; padding:10px; border:1px solid var(--border-color); border-radius:4px; font-size:14px;"></textarea>
       </div>
 
       <div class="form-row">
@@ -262,16 +276,6 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </form>
     </div>
-
-    <div>
-      <h3 style="margin-bottom:12px;">Judul Video</h3>
-      <input type="text" id="judulVideoPreview" readonly style="width:100%; background:#f1f3f5; color:#212529; border:1px solid var(--border-color); border-radius:4px; padding:10px 12px; font-size:14px;">
-      <button type="button" class="btn btn-primary" style="margin-top:10px; background-color:#198754;" onclick="copyJudul()">Salin Judul</button>
-
-      <h3 style="margin:24px 0 12px;">Preview Deskripsi Youtube</h3>
-      <textarea id="descPreview" readonly style="width:100%; height:460px; font-family:Courier, monospace; background:#f1f3f5; color:#212529; border:1px solid var(--border-color); border-radius:4px; padding:12px; resize:none; font-size:13px; line-height:1.5;"></textarea>
-      <button type="button" class="btn btn-primary" style="margin-top:10px; background-color:#198754;" onclick="copyDescription()">Salin Deskripsi</button>
-    </div>
   </div>
 </div>
 
@@ -281,8 +285,6 @@ include __DIR__ . '/../includes/header.php';
 
 // ===== Tambahkan State untuk file uploads (Kloning dari troubleshoot.php) =====
 let selectedFiles = []; 
-let flyerBase64Data = null; 
-let flyerFileName = '';
 let editingPageId = null;
 
 // ===== Master Data (Nama Acara & Nama Pemandu per Programa) =====
@@ -297,6 +299,7 @@ async function loadMasterData(){
         if (data.success) {
             // Perbaikan: Ambil data.petugas langsung dari hasil respons JSON
             masterData = { acara: data.acara, pemandu: data.pemandu, petugas: data.petugas };
+            initFilterPetugas(); // Inisialisasi dropdown filter petugas setelah data dimuat
         } else {
             console.error('Gagal memuat master data:', data.error);
         }
@@ -310,6 +313,39 @@ async function loadMasterData(){
         populateTeknikOptions();
         populatePaOptions();
     }
+}
+
+// Fungsi untuk mengisi dropdown filter petugas saat master data selesai dimuat
+function initFilterPetugas() {
+    var select = document.getElementById('filterPetugas');
+    var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
+    
+    petugasList.forEach(function(nama) {
+        var opt = document.createElement('option');
+        opt.value = nama;
+        opt.textContent = nama;
+        select.appendChild(opt);
+    });
+}
+
+// Update fungsi filterTable untuk menangani select
+function filterTable() {
+    var programFilter = document.getElementById('filterPrograma').value.toLowerCase();
+    var petugasFilter = document.getElementById('filterPetugas').value.toLowerCase();
+    var rows = document.querySelectorAll('.video-row');
+
+    rows.forEach(function(row) {
+        var videoData = JSON.parse(row.dataset.video);
+        
+        var matchPrograma = programFilter === "" || videoData.programa.toLowerCase().includes(programFilter);
+        
+        // Memeriksa apakah nama petugas ada di dalam string PT atau PA
+        var matchPetugas = petugasFilter === "" || 
+                           videoData.teknik.toLowerCase().includes(petugasFilter) || 
+                           videoData.pa.toLowerCase().includes(petugasFilter);
+
+        row.style.display = (matchPrograma && matchPetugas) ? "" : "none";
+    });
 }
 
 function getProgramaLabelFromLive(){
@@ -622,11 +658,6 @@ async function uploadFiles(files) {
   return data.files.map(f => ({ id: f.id, name: f.original })); 
 }
 
-function formatJamSistem(timeString){
-    if (!timeString) return '00.00';
-    return timeString.replace(':', '.');
-}
-
 // Kebalikan dari format gabungan "00.00-00.00" yang disimpan di Notion:
 // pecah jadi { mulai, selesai } dalam format "HH:MM" untuk <input type="time">.
 function parseJamGabungToInputs(gabung){
@@ -643,14 +674,6 @@ function parseJamGabungToInputs(gabung){
         mulai: toHHMM(parts[0]),
         selesai: parts.length > 1 ? toHHMM(parts[1]) : ''
     };
-}
-
-function formatTanggalIndonesia(dateString){
-    if (!dateString) return '-';
-    var date = new Date(dateString);
-    if (isNaN(date.getTime())) return '-';
-    var bulanIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    return date.getDate() + ' ' + bulanIndo[date.getMonth()] + ' ' + date.getFullYear();
 }
 
 // Kebalikan dari formatTanggalIndonesia: menerima ISO ("2026-07-17"),
@@ -703,115 +726,6 @@ function setAddVideoDefaults(){
 
     document.getElementById('jamMulai').value = formatHH + ':00';
     document.getElementById('jamSelesai').value = formatNextHH + ':00';
-}
-
-function updateJudulVideo(){
-    var programSelect = document.getElementById('program');
-    var tema = document.getElementById('tema').value.trim();
-
-    var namaAcaraDisplay = programSelect.selectedIndex >= 0 ? programSelect.options[programSelect.selectedIndex].text : '';
-    if (programSelect.value === '') namaAcaraDisplay = '';
-
-    var judul = tema !== '' ? tema : namaAcaraDisplay;
-    document.getElementById('judulVideo').value = judul;
-    document.getElementById('judulVideoPreview').value = judul;
-    document.getElementById('namaAcaraDisplayHidden').value = namaAcaraDisplay;
-}
-
-function generateDescription(){
-    updateJudulVideo();
-
-    var programFinal = document.getElementById('program').value;
-    var programTitleCase = programFinal.toUpperCase();
-    var tema = document.getElementById('tema').value.trim();
-
-    const tanggalMentah = document.getElementById('tanggal').value;
-    var hari = '';
-    if (tanggalMentah) {
-        const dateObj = new Date(tanggalMentah);
-        if (!isNaN(dateObj.getTime())) {
-            const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-            hari = daftarHari[dateObj.getDay()];
-        }
-    }
-
-    var tanggalFormatted = formatTanggalIndonesia(tanggalMentah);
-    var hariTanggalGabung = hari + ', ' + tanggalFormatted;
-
-    var jamMulaiMentah = document.getElementById('jamMulai').value;
-    var jamSelesaiMentah = document.getElementById('jamSelesai').value;
-    var jamMulai = formatJamSistem(jamMulaiMentah);
-    var jamSelesai = formatJamSistem(jamSelesaiMentah);
-
-    var liveSelection = document.getElementById('live').value;
-    var liveText = '';
-    if (liveSelection.indexOf('94,6 FM Pro 1') !== -1) {
-        liveText = 'Live di 94,6 FM Pro 1 RRI Malang dan Youtube RRI Malang Official';
-    } else if (liveSelection.indexOf('87.9 FM Pro 2') !== -1) {
-        liveText = 'Live di 87.9 FM Pro 2 RRI Malang dan Youtube RRI Malang Official';
-    } else {
-        liveText = 'Live di 105,3 FM Pro 4 RRI Malang dan YouTube RRI Malang Official';
-    }
-
-    var jenisPenyiar = document.getElementById('jenisPenyiar').value;
-    var penyiar = document.getElementById('penyiar').value || '-';
-    var narasumber = document.getElementById('narasumber').value.trim();
-    var teknik = document.getElementById('teknik').value || '-';
-    var pa = document.getElementById('pa').value || '-';
-
-    var template = '';
-    if (programTitleCase === 'DIALOG MALANG MENYAPA') {
-        template += 'Prioritas Nasional\n';
-    }
-
-    template += programTitleCase + '\n';
-    template += hariTanggalGabung + '\n';
-    template += 'Pukul ' + jamMulai + ' s/d ' + jamSelesai + ' WIB\n';
-    template += liveText + '\n\n';
-
-    if (tema !== '') {
-        template += 'Tema : " ' + tema + ' "\n\n';
-    }
-    template += jenisPenyiar + ' : ' + penyiar + '\n\n';
-    if (narasumber !== '') {
-        template += 'Narasumber :\n' + narasumber + '\n\n';
-    }
-
-    template += 'Pengarah Teknik : ' + teknik + '\n';
-    template += 'Pengarah Acara : ' + pa + '\n\n';
-
-    template += 'Dapatkan informasi terupdate dan hiburan terkini hanya di Radio Republik Indonesia\n';
-    template += 'Programa 1 FM 94.6 Mhz & AM 891 KHz\n';
-    template += 'Programa 2 FM 87.9 Mhz\n';
-    template += 'Programa 4 FM 105.3 Mhz\n';
-    template += 'Aplikasi RRI Digital dan Kanal rri.co.id\n';
-    template += 'Youtube RRI MALANG Official';
-
-    document.getElementById('descPreview').value = template;
-}
-
-function copyDescription(){
-    var previewTextArea = document.getElementById('descPreview');
-    previewTextArea.select();
-    previewTextArea.setSelectionRange(0, 99999);
-
-    navigator.clipboard.writeText(previewTextArea.value).then(function(){
-        var toast = document.getElementById('descToast');
-        toast.style.display = 'block';
-        setTimeout(function(){ toast.style.display = 'none'; }, 2500);
-    });
-}
-
-function copyJudul(){
-    var judulField = document.getElementById('judulVideoPreview');
-    judulField.select();
-    judulField.setSelectionRange(0, 99999);
-
-    navigator.clipboard.writeText(judulField.value).then(function(){
-        var toast = document.getElementById('descToast');
-        toast.style.display = 'block';
-        setTimeout(function(){ toast.style.display = 'none'; }, 2500);
-    });
 }
 
 function showAddView(){
@@ -1004,6 +918,9 @@ function hideAddView(){
 
 // UBAH MENJADI ASYNC FUNCTION
 async function submitAddVideo(){
+    var programSelect = document.getElementById('program');
+    document.getElementById('namaAcaraDisplayHidden').value = programSelect.options[programSelect.selectedIndex].text;
+
     var form = document.getElementById('addVideoForm');
     var formData = new FormData(form);
     var isEditMode = !!editingPageId;
@@ -1090,6 +1007,28 @@ function deleteVideoRow(pageId, title) {
     });
 }
 
+function filterTable() {
+    var programFilter = document.getElementById('filterPrograma').value.toLowerCase();
+    var petugasFilter = document.getElementById('filterPetugas').value.toLowerCase();
+    var rows = document.querySelectorAll('.video-row');
+
+    rows.forEach(function(row) {
+        var videoData = JSON.parse(row.dataset.video);
+        
+        // Cek Programa
+        var matchPrograma = programFilter === "" || videoData.programa.toLowerCase().includes(programFilter);
+        
+        // Cek Petugas (Gabungkan PT dan PA untuk pencarian)
+        var petugasGabung = (videoData.teknik + " " + videoData.pa).toLowerCase();
+        var matchPetugas = petugasFilter === "" || petugasGabung.includes(petugasFilter);
+
+        if (matchPrograma && matchPetugas) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
 
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

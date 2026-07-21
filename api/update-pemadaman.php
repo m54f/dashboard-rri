@@ -8,21 +8,28 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-$notionToken = NOTION_TOKEN;
+ $input = json_decode(file_get_contents('php://input'), true);
+ $notionToken = NOTION_TOKEN;
 
 if (empty($input['page_id']) || empty($input['pemancar']) || empty($input['tanggal'])) {
     echo json_encode(['success' => false, 'error' => 'Data tidak valid.']);
     exit;
 }
 
-$startDate = $input['tanggal'] . 'T' . $input['start_time'] . ':00+07:00';
-$endDate   = $input['tanggal'] . 'T' . $input['end_time'] . ':00+07:00';
+// Menggunakan null coalescing operator untuk mencegah error undefined index
+ $startTime = $input['start_time'] ?? '00:00';
+ $endTime = $input['end_time'] ?? '00:00';
 
-$pemancarSelect = [['name' => $input['pemancar']]]; // <-- PERUBAHAN DI SINI
-$petugasSelect  = array_map(fn($nama) => ['name' => trim($nama)], $input['petugas']);
+ $startDate = $input['tanggal'] . 'T' . $startTime . ':00+07:00';
+ $endDate   = $input['tanggal'] . 'T' . $endTime . ':00+07:00';
 
-$body = [
+ $pemancarSelect = [['name' => $input['pemancar']]];
+
+ $petugasInput = $input['petugas'] ?? [];
+if (!is_array($petugasInput)) $petugasInput = [];
+ $petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
+
+ $body = [
     'properties' => [
         'Pemancar' => ['multi_select' => $pemancarSelect],
         'Date' => [
@@ -35,22 +42,22 @@ $body = [
     ]
 ];
 
-$pageId = $input['page_id'];
-$url = "https://api.notion.com/v1/pages/{$pageId}";
-$headers = [
+ $pageId = $input['page_id'];
+ $url = "https://api.notion.com/v1/pages/{$pageId}";
+ $headers = [
     "Authorization: Bearer {$notionToken}",
     "Notion-Version: 2022-06-28",
     "Content-Type: application/json"
 ];
 
-$ch = curl_init($url);
+ $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
 
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+ $response = curl_exec($ch);
+ $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 if ($httpCode !== 200) {

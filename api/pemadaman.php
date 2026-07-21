@@ -16,7 +16,7 @@ function getPemadaman() {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, '{}'); // Objek kosong, bukan array
+    curl_setopt($ch, CURLOPT_POSTFIELDS, '{}'); // Objek kosong
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -30,8 +30,10 @@ function getPemadaman() {
     $data = json_decode($response, true);
     $results = [];
     
+    if (!isset($data['results'])) return $results;
+    
     foreach ($data['results'] as $page) {
-        $props = $page['properties'];
+        $props = $page['properties'] ?? [];
         
         $dateStart = $props['Date']['date']['start'] ?? null;
         $dateEnd   = $props['Date']['date']['end'] ?? null;
@@ -62,8 +64,8 @@ function getPemadaman() {
         $results[] = [
             'page_id'      => $page['id'],
             'id'           => strtoupper(substr($page['id'], 0, 8)),
-            'url'          => $page['url'],
-            'pemancar'     => implode(', ', $pemancarArr) ?: 'Tidak Diketahui', // Digabung dengan koma jika lebih dari 1
+            'url'          => $page['url'] ?? '#',
+            'pemancar'     => implode(', ', $pemancarArr) ?: 'Tidak Diketahui',
             'tanggal_raw'  => $dateStart,
             'tanggal'      => $dateStart ? formatDateIndo($dateStart) : '-',
             'start_time'   => $dateStart ? date('H:i', strtotime($dateStart)) : '-',
@@ -71,7 +73,7 @@ function getPemadaman() {
             'petugas_arr'  => $petugasArr,
             'petugas'      => implode(', ', $petugasArr) ?: '-',
             'files'        => $filesArr,
-            'submission'   => formatDateIndo($page['created_time']),
+            'submission'   => formatDateIndo($page['created_time'] ?? 'now'),
         ];
     }
     
@@ -82,7 +84,11 @@ function getPemadaman() {
 function formatDateIndo($dateStr) {
     if (empty($dateStr)) return '';
     $months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    $date = new DateTime($dateStr);
-    return $date->format('j ') . $months[(int)$date->format('m') - 1] . ' ' . $date->format('Y');
+    try {
+        $date = new DateTime($dateStr);
+        return $date->format('j ') . $months[(int)$date->format('m') - 1] . ' ' . $date->format('Y');
+    } catch (Exception $e) {
+        return '';
+    }
 }
 ?>

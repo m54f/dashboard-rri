@@ -12,31 +12,148 @@ $total      = count($pemadaman);
 $studioN    = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Studio'));
 $ngadirejoN = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Ngadirejo'));
 $ngijoN     = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Ngijo'));
-$probolinggoN = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Probolinggo'));
+$panelN     = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Panel Auditorium'));
+$gensetN    = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Maintenance Genset'));
 
 $stats = [
-    ['label' => 'Total Pemadaman', 'value' => $total, 'sub' => 'Data real-time dari Notion', 'icon' => 'ri-flashlight-line', 'tone' => 'orange'],
-    ['label' => 'Pemancar Studio', 'value' => $studioN, 'sub' => 'Total kejadian', 'icon' => 'ri-broadcast-line', 'tone' => 'blue'],
-    ['label' => 'Pemancar Ngadirejo', 'value' => $ngadirejoN, 'sub' => 'Total kejadian', 'icon' => 'ri-broadcast-line', 'tone' => 'purple'],
-    ['label' => 'Pemancar Ngijo', 'value' => $ngijoN, 'sub' => 'Total kejadian', 'icon' => 'ri-broadcast-line', 'tone' => 'green'],
+    ['label' => 'Total Log', 'value' => $total, 'sub' => 'Semua catatan', 'icon' => 'ri-flashlight-line', 'tone' => 'orange'],
+    ['label' => 'Pemadaman PLN', 'value' => $studioN + $ngadirejoN + $ngijoN, 'sub' => 'Studio, Ngadirejo, Ngijo', 'icon' => 'ri-broadcast-line', 'tone' => 'blue'],
+    ['label' => 'Panel Auditorium', 'value' => $panelN, 'sub' => 'Total kejadian', 'icon' => 'ri-plug-line', 'tone' => 'purple'],
+    ['label' => 'Maintenance Genset', 'value' => $gensetN, 'sub' => 'Total kejadian', 'icon' => 'ri-tools-line', 'tone' => 'green'],
 ];
 
 $base = '..';
-$pageTitle = 'Log Pemadaman PLN';
+$pageTitle = 'Logbook Listrik';
 $activeMenu = 'pemadaman';
 
 $petugasList = ['Alfian','Alif','Saiful','Winsa','Yayang','Yhanuar','Yuda','Deny','Selvy','Anggi','Dedy','Syukur'];
-$pemancarList = ['Pemancar Studio', 'Pemancar Ngijo', 'Pemancar Ngadirejo', 'Pemancar Probolinggo'];
+
+$pemancarList = [
+    'Pemancar Studio', 
+    'Pemancar Ngijo', 
+    'Pemancar Ngadirejo', 
+    'Pemancar Probolinggo',
+    'Panel Auditorium',
+    'Maintenance Genset'
+];
 
 include __DIR__ . '/../includes/header.php';
 ?>
 
+<!-- ===== STYLE KHUSUS MODAL MODERN ===== -->
+<style>
+/* Modal Overlay & Animation */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+  opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 1rem;
+}
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-content {
+  background: #ffffff; border-radius: 20px; width: 100%; max-width: 680px; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+
+/* Modal Header */
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.5rem 2rem; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: #fff; z-index: 10; border-radius: 20px 20px 0 0;
+}
+.modal-title { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0; }
+.modal-close {
+  background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%;
+  font-size: 1.5rem; line-height: 1; color: #64748b; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: #e2e8f0; color: #0f172a; }
+
+/* Form Layout */
+.modal-body { padding: 2rem; }
+.form-group { margin-bottom: 1.5rem; }
+.form-label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+.required-star { color: #ef4444; }
+.form-hint { font-size: 0.8rem; color: #64748b; font-weight: 400; margin-left: 0.25rem; }
+
+/* Selection Cards (Pemancar) */
+.selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+.selection-card {
+  position: relative; cursor: pointer; border: 2px solid #e2e8f0; border-radius: 12px;
+  padding: 1rem; transition: all 0.2s ease; background: #fff;
+}
+.selection-card:hover { border-color: #94a3b8; background: #f8fafc; }
+.selection-card input[type="radio"] { position: absolute; opacity: 0; }
+.selection-card input[type="radio"]:checked + .card-content { color: #2563eb; }
+.selection-card:has(input[type="radio"]:checked) {
+  border-color: #2563eb; background: #eff6ff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
+}
+.card-content { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 0.9rem; color: #475569; transition: color 0.2s; }
+.card-content i { font-size: 1.25rem; }
+
+/* Grid untuk Tanggal & Waktu */
+.datetime-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) { .datetime-grid { grid-template-columns: 1fr; } }
+
+.form-input {
+  width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 0.95rem; color: #0f172a; background: #fff; transition: all 0.2s; outline: none;
+}
+.form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+/* Chip Selector (Petugas) */
+.chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip-option { cursor: pointer; user-select: none; }
+.chip-option input[type="checkbox"] { position: absolute; opacity: 0; }
+.chip-content {
+  display: inline-block; padding: 0.5rem 1rem; border-radius: 999px;
+  background: #f1f5f9; color: #475569; font-size: 0.85rem; font-weight: 600;
+  border: 1.5px solid transparent; transition: all 0.2s ease;
+}
+.chip-option:hover .chip-content { background: #e2e8f0; }
+.chip-option input[type="checkbox"]:checked + .chip-content {
+  background: #2563eb; color: #fff; border-color: #1d4ed8; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Modern File Upload */
+.upload-zone {
+  border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.5rem; text-align: center;
+  background: #f8fafc; transition: all 0.2s; cursor: pointer; position: relative;
+}
+.upload-zone:hover { border-color: #2563eb; background: #eff6ff; }
+.upload-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+.upload-icon { font-size: 2rem; color: #64748b; margin-bottom: 0.5rem; }
+.upload-text { font-size: 0.9rem; color: #334155; font-weight: 600; }
+.upload-hint { font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; }
+.file-preview {
+  margin-top: 0.75rem; font-size: 0.85rem; color: #2563eb; font-weight: 500;
+  word-break: break-all; text-align: left; background: #eff6ff; padding: 0.75rem; border-radius: 8px; display: none;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.5rem 2rem;
+  border-top: 1px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 20px 20px; position: sticky; bottom: 0;
+}
+.btn {
+  padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+  cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+}
+.btn-secondary { background: #fff; color: #475569; border: 1.5px solid #cbd5e1; }
+.btn-secondary:hover { background: #f1f5f9; border-color: #94a3b8; }
+.btn-primary { background: #2563eb; color: #fff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+.btn-primary:disabled { background: #93c5fd; cursor: not-allowed; transform: none; }
+</style>
+
 <div class="page-head">
   <div>
-    <h2>Log Pemadaman PLN</h2>
-    <p>Catat dan pantau riwayat pemadaman listrik di setiap pemancar.</p>
+    <h2>Logbook Aktivitas Listrik</h2>
+    <p>Catat dan pantau riwayat pemadaman listrik, penggunaan panel, dan maintenance genset.</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Catat Pemadaman</button>
+  <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Catat Aktivitas</button>
 </div>
 
 <?php if (isset($errorMessage)): ?>
@@ -58,25 +175,25 @@ include __DIR__ . '/../includes/header.php';
   <?php endforeach; ?>
 </div>
 
+<!-- Filter Tab berdasarkan Pemancar -->
 <div class="filter-tabs">
   <div class="filter-tab active" onclick="filterPemadaman('Semua', this)">Semua</div>
-  <div class="filter-tab" onclick="filterPemadaman('Pemancar Studio', this)">Studio</div>
-  <div class="filter-tab" onclick="filterPemadaman('Pemancar Ngadirejo', this)">Ngadirejo</div>
-  <div class="filter-tab" onclick="filterPemadaman('Pemancar Ngijo', this)">Ngijo</div>
-  <div class="filter-tab" onclick="filterPemadaman('Pemancar Probolinggo', this)">Probolinggo</div>
+  <?php foreach ($pemancarList as $loc): ?>
+  <div class="filter-tab" onclick="filterPemadaman('<?= htmlspecialchars($loc) ?>', this)"><?= htmlspecialchars($loc) ?></div>
+  <?php endforeach; ?>
 </div>
 
 <div class="card">
   <div class="card-header">
-    <div class="card-title"><i class="ri-list-check-2"></i> Riwayat Pemadaman</div>
+    <div class="card-title"><i class="ri-list-check-2"></i> Riwayat Aktivitas</div>
   </div>
   <div class="table-wrap">
     <table class="data-table" id="pemadamanTable">
       <thead>
         <tr>
           <th>ID</th>
+          <th>Kategori / Pemancar</th>
           <th>Tanggal & Waktu</th>
-          <th>Pemancar</th>
           <th>Durasi</th>
           <th>Petugas</th>
           <th>Bukti Foto</th>
@@ -88,7 +205,7 @@ include __DIR__ . '/../includes/header.php';
         <?php if (empty($pemadaman)): ?>
           <tr>
             <td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
-              Tidak ada data pemadaman ditemukan.
+              Tidak ada data ditemukan.
             </td>
           </tr>
         <?php else: ?>
@@ -101,28 +218,31 @@ include __DIR__ . '/../includes/header.php';
                 'files'        => $p['files'] ?? [],
             ]), ENT_QUOTES, 'UTF-8');
             
-            // Hitung durasi
             $durasi = '-';
             if (!empty($p['start_time']) && !empty($p['end_time'])) {
                 $start = new DateTime($p['start_time']);
                 $end = new DateTime($p['end_time']);
                 $diff = $start->diff($end);
-                if ($diff->h > 0) {
-                    $durasi = $diff->h . 'j ' . $diff->i . 'm';
-                } else {
-                    $durasi = $diff->i . 'm';
-                }
+                $durasi = ($diff->h > 0 ? $diff->h . 'j ' : '') . $diff->i . 'm';
             }
+
+            $tagColor = 'blue';
+            if (strpos($p['pemancar'] ?? '', 'Panel') !== false) $tagColor = 'purple';
+            if (strpos($p['pemancar'] ?? '', 'Genset') !== false) $tagColor = 'green';
           ?>
           <tr data-pemancar="<?= htmlspecialchars($p['pemancar']) ?>">
             <td style="font-weight:700; color:var(--text-secondary);"><?= htmlspecialchars($p['id']) ?></td>
+            <td>
+              <span class="tag <?= $tagColor ?>">
+                <i class="ri-record-circle-line"></i> <?= htmlspecialchars($p['pemancar']) ?>
+              </span>
+            </td>
             <td>
               <div style="font-weight:600;"><?= htmlspecialchars($p['tanggal']) ?></div>
               <div style="font-size:11px; color:var(--text-secondary);">
                 <?= htmlspecialchars($p['start_time'] ?? '') ?> - <?= htmlspecialchars($p['end_time'] ?? '') ?>
               </div>
             </td>
-            <td><span class="tag blue"><i class="ri-broadcast-line"></i> <?= htmlspecialchars($p['pemancar']) ?></span></td>
             <td><span class="mini-badge orange"><?= $durasi ?></span></td>
             <td><?= htmlspecialchars($p['petugas']) ?></td>
             <td>
@@ -157,101 +277,140 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- Modal Catat Pemadaman (Create & Edit) -->
+<!-- ===== MODAL CATAT AKTIVITAS (MODERN UI/UX) ===== -->
 <div class="modal-overlay" id="pemadamanModal">
-  <div class="modal-content" style="max-width:600px;">
+  <div class="modal-content">
     <div class="modal-header">
-      <h3 class="modal-title" id="modalTitle">Catat Pemadaman PLN</h3>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h3 class="modal-title" id="modalTitle">Catat Aktivitas</h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="Tutup">&times;</button>
     </div>
+    
     <form id="pemadamanForm" onsubmit="handlePemadamanSubmit(event)">
-      <input type="hidden" id="field_page_id" name="page_id" value="">
+      <div class="modal-body">
+        <input type="hidden" id="field_page_id" name="page_id" value="">
 
-      <!-- Pemancar -->
-      <div class="form-group">
-        <label>Pemancar <span class="required-star">*</span></label>
-        <div class="radio-group" id="field_pemancar">
-          <?php foreach ($pemancarList as $loc): ?>
-          <label class="radio-option">
-            <input type="radio" name="pemancar" value="<?= htmlspecialchars($loc) ?>" required>
-            <span class="radio-label"><i class="ri-broadcast-line"></i> <?= htmlspecialchars($loc) ?></span>
-          </label>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <!-- Tanggal & Waktu -->
-      <div class="form-group">
-        <label>Tanggal Pemadaman <span class="required-star">*</span></label>
-        <input type="date" id="field_tanggal" name="tanggal" required>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <!-- Pemancar / Kategori (Selection Cards) -->
         <div class="form-group">
-          <label>Jam Mulai <span class="required-star">*</span></label>
-          <input type="time" id="field_start_time" name="start_time" required>
+          <label class="form-label">Pilih Kategori / Pemancar <span class="required-star">*</span></label>
+          <div class="selection-grid" id="field_pemancar">
+            <?php foreach ($pemancarList as $loc): ?>
+            <label class="selection-card">
+              <input type="radio" name="pemancar" value="<?= htmlspecialchars($loc) ?>" required>
+              <div class="card-content">
+                <?php
+                  $icon = 'ri-broadcast-line';
+                  if (strpos($loc, 'Panel') !== false) $icon = 'ri-plug-line';
+                  if (strpos($loc, 'Genset') !== false) $icon = 'ri-tools-line';
+                  if (strpos($loc, 'Probolinggo') !== false) $icon = 'ri-map-pin-line';
+                ?>
+                <i class="<?= $icon ?>"></i>
+                <span><?= htmlspecialchars($loc) ?></span>
+              </div>
+            </label>
+            <?php endforeach; ?>
+          </div>
         </div>
+
+        <!-- Tanggal & Waktu (Grid Layout) -->
         <div class="form-group">
-          <label>Jam Selesai <span class="required-star">*</span></label>
-          <input type="time" id="field_end_time" name="end_time" required>
+          <label class="form-label">Jadwal Aktivitas <span class="required-star">*</span></label>
+          <div class="datetime-grid">
+            <div>
+              <input type="date" id="field_tanggal" name="tanggal" class="form-input" required>
+            </div>
+            <div>
+              <input type="time" id="field_start_time" name="start_time" class="form-input" required>
+            </div>
+            <div>
+              <input type="time" id="field_end_time" name="end_time" class="form-input" required>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Petugas -->
-      <div class="form-group">
-        <label>Petugas <span class="required-star">*</span> <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Pilih sebanyak yang Anda inginkan</span></label>
-        <div class="checkbox-grid" id="field_petugas">
-          <?php foreach ($petugasList as $nama): ?>
-          <label class="checkbox-option">
-            <input type="checkbox" name="petugas[]" value="<?= $nama ?>">
-            <span class="checkbox-label"><?= $nama ?></span>
+        <!-- Petugas (Chip Selector) -->
+        <div class="form-group">
+          <label class="form-label">
+            Petugas <span class="required-star">*</span> 
+            <span class="form-hint">— Pilih sebanyak yang Anda inginkan</span>
           </label>
-          <?php endforeach; ?>
+          <div class="chip-grid" id="field_petugas">
+            <?php foreach ($petugasList as $nama): ?>
+            <label class="chip-option">
+              <input type="checkbox" name="petugas[]" value="<?= htmlspecialchars($nama) ?>">
+              <span class="chip-content"><?= htmlspecialchars($nama) ?></span>
+            </label>
+            <?php endforeach; ?>
+          </div>
         </div>
-      </div>
 
-      <!-- Upload Foto -->
-      <div class="form-group">
-        <label>Bukti Foto (Opsional)</label>
-        <div style="background:var(--bg-secondary); border:2px dashed var(--border-color); border-radius:8px; padding:1.5rem; text-align:center;">
-          <i class="ri-image-add-line" style="font-size:2rem; color:var(--text-secondary); margin-bottom:0.5rem;"></i>
-          <div style="font-size:13px; color:var(--text-secondary); margin-bottom:0.5rem;">
-            Upload foto kondisi pemadaman
+        <!-- Upload Foto (Modern Drop Zone) -->
+        <div class="form-group">
+          <label class="form-label">Bukti Foto <span class="form-hint">(Opsional)</span></label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" name="files[]" id="field_files" multiple accept="image/*">
+            <div class="upload-icon"><i class="ri-image-add-line"></i></div>
+            <div class="upload-text">Klik atau seret file ke sini</div>
+            <div class="upload-hint">Maksimal 5 MB per file, hingga 10 file (JPG, PNG)</div>
           </div>
-          <div style="font-size:11px; color:var(--text-secondary);">
-            Maksimal 5 MB, 10 file
-          </div>
-          <input type="file" name="files[]" multiple accept="image/*" style="margin-top:0.5rem;">
+          <div class="file-preview" id="filePreview"></div>
         </div>
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
-        <button type="submit" class="btn btn-primary" id="submitBtn"><i class="ri-send-plane-line"></i> <span id="submitBtnLabel">Kirim</span></button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <i class="ri-send-plane-line"></i> <span id="submitBtnLabel">Kirim Data</span>
+        </button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-function openModal(){ document.getElementById('pemadamanModal').classList.add('active'); }
-function closeModal(){ document.getElementById('pemadamanModal').classList.remove('active'); }
+// ===== MODAL CONTROLS =====
+function openModal(){ 
+  document.getElementById('pemadamanModal').classList.add('active'); 
+  document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+function closeModal(){ 
+  document.getElementById('pemadamanModal').classList.remove('active'); 
+  document.body.style.overflow = '';
+}
 
 document.getElementById('pemadamanModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-// ===== Mode CREATE =====
+// ===== FILE UPLOAD PREVIEW =====
+document.getElementById('field_files').addEventListener('change', function() {
+  const preview = document.getElementById('filePreview');
+  if (this.files.length > 0) {
+    const fileNames = Array.from(this.files).map(f => f.name).join(', ');
+    preview.textContent = `📎 ${this.files.length} file dipilih: ${fileNames}`;
+    preview.style.display = 'block';
+    document.getElementById('uploadZone').style.borderColor = '#2563eb';
+    document.getElementById('uploadZone').style.background = '#eff6ff';
+  } else {
+    preview.style.display = 'none';
+    document.getElementById('uploadZone').style.borderColor = '#cbd5e1';
+    document.getElementById('uploadZone').style.background = '#f8fafc';
+  }
+});
+
+// ===== MODE CREATE =====
 function openCreateModal(){
   const form = document.getElementById('pemadamanForm');
   form.reset();
   document.getElementById('field_page_id').value = '';
-  document.getElementById('modalTitle').textContent = 'Catat Pemadaman PLN';
-  document.getElementById('submitBtnLabel').textContent = 'Kirim';
-  // Default tanggal = hari ini
-  document.getElementById('field_tanggal').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modalTitle').textContent = 'Catat Aktivitas';
+  document.getElementById('submitBtnLabel').textContent = 'Kirim Data';
+  document.getElementById('filePreview').style.display = 'none';
+  document.getElementById('uploadZone').style.borderColor = '#cbd5e1';
+  document.getElementById('uploadZone').style.background = '#f8fafc';
   
-  // Set waktu default (opsional)
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('field_tanggal').value = today;
+  
   const now = new Date();
   const timeStr = now.toTimeString().substring(0,5);
   document.getElementById('field_start_time').value = timeStr;
@@ -259,15 +418,15 @@ function openCreateModal(){
   openModal();
 }
 
-// ===== Mode EDIT =====
+// ===== MODE EDIT =====
 function openEditModal(btn){
   const data = JSON.parse(btn.dataset.payload);
   const form = document.getElementById('pemadamanForm');
   form.reset();
+  document.getElementById('filePreview').style.display = 'none';
 
   document.getElementById('field_page_id').value = data.page_id;
   
-  // Parse tanggal dari raw
   if (data.tanggal_raw) {
     const dateObj = new Date(data.tanggal_raw);
     document.getElementById('field_tanggal').value = dateObj.toISOString().split('T')[0];
@@ -281,7 +440,7 @@ function openEditModal(btn){
     if (cb) cb.checked = true;
   });
 
-  document.getElementById('modalTitle').textContent = 'Edit Pemadaman';
+  document.getElementById('modalTitle').textContent = 'Edit Data Aktivitas';
   document.getElementById('submitBtnLabel').textContent = 'Simpan Perubahan';
   openModal();
 }
@@ -341,7 +500,7 @@ function updateTablePagination() {
     if (paginationWrap) paginationWrap.style.display = 'none';
   } else {
     paginationWrap.style.display = 'flex';
-    paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} pemadaman`;
+    paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} data`;
 
     let buttonsHTML = '';
     buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
@@ -357,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTablePagination();
 });
 
-// ===== Submit (Create/Update) =====
+// ===== SUBMIT (CREATE/UPDATE) =====
 async function handlePemadamanSubmit(event) {
   event.preventDefault();
   const form = event.target;
@@ -369,10 +528,10 @@ async function handlePemadamanSubmit(event) {
   if (petugasChecked.length === 0) { showToast('⚠️ Pilih minimal satu Petugas!', 'error'); return; }
 
   const pemancar = form.querySelector('input[name="pemancar"]:checked')?.value;
-  if (!pemancar) { showToast('⚠️ Pilih lokasi Pemancar!', 'error'); return; }
+  if (!pemancar) { showToast('⚠️ Pilih Kategori/Pemancar!', 'error'); return; }
 
   submitBtn.disabled = true;
-  submitBtnLabel.textContent = 'Menyimpan...';
+  submitBtnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyimpan...';
 
   const pageId = form.page_id.value;
   const isEdit = !!pageId;
@@ -408,12 +567,12 @@ async function handlePemadamanSubmit(event) {
     showToast('❌ ' + err.message, 'error');
   } finally {
     submitBtn.disabled = false;
-    submitBtnLabel.textContent = originalLabel;
+    submitBtnLabel.innerHTML = `<i class="ri-send-plane-line"></i> ${originalLabel}`;
   }
 }
 
 async function deletePemadaman(pageId, label) {
-  if (!confirm(`Hapus catatan pemadaman "${label}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
+  if (!confirm(`Hapus catatan "${label}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
   try {
     const res = await fetch('../api/delete-pemadaman.php', {
       method: 'POST',
@@ -440,7 +599,7 @@ function showToast(message, type) {
   toast.textContent = message;
   toast.style.cssText = `
     position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
-    padding: 1rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+    padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
     color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18); animation: slideInToast 0.4s ease;
     ${type === 'success' ? 'background: linear-gradient(135deg, #22c55e, #16a34a);' : 'background: linear-gradient(135deg, #ef4444, #dc2626);'}
   `;

@@ -5,9 +5,8 @@
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fetch_rss') {
     header('Content-Type: application/json; charset=utf-8');
     
-    // Perbaikan kompatibilitas untuk PHP versi di bawah 7.0
-    $channelId = isset($_POST['channel_id']) ? $_POST['channel_id'] : '';
-    $targetDate = isset($_POST['target_date']) ? $_POST['target_date'] : date('Y-m-d');
+    $channelId = $_POST['channel_id'] ?? '';
+    $targetDate = $_POST['target_date'] ?? date('Y-m-d');
     
     if (empty($channelId)) {
         echo json_encode(['success' => false, 'error' => 'ID Channel tidak boleh kosong.']);
@@ -41,28 +40,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Looping setiap video dari RSS
     foreach ($xml->entry as $entry) {
-        // Menggunakan <published> kembali sesuai permintaan
+        $media = $entry->children($namespaces['media']);
+        $title = (string)$entry->title;
+        $url = (string)$entry->link['href'];
+        $description = (string)$media->group->description;
+        
+        // 1. Ekstrak data dari deskripsi (termasuk mencari tanggal asli yang tertulis)
+        $parsed = parseDeskripsi($description);
+        
+        // 2. Ambil waktu sistem YouTube sebagai cadangan (dikonversi ke WIB)
         $dt = new DateTime((string)$entry->published);
         $dt->setTimezone(new DateTimeZone('Asia/Jakarta'));
-        $publishedDate = $dt->format('Y-m-d');
-        $publishedTime = $dt->format('H:i'); // Mengambil jam dan menit (WIB)
+        $fallbackDate = $dt->format('Y-m-d');
 
-        // Filter berdasarkan tanggal published (WIB)
-        if ($publishedDate === $targetDate) {
-            $media = $entry->children($namespaces['media']);
-            $title = (string)$entry->title;
-            $url = (string)$entry->link['href'];
-            $description = (string)$media->group->description;
-            
-            // Ekstrak sisa data dari deskripsi
-            $parsed = parseDeskripsi($description);
-            
+        // 3. PRIORITAS: Gunakan tanggal dari deskripsi jika ada, jika tidak pakai cadangan
+        $realDate = !empty($parsed['tanggal_asli']) ? $parsed['tanggal_asli'] : $fallbackDate;
+
+        // 4. Filter berdasarkan tanggal yang benar-benar tayang
+        if ($realDate === $targetDate) {
             $parsed['title_asli'] = $title;
             $parsed['url'] = $url;
-            $parsed['tanggal'] = $publishedDate;       // Tanggal dari <published>
-            $parsed['jamMulai'] = $publishedTime;      // Jam dari <published>
-            $parsed['jamSelesai'] = '';
-
+            $parsed['tanggal'] = $realDate;
             $videos[] = $parsed;
         }
     }
@@ -71,45 +69,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Fungsi Mesin Regex (Khusus Pemandu, PT, PA, Tema, Narasumber)
+// Fungsi Mesin Regex
 function parseDeskripsi($description) {
     $data = [
         'tema' => '', 'penyiar' => '', 'narasumber' => '',
-        'pt' => [], 'pa' => [], 'programa' => ''
+        'pt' => [], 'pa' => [], 'programa' => '', 'jamMulai' => '', 'jamSelesai' => '',
+        'tanggal_asli' => '' // Tempat menyimpan tanggal asli dari teks
     ];
 
     if (empty($description)) return $data;
 
     $cleanDesc = preg_replace('/[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', '', $description);
 
-    // 1. Ekstrak Programa
+    // 1. Ekstrak Tanggal dari Teks (Misal: "Selasa, 14 Juli 2026" atau "15 Juli 2026")
+    $bulanIndo = [
+        'januari'=>'01', 'februari'=>'02', 'maret'=>'03', 'april'=>'04', 
+        'mei'=>'05', 'juni'=>'06', 'juli'=>'07', 'agustus'=>'08', 
+        'september'=>'09', 'oktober'=>'10', 'november'=>'11', 'desember'=>'12'
+    ];
+    
+    if (preg_match('/(?:\b(?:Senin|Selasa|Rabu|Kamis|Jum\'?at|Sabtu|Minggu)\b\s*,?\s*)?(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i', $cleanDesc, $m)) {
+        $tgl = str_pad($m[1], 2, '0', STR_PAD_LEFT);
+        $bln = $bulanIndo[strtolower($m[2])] ?? '01';
+        $thn = $m[3];
+        $data['tanggal_asli'] = "$thn-$bln-$tgl"; // Konversi ke format YYYY-MM-DD
+    }
+
+    // 2. Ekstrak Programa
     if (preg_match('/Pro\s*1/i', $cleanDesc)) $data['programa'] = 'Pro 1 FM 94.6 Mhz';
     elseif (preg_match('/Pro\s*2/i', $cleanDesc)) $data['programa'] = 'Pro 2 FM 87.9 Mhz';
     elseif (preg_match('/Pro\s*4/i', $cleanDesc)) $data['programa'] = 'Pro 4 FM 105.3 Mhz';
 
-    // 2. Pemandu
+    // 3. Ekstrak Jam (Contoh: 15.00 - 16.00 atau 06.00 s/d Selesai)
+    if (preg_match('/(\d{2}[.:]\d{2})\s*(?:s\/d|-|sd)\s*(Selesai|\d{2}[.:]\d{2})?/i', $cleanDesc, $m)) {
+        $data['jamMulai'] = str_replace('.', ':', $m[1]);
+        if (isset($m[2]) && strtolower($m[2]) !== 'selesai') {
+            $data['jamSelesai'] = str_replace('.', ':', $m[2]);
+        }
+    }
+
+    // 4. Pemandu
     if (preg_match('/(?:Presenter|Penyiar|Host)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['penyiar'] = trim(str_replace(['(Presenter)', '(Host)'], '', $m[1]));
     } elseif (preg_match('/Dipandu oleh:?\s*\r?\n([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['penyiar'] = trim(str_replace(['(Presenter)', '(Host)'], '', $m[1]));
     }
 
-    // 3. PT
+    // 5. PT
     if (preg_match('/(?:Petugas Teknik|Petugas PT|Pengarah Teknik|\bPT\b)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['pt'] = array_map('trim', explode(',', $m[1]));
     }
 
-    // 4. PA
+    // 6. PA
     if (preg_match('/(?:Petugas PA|Pengarah Acara|\bPA\b)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['pa'] = array_map('trim', explode(',', $m[1]));
     }
 
-    // 5. Tema
+    // 7. Tema
     if (preg_match('/Tema\s*[:\-]?\s*"?([^"\n\r]+)"?/i', $cleanDesc, $m)) {
         $data['tema'] = trim($m[1], " \t\n\r\0\x0B\"");
     }
 
-    // 6. Narasumber
+    // 8. Narasumber
     if (preg_match('/Narasumber\s*[:\-]?\s*\r?\n?([\s\S]*?)(?=\r?\n(?:Petugas|Telepon|WhatsApp|Dapatkan|PT|PA|Pengarah|Line)|$)/i', $cleanDesc, $m)) {
         $narasumberBersih = trim($m[1]);
         $data['narasumber'] = ($narasumberBersih === ':' || $narasumberBersih === '') ? '' : ltrim($narasumberBersih, ": \t\n\r\0\x0B");
@@ -190,7 +211,7 @@ function parseDeskripsi($description) {
 
 <script>
 // Mock data untuk dropdown petugas
-const mockPetugas = ["Dicky", "Priyo", "Anggi", "Ludfi", "Deny", "Shofirin", "Yhanuar", "Yudha", "Dayat", "Dedy", "Winsa", "Yayank", "Syukur", "Saiful", "Alif", "Selvy", "Alfian", "Firman", "Roni", "Ari"];
+const mockPetugas = ["Dicky", "Priyo", "Anggi", "Ludfi", "Deny", "Shofirin", "Yhanuar", "Yudha", "Dayat", "Dedy", "Winsa", "Yayang", "Syukur", "Saiful", "Alif", "Selvy", "Alfian", "Firman", "Roni", "Ari"];
 
 async function tarikRss() {
     const channelId = document.getElementById('channelId').value.trim();
