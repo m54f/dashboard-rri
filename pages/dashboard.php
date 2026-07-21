@@ -16,19 +16,15 @@ require_once __DIR__ . '/../api/agenda.php';
  $agenda = [];
 if (is_array($fetchedAgenda) && !isset($fetchedAgenda['error'])) {
     foreach ($fetchedAgenda as $a) {
-        $tag = $a['tag'] ?? 'Umum';
-        $tone = match(strtolower($tag)) {
-            'podcast' => 'purple',
-            'live' => 'red',
-            'event' => 'orange',
-            'produksi' => 'blue',
-            default => 'gray'
-        };
         $agenda[] = [
             'time' => substr($a['time'], 0, 5),
             'title' => $a['title'],
-            'tag' => strtoupper($tag),
-            'tone' => $tone,
+            // Pakai tag & tone yang sama persis dengan yang dihasilkan
+            // getAgenda()/categoryTone() di api/agenda.php — biar konsisten
+            // dengan halaman Daily Agenda (termasuk kapitalisasi aslinya,
+            // tidak dipaksa uppercase lagi).
+            'tag' => $a['tag'] ?? 'Umum',
+            'tone' => $a['tone'] ?? 'gray',
             'pic' => $a['pic'] ?? '-'
         ];
     }
@@ -144,6 +140,7 @@ include __DIR__ . '/../includes/header.php';
   .tag.orange { background: #fff7ed; color: var(--warning); }
   .tag.purple { background: #f5f3ff; color: var(--purple); }
   .tag.gray { background: #f3f4f6; color: var(--text-secondary); }
+  .tag.green { background: #ecfdf5; color: var(--success); }
   .pic-badge { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
 
   /* Troubleshoot List */
