@@ -6,7 +6,7 @@ $menuOperasional = [
     'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
     'Maintenance' => ['Log Pemadaman PLN', 'ri-flashlight-line', '/pages/pemadaman.php'],
     'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/pages/peminjaman.php'],
-    'inventaris'  => ['Inventaris',     'ri-book-shelf-line',           '/pages/inventaris.php'],
+    'inventaris'  => ['Inventaris',     'ri-book-line',           '/pages/inventaris.php'],
 ];
 $menuDokumentasi = [
     'jurnal'   => ['Jurnal Kegiatan', 'ri-file-list-3-line', '/pages/jurnal.php'],

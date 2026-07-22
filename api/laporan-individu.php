@@ -57,38 +57,44 @@ function isPetugasIni($targetName, $dataArray) {
  $riwayat = [];
  $totalDurasiMenit = 0;
  $statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0];
+ $debugLog = []; // Untuk melihat jika ada API yang error
 
 // ==========================================
 // 1. DARI LOGBOOK PEMADAMAN
 // ==========================================
 if (function_exists('getPemadaman')) {
-    $pemadaman = getPemadaman();
-    // Pastikan bukan error array
-    if (is_array($pemadaman) && !isset($pemadaman['error'])) {
-        foreach ($pemadaman as $p) {
-            if (isPetugasIni($namaInput, $p['petugas_arr'] ?? []) || isPetugasIni($namaInput, $p['petugas'] ?? '')) {
-                $statistik['Pemadaman Listrik']++;
-                $durasiText = '-';
-                if (!empty($p['tanggal_raw']) && !empty($p['end_time']) && $p['end_time'] !== '-') {
-                    try {
-                        $start = new DateTime($p['tanggal_raw']);
-                        $endRaw = explode('T', $p['tanggal_raw'])[0] . 'T' . $p['end_time'] . ':00+07:00';
-                        $end = new DateTime($endRaw);
-                        $diff = $start->diff($end);
-                        $totalDurasiMenit += ($diff->h * 60) + $diff->i;
-                        $durasiText = $diff->h . 'j ' . $diff->i . 'm';
-                    } catch (Exception $e) {}
+    try {
+        $pemadaman = getPemadaman();
+        if (is_array($pemadaman) && !isset($pemadaman['error'])) {
+            foreach ($pemadaman as $p) {
+                if (isPetugasIni($namaInput, $p['petugas_arr'] ?? []) || isPetugasIni($namaInput, $p['petugas'] ?? '')) {
+                    $statistik['Pemadaman Listrik']++;
+                    $durasiText = '-';
+                    if (!empty($p['tanggal_raw']) && !empty($p['end_time']) && $p['end_time'] !== '-') {
+                        try {
+                            $start = new DateTime($p['tanggal_raw']);
+                            $endRaw = explode('T', $p['tanggal_raw'])[0] . 'T' . $p['end_time'] . ':00+07:00';
+                            $end = new DateTime($endRaw);
+                            $diff = $start->diff($end);
+                            $totalDurasiMenit += ($diff->h * 60) + $diff->i;
+                            $durasiText = $diff->h . 'j ' . $diff->i . 'm';
+                        } catch (Exception $e) {}
+                    }
+                    $riwayat[] = [
+                        'tanggal' => $p['tanggal'] ?? '-',
+                        'kategori' => 'Pemadaman Listrik',
+                        'deskripsi' => $p['pemancar'] ?? '-',
+                        'status' => 'Selesai',
+                        'durasi' => $durasiText,
+                        'url' => $p['url'] ?? '#'
+                    ];
                 }
-                $riwayat[] = [
-                    'tanggal' => $p['tanggal'] ?? '-',
-                    'kategori' => 'Pemadaman Listrik',
-                    'deskripsi' => $p['pemancar'] ?? '-',
-                    'status' => 'Selesai',
-                    'durasi' => $durasiText,
-                    'url' => $p['url'] ?? '#'
-                ];
             }
+        } else {
+            $debugLog[] = 'Pemadaman API Error: ' . ($pemadaman['error'] ?? 'Unknown');
         }
+    } catch (Exception $e) {
+        $debugLog[] = 'Pemadaman Exception: ' . $e->getMessage();
     }
 }
 
@@ -96,21 +102,27 @@ if (function_exists('getPemadaman')) {
 // 2. DARI TROUBLESHOOT
 // ==========================================
 if (function_exists('getTroubleshoot')) {
-    $troubleshoot = getTroubleshoot();
-    if (is_array($troubleshoot) && !isset($troubleshoot['error'])) {
-        foreach ($troubleshoot as $t) {
-            if (isPetugasIni($namaInput, $t['petugas_arr'] ?? []) || isPetugasIni($namaInput, $t['petugas'] ?? '') || isPetugasIni($namaInput, $t['pic'] ?? '')) {
-                $statistik['Troubleshoot']++;
-                $riwayat[] = [
-                    'tanggal' => $t['date'] ?? '-',
-                    'kategori' => 'Troubleshoot',
-                    'deskripsi' => $t['title'] ?? '-',
-                    'status' => $t['status'] ?? '-',
-                    'durasi' => '-',
-                    'url' => $t['url'] ?? '#'
-                ];
+    try {
+        $troubleshoot = getTroubleshoot();
+        if (is_array($troubleshoot) && !isset($troubleshoot['error'])) {
+            foreach ($troubleshoot as $t) {
+                if (isPetugasIni($namaInput, $t['petugas_arr'] ?? []) || isPetugasIni($namaInput, $t['petugas'] ?? '') || isPetugasIni($namaInput, $t['pic'] ?? '')) {
+                    $statistik['Troubleshoot']++;
+                    $riwayat[] = [
+                        'tanggal' => $t['date'] ?? '-',
+                        'kategori' => 'Troubleshoot',
+                        'deskripsi' => $t['title'] ?? '-',
+                        'status' => $t['status'] ?? '-',
+                        'durasi' => '-',
+                        'url' => $t['url'] ?? '#'
+                    ];
+                }
             }
+        } else {
+            $debugLog[] = 'Troubleshoot API Error: ' . ($troubleshoot['error'] ?? 'Unknown');
         }
+    } catch (Exception $e) {
+        $debugLog[] = 'Troubleshoot Exception: ' . $e->getMessage();
     }
 }
 
@@ -118,21 +130,27 @@ if (function_exists('getTroubleshoot')) {
 // 3. DARI CHECKLIST
 // ==========================================
 if (function_exists('getChecklist')) {
-    $checklist = getChecklist();
-    if (is_array($checklist) && !isset($checklist['error'])) {
-        foreach ($checklist as $c) {
-            if (isPetugasIni($namaInput, $c['petugas_arr'] ?? []) || isPetugasIni($namaInput, $c['petugas'] ?? '')) {
-                $statistik['Checklist']++;
-                $riwayat[] = [
-                    'tanggal' => $c['tanggal'] ?? '-',
-                    'kategori' => 'Checklist ',
-                    'deskripsi' => 'Cek ' . ($c['done_items'] ?? 0) . '/5 Perangkat',
-                    'status' => ($c['is_complete'] ?? false) ? 'Lengkap' : 'Belum Lengkap',
-                    'durasi' => '-',
-                    'url' => $c['url'] ?? '#'
-                ];
+    try {
+        $checklist = getChecklist();
+        if (is_array($checklist) && !isset($checklist['error'])) {
+            foreach ($checklist as $c) {
+                if (isPetugasIni($namaInput, $c['petugas_arr'] ?? []) || isPetugasIni($namaInput, $c['petugas'] ?? '')) {
+                    $statistik['Checklist']++;
+                    $riwayat[] = [
+                        'tanggal' => $c['tanggal'] ?? '-',
+                        'kategori' => 'Checklist',
+                        'deskripsi' => 'Cek ' . ($c['done_items'] ?? 0) . '/5 Perangkat',
+                        'status' => ($c['is_complete'] ?? false) ? 'Lengkap' : 'Belum Lengkap',
+                        'durasi' => '-',
+                        'url' => $c['url'] ?? '#'
+                    ];
+                }
             }
+        } else {
+            $debugLog[] = 'Checklist API Error: ' . ($checklist['error'] ?? 'Unknown');
         }
+    } catch (Exception $e) {
+        $debugLog[] = 'Checklist Exception: ' . $e->getMessage();
     }
 }
 
@@ -140,21 +158,27 @@ if (function_exists('getChecklist')) {
 // 4. DARI JURNAL KEGIATAN
 // ==========================================
 if (function_exists('getJurnal')) {
-    $jurnal = getJurnal();
-    if (is_array($jurnal) && !isset($jurnal['error'])) {
-        foreach ($jurnal as $j) {
-            if (isPetugasIni($namaInput, $j['ops_arr'] ?? []) || isPetugasIni($namaInput, $j['op'] ?? '')) {
-                $statistik['Jurnal Kegiatan']++;
-                $riwayat[] = [
-                    'tanggal' => $j['date'] ?? '-',
-                    'kategori' => 'Jurnal Kegiatan',
-                    'deskripsi' => $j['title'] ?? '-',
-                    'status' => $j['status'] ?? '-',
-                    'durasi' => '-',
-                    'url' => $j['url'] ?? '#'
-                ];
+    try {
+        $jurnal = getJurnal();
+        if (is_array($jurnal) && !isset($jurnal['error'])) {
+            foreach ($jurnal as $j) {
+                if (isPetugasIni($namaInput, $j['ops_arr'] ?? []) || isPetugasIni($namaInput, $j['op'] ?? '')) {
+                    $statistik['Jurnal Kegiatan']++;
+                    $riwayat[] = [
+                        'tanggal' => $j['date'] ?? '-',
+                        'kategori' => 'Jurnal Kegiatan',
+                        'deskripsi' => $j['title'] ?? '-',
+                        'status' => $j['status'] ?? '-',
+                        'durasi' => '-',
+                        'url' => $j['url'] ?? '#'
+                    ];
+                }
             }
+        } else {
+            $debugLog[] = 'Jurnal API Error: ' . ($jurnal['error'] ?? 'Unknown');
         }
+    } catch (Exception $e) {
+        $debugLog[] = 'Jurnal Exception: ' . $e->getMessage();
     }
 }
 
@@ -173,6 +197,7 @@ echo json_encode([
     'total_tugas' => count($riwayat),
     'total_durasi' => $totalJam . ' Jam ' . $sisaMenit . ' Menit',
     'statistik' => $statistik,
-    'riwayat' => $riwayat
+    'riwayat' => $riwayat,
+    'debug' => $debugLog // Sengaja ditampilkan untuk pengecekan
 ]);
 ?>
