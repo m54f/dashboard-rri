@@ -42,110 +42,141 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- ===== STYLE KHUSUS MODAL MODERN ===== -->
 <style>
-/* Modal Overlay & Animation */
+/* ===== MODAL OVERLAY ===== */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center; z-index: 9999;
-  opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 1rem;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
 }
-.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===== MODAL CONTAINER ===== */
 .modal-content {
-  background: #ffffff; border-radius: 20px; width: 100%; max-width: 680px; max-height: 90vh;
-  overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  transform: translateY(20px);
+  transition: transform .3s ease;
 }
-.modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+.modal-overlay.active .modal-content {
+  transform: translateY(0);
+}
 
-/* Modal Header */
+/* ===== HEADER (tidak floating) ===== */
 .modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1.5rem 2rem; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: #fff; z-index: 10; border-radius: 20px 20px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  background: #ffffff;          /* solid, tidak transparan */
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;            /* hapus sticky/fixed */
+  flex-shrink: 0;
 }
-.modal-title { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0; }
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
 .modal-close {
-  background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%;
-  font-size: 1.5rem; line-height: 1; color: #64748b; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  transition: background .2s, color .2s;
 }
-.modal-close:hover { background: #e2e8f0; color: #0f172a; }
-
-/* Form Layout */
-.modal-body { padding: 2rem; }
-.form-group { margin-bottom: 1.5rem; }
-.form-label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
-.required-star { color: #ef4444; }
-.form-hint { font-size: 0.8rem; color: #64748b; font-weight: 400; margin-left: 0.25rem; }
-
-/* Selection Cards (Pemancar) */
-.selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
-.selection-card {
-  position: relative; cursor: pointer; border: 2px solid #e2e8f0; border-radius: 12px;
-  padding: 1rem; transition: all 0.2s ease; background: #fff;
-}
-.selection-card:hover { border-color: #94a3b8; background: #f8fafc; }
-.selection-card input[type="radio"] { position: absolute; opacity: 0; }
-.selection-card input[type="radio"]:checked + .card-content { color: #2563eb; }
-.selection-card:has(input[type="radio"]:checked) {
-  border-color: #2563eb; background: #eff6ff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
-}
-.card-content { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 0.9rem; color: #475569; transition: color 0.2s; }
-.card-content i { font-size: 1.25rem; }
-
-/* Grid untuk Tanggal & Waktu */
-.datetime-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
-@media (max-width: 640px) { .datetime-grid { grid-template-columns: 1fr; } }
-
-.form-input {
-  width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px;
-  font-size: 0.95rem; color: #0f172a; background: #fff; transition: all 0.2s; outline: none;
-}
-.form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-
-/* Chip Selector (Petugas) */
-.chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.chip-option { cursor: pointer; user-select: none; }
-.chip-option input[type="checkbox"] { position: absolute; opacity: 0; }
-.chip-content {
-  display: inline-block; padding: 0.5rem 1rem; border-radius: 999px;
-  background: #f1f5f9; color: #475569; font-size: 0.85rem; font-weight: 600;
-  border: 1.5px solid transparent; transition: all 0.2s ease;
-}
-.chip-option:hover .chip-content { background: #e2e8f0; }
-.chip-option input[type="checkbox"]:checked + .chip-content {
-  background: #2563eb; color: #fff; border-color: #1d4ed8; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+.modal-close:hover {
+  background: #f3f4f6;
+  color: #111827;
 }
 
-/* Modern File Upload */
-.upload-zone {
-  border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.5rem; text-align: center;
-  background: #f8fafc; transition: all 0.2s; cursor: pointer; position: relative;
-}
-.upload-zone:hover { border-color: #2563eb; background: #eff6ff; }
-.upload-zone input[type="file"] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer;
-}
-.upload-icon { font-size: 2rem; color: #64748b; margin-bottom: 0.5rem; }
-.upload-text { font-size: 0.9rem; color: #334155; font-weight: 600; }
-.upload-hint { font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; }
-.file-preview {
-  margin-top: 0.75rem; font-size: 0.85rem; color: #2563eb; font-weight: 500;
-  word-break: break-all; text-align: left; background: #eff6ff; padding: 0.75rem; border-radius: 8px; display: none;
+/* ===== BODY (scroll di sini saja) ===== */
+.modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0; /* TAMBAHKAN INI agar scrollbar berfungsi */
+  background: #ffffff;
 }
 
-/* Modal Footer */
+/* ===== FOOTER (menempel rapat, tidak melayang) ===== */
 .modal-footer {
-  display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.5rem 2rem;
-  border-top: 1px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 20px 20px; position: sticky; bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  background: #ffffff;          /* solid */
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  position: relative;            /* hapus sticky/fixed */
+  margin-top: 0;                 /* hapus margin negatif jika ada */
 }
+
+/* ===== TOMBOL ===== */
 .btn {
-  padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
-  cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background .2s, transform .1s, box-shadow .2s;
 }
-.btn-secondary { background: #fff; color: #475569; border: 1.5px solid #cbd5e1; }
-.btn-secondary:hover { background: #f1f5f9; border-color: #94a3b8; }
-.btn-primary { background: #2563eb; color: #fff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
-.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-.btn-primary:disabled { background: #93c5fd; cursor: not-allowed; transform: none; }
+.btn:active { transform: translateY(1px); }
+.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37,99,235,.3);
+}
+.btn-primary:hover { background: #1d4ed8; }
+
+/* Scrollbar tipis agar rapi */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+
+/* ===== FORM WRAPPER (Agar flexbox turun ke modal-body) ===== */
+#pemadamanForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0; /* Wajib ada agar flex child bisa di-scroll */
+  overflow: hidden;
+}
 </style>
 
 <div class="page-head">

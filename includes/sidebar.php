@@ -4,7 +4,7 @@ $menuOperasional = [
     'agenda'      => ['Daily Agenda',        'ri-calendar-line',          '/pages/agenda.php'],
     'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/pages/checklist.php'],
     'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
-    'Maintenance' => ['Log Pemadaman PLN',   'ri-flashlight-line',        '/pages/pemadaman.php'],
+    'pemadaman' => ['Log Pemadaman PLN',   'ri-flashlight-line',        '/pages/pemadaman.php'],
     'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/pages/peminjaman.php'],
     'inventaris'  => ['Inventaris',          'ri-book-line',              '/pages/inventaris.php'],
 ];
@@ -81,26 +81,26 @@ function render_menu_group($items, $base, $activeMenu) {
     
     <!-- Anggota 1 -->
     <div style="background: var(--bg-color); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">[Nama Anggota 1]</div>
-      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">NIM: [12345678] • [Role, misal: Frontend]</div>
+      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Reihan</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Programmer</div>
     </div>
     
     <!-- Anggota 2 -->
     <div style="background: var(--bg-color); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">[Nama Anggota 2]</div>
-      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">NIM: [12345678] • [Role, misal: Backend]</div>
+      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Salis</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Programmer</div>
     </div>
     
     <!-- Anggota 3 -->
     <div style="background: var(--bg-color); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">[Nama Anggota 3]</div>
-      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">NIM: [12345678] • [Role, misal: UI/UX]</div>
+      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Zidane</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Programmer</div>
     </div>
     
     <!-- Anggota 4 -->
     <div style="background: var(--bg-color); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">[Nama Anggota 4]</div>
-      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">NIM: [12345678] • [Role, misal: Database]</div>
+      <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Salman</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Programmer</div>
     </div>
 
   </div>
