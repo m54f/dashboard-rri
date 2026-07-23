@@ -409,36 +409,9 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- 3. BOTTOM SECTION: Checklist Detail & YouTube Recap -->
 <!-- PERUBAHAN: Grid ratio diubah menjadi 0.8fr : 1.6fr agar Checklist kecil dan YouTube besar -->
-<div class="main-grid" style="grid-template-columns: 0.8fr 1.6fr; align-items: start;">
+<div class="main-grid" style="grid-template-columns: 1.6fr 0.8fr; align-items: start;">
   
-  <!-- Checklist Detail (DIPERKECIL / COMPACT) -->
-  <div class="card checklist-compact">
-    <div class="card-header">
-      <div class="card-title"><i class="ri-equipment-line"></i> Status Perangkat</div>
-      <a class="link-btn" href="<?= $base ?>/pages/checklist.php">Detail <i class="ri-arrow-right-line"></i></a>
-    </div>
-    <div class="card-body">
-      <div class="progress-wrap">
-        <div class="progress-header">
-          <span>Tingkat Kesiapan</span>
-          <span style="color: var(--success); font-weight: 700;"><?= $checklistPct ?>%</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: <?= $checklistPct ?>%;"></div>
-        </div>
-      </div>
-      <div class="checklist-mini">
-        <?php foreach ($checklist as $c): ?>
-        <div class="check-mini-item <?= $c['ok'] ? 'ok' : 'not-ok' ?>">
-          <span><i class="<?= $c['ok'] ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill' ?>"></i> <?= htmlspecialchars($c['name']) ?></span>
-          <span><?= htmlspecialchars($c['status']) ?></span>
-        </div>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </div>
-
-  <!-- YouTube Recap (DIPERBESAR) -->
+  <!-- YouTube Recap (DIPERBESAR) - SEKARANG DI KIRI -->
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-youtube-line" style="color: #ef4444;"></i> Live 7 Hari Terakhir</div>
@@ -483,6 +456,34 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
+  <!-- Checklist Detail (DIPERKECIL / COMPACT) - SEKARANG DI KANAN -->
+  <div class="card checklist-compact">
+    <div class="card-header">
+      <div class="card-title"><i class="ri-equipment-line"></i> Status Perangkat</div>
+      <a class="link-btn" href="<?= $base ?>/pages/checklist.php">Detail <i class="ri-arrow-right-line"></i></a>
+    </div>
+    <div class="card-body">
+      <div class="progress-wrap">
+        <div class="progress-header">
+          <span>Tingkat Kesiapan</span>
+          <span style="color: var(--success); font-weight: 700;"><?= $checklistPct ?>%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: <?= $checklistPct ?>%;"></div>
+        </div>
+      </div>
+      <div class="checklist-mini">
+        <?php foreach ($checklist as $c): ?>
+        <div class="check-mini-item <?= $c['ok'] ? 'ok' : 'not-ok' ?>">
+          <span><i class="<?= $c['ok'] ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill' ?>"></i> <?= htmlspecialchars($c['name']) ?></span>
+          <span><?= htmlspecialchars($c['status']) ?></span>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+
 </div>
+
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
