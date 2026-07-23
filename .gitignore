@@ -7,3 +7,4 @@ setup/5-clear-peminjaman.php
 setup/6-seed-peminjaman-full.php
 setup/7-seed-inventaris-full.php
 setup/8-clear-inventaris.php
+setup/setup_database_petugas.php

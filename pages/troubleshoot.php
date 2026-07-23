@@ -37,35 +37,100 @@ include __DIR__ . '/../includes/header.php';
 <style>
 /* Modal Overlay & Animation */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center; z-index: 9999;
-  opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 1rem;
+  position: fixed; 
+  inset: 0; 
+  background: rgba(15, 23, 42, 0.6); 
+  backdrop-filter: blur(4px);
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 9999;
+  opacity: 0; 
+  visibility: hidden; 
+  transition: all 0.3s ease; 
+  padding: 1rem;
 }
 .modal-overlay.active { opacity: 1; visibility: visible; }
+
+/* Modal Container */
 .modal-content {
-  background: #ffffff; border-radius: 20px; width: 100%; max-width: 680px; max-height: 90vh;
-  overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff; 
+  border-radius: 16px; 
+  width: 100%; 
+  max-width: 680px; 
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Hindari scroll di level ini */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(20px) scale(0.95); 
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
-/* Modal Header & Footer */
-.modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1.5rem 2rem; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: #fff; z-index: 10; border-radius: 20px 20px 0 0;
+/* Form Wrapper (PENTING agar flexbox turun ke modal-body) */
+#newTicketForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0; /* Wajib ada agar bisa di-scroll */
+  overflow: hidden;
 }
-.modal-title { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0; }
+
+/* Modal Header (Tidak melayang) */
+.modal-header {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  padding: 1.25rem 1.5rem; 
+  border-bottom: 1px solid #e5e7eb; 
+  background: #ffffff; 
+  position: relative; 
+  flex-shrink: 0;
+  border-radius: 16px 16px 0 0;
+}
+.modal-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; }
 .modal-close {
-  background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%;
-  font-size: 1.5rem; line-height: 1; color: #64748b; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center;
+  background: #f1f5f9; 
+  border: none; 
+  width: 34px; 
+  height: 34px; 
+  border-radius: 8px;
+  font-size: 1.5rem; 
+  line-height: 1; 
+  color: #64748b; 
+  cursor: pointer; 
+  transition: all 0.2s;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
 }
 .modal-close:hover { background: #e2e8f0; color: #0f172a; }
 
-.modal-body { padding: 2rem; }
+/* Modal Body (Hanya bagian ini yang di-scroll) */
+.modal-body { 
+  padding: 1.5rem; 
+  flex: 1 1 auto; 
+  min-height: 0; /* Wajib ada agar scrollbar berfungsi */
+  overflow-y: auto; 
+  background: #ffffff; 
+}
+
+/* Scrollbar tipis agar rapi */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+/* Modal Footer (Tidak melayang) */
 .modal-footer {
-  display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.5rem 2rem;
-  border-top: 1px solid #f1f5f9; background: #f8fafc; border-radius: 0 0 20px 20px; position: sticky; bottom: 0;
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 0.75rem; 
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb; 
+  background: #ffffff; 
+  position: relative; 
+  flex-shrink: 0;
+  border-radius: 0 0 16px 16px;
 }
 
 /* Form Elements */
@@ -97,7 +162,7 @@ include __DIR__ . '/../includes/header.php';
 
 /* Chip Selector (Petugas) */
 .chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.chip-option { cursor: pointer; user-select: none; }
+.chip-option { cursor: pointer; user-select: none; position: relative; }
 .chip-option input[type="checkbox"] { position: absolute; opacity: 0; }
 .chip-content {
   display: inline-block; padding: 0.5rem 1rem; border-radius: 999px;

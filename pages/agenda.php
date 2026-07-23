@@ -10,15 +10,25 @@ $stats = [
 
 require_once __DIR__ . '/../api/agenda.php';
 
-$selectedDate = $_GET['date'] ?? '';
-$selectedSort = ($_GET['sort'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-$agenda = getAgenda($selectedDate ?: null, $selectedSort);
+$filterDate = $_GET['date'] ?? ''; // '' atau format 'Y-m-d' (dari input type="date")
+$selectedSort = 'desc'; // fitur pilih Urutan dihapus — tabel selalu tampilkan yang PALING BARU dulu
+
+// Ambil SEMUA data sekali jalan, lalu filter di PHP berdasarkan tanggal yang
+// dipilih di satu field input type="date". Widget bawaan browser ini sudah
+// punya navigasi bulan & tahun (klik header kalender) plus tombol Clear/Today
+// sendiri, jadi user gampang cari tanggal yang diinginkan dari satu field aja.
+$allAgenda = getAgenda(null, $selectedSort);
 $errorMessage = null;
 $errorRaw = null;
-if (!is_array($agenda) || isset($agenda['error'])) {
-  $errorMessage = $agenda['error'] ?? 'Gagal memuat data agenda dari Notion';
-  $errorRaw = $agenda['raw'] ?? null;
-  $agenda = [];
+if (!is_array($allAgenda) || isset($allAgenda['error'])) {
+    $errorMessage = $allAgenda['error'] ?? 'Gagal memuat data agenda dari Notion';
+    $errorRaw = $allAgenda['raw'] ?? null;
+    $allAgenda = [];
+}
+
+$agenda = $allAgenda;
+if ($filterDate !== '') {
+    $agenda = array_values(array_filter($agenda, fn($a) => $a['date'] === $filterDate));
 }
 
 // Statistik kartu di atas SELALU berdasarkan HARI INI (bukan ikut filter
@@ -62,30 +72,67 @@ $agendaPage = array_slice($agenda, $offset, $perPage);
 $showingFrom = $totalItems === 0 ? 0 : $offset + 1;
 $showingTo = min($offset + $perPage, $totalItems);
 
-function agendaPageUrl($page, $selectedDate, $selectedSort)
+function agendaPageUrl($page, $filterDate)
 {
     $params = [];
-    if ($selectedDate !== '') $params['date'] = $selectedDate;
-    $params['sort'] = $selectedSort;
+    if ($filterDate !== '') $params['date'] = $filterDate;
     $params['page'] = $page;
     return '?' . http_build_query($params);
 }
 
 include __DIR__ . '/../includes/header.php';
 ?>
+<style>
+/* Dropdown status inline di tabel Daily Agenda — tampilannya tetap pakai
+   warna & bentuk yang sama seperti badge status-tag lama, tapi jadi <select>
+   supaya bisa langsung diganti (Belum/Selesai) tanpa buka modal Edit.
+   Ditambah border putus-putus + panah kecil supaya keliatan bisa diklik
+   (sebelumnya terlalu mirip teks/badge statis biasa). */
+.status-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 1px dashed rgba(0,0,0,0.25);
+  outline: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding-right: 20px !important;
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.status-select:hover {
+  border-color: rgba(37,99,235,0.55);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+.status-select:focus {
+  border-color: rgba(37,99,235,0.7);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.22);
+}
+.status-select:disabled { cursor: wait; opacity: 0.6; }
+.status-select-arrow {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.7;
+}
+</style>
 <div class="page-head">
   <div>
     <h2>Daily Agenda</h2>
     <p>Jadwal kegiatan operasional siaran hari ini.</p>
   </div>
-  <form class="date-picker" method="get" style="display:inline-flex; align-items:center; gap:0.75rem; margin-left:1rem;">
-    <label for="dateFilter" style="margin:0; font-weight:600;">Tanggal:</label>
-    <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($selectedDate) ?>" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
-    <label for="sortFilter" style="margin:0; font-weight:600;">Urutan:</label>
-    <select id="sortFilter" name="sort" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
-      <option value="asc" <?= $selectedSort === 'asc' ? 'selected' : '' ?>>Terlama</option>
-      <option value="desc" <?= $selectedSort === 'desc' ? 'selected' : '' ?>>Terbaru</option>
-    </select>
+  <form class="date-picker" method="get" id="filterForm" style="display:inline-flex; align-items:center; gap:0.75rem; margin-left:1rem; flex-wrap:wrap;">
+    <label for="dateFilter" style="margin:0; font-weight:600;">Filter Tanggal:</label>
+    <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
   </form>
   <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
 </div>
@@ -121,7 +168,13 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="card">
   <div class="card-header">
-    <div class="card-title"><i class="ri-calendar-line"></i>Jadwal — <?= htmlspecialchars($selectedDate ? date('l, d F Y', strtotime($selectedDate)) : 'Semua Tanggal') ?></div>
+    <div class="card-title"><i class="ri-calendar-line"></i>Jadwal — <?php
+      if ($filterDate !== '') {
+        echo htmlspecialchars(date('l, d F Y', strtotime($filterDate)));
+      } else {
+        echo 'Semua Tanggal';
+      }
+    ?></div>
   </div>
   <div class="table-wrap">
     <table class="data-table" id="agendaTable">
@@ -135,8 +188,17 @@ include __DIR__ . '/../includes/header.php';
           <td style="font-weight:700;"><?= htmlspecialchars($a['time']) ?></td>
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
           <td><span class="tag <?= $a['tone'] ?>"><?= htmlspecialchars($a['tag']) ?></span></td>
-          <td><span class="avatar-sm"><?= strtoupper(substr($a['pic'],0,2)) ?></span> <?= htmlspecialchars($a['pic']) ?></td>
-          <td><span class="status-tag <?= $a['cls'] ?>"><?= htmlspecialchars($a['status']) ?></span></td>
+          <td><?= strtoupper(substr($a['pic'],0,2)) ?></span> <?= htmlspecialchars($a['pic']) ?></td>
+          <td>
+            <?php $curStatus = stripos($a['status'], 'selesai') !== false ? 'Selesai' : 'Belum'; ?>
+            <span class="status-select-wrap" title="Klik untuk ubah status">
+              <select class="status-select status-tag <?= $a['cls'] ?>" data-id="<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>" data-prev="<?= $curStatus ?>" onchange="updateStatusInline(this)">
+                <option value="Belum" <?= $curStatus === 'Belum' ? 'selected' : '' ?>>Belum</option>
+                <option value="Selesai" <?= $curStatus === 'Selesai' ? 'selected' : '' ?>>Selesai</option>
+              </select>
+              <i class="ri-arrow-down-s-line status-select-arrow"></i>
+            </span>
+          </td>
           <td class="cell-sub"><?= $a['notes'] ? htmlspecialchars($a['notes']) : '—' ?></td>
           <td>
             <?php if (!empty($a['dokumentasi'])):
@@ -184,13 +246,13 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <?php if ($totalPages > 1): ?>
     <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-      <a href="<?= htmlspecialchars(agendaPageUrl(max(1, $currentPage - 1), $selectedDate, $selectedSort)) ?>"
+      <a href="<?= htmlspecialchars(agendaPageUrl(max(1, $currentPage - 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
       <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-      <a href="<?= htmlspecialchars(agendaPageUrl($p, $selectedDate, $selectedSort)) ?>"
+      <a href="<?= htmlspecialchars(agendaPageUrl($p, $filterDate)) ?>"
          class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem;"><?= $p ?></a>
       <?php endfor; ?>
-      <a href="<?= htmlspecialchars(agendaPageUrl(min($totalPages, $currentPage + 1), $selectedDate, $selectedSort)) ?>"
+      <a href="<?= htmlspecialchars(agendaPageUrl(min($totalPages, $currentPage + 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
     </div>
     <?php endif; ?>
@@ -211,20 +273,14 @@ include __DIR__ . '/../includes/header.php';
         <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
       </div>
       <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Kategori</label>
-          <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
-          <datalist id="kategoriList">
-            <?php foreach ($categories as $cat): ?>
-            <option value="<?= htmlspecialchars($cat) ?>"></option>
-            <?php endforeach; ?>
-          </datalist>
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select name="status"><option>Belum</option><option>Selesai</option><option>Cancel</option></select>
-        </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
+        <datalist id="kategoriList">
+          <?php foreach ($categories as $cat): ?>
+          <option value="<?= htmlspecialchars($cat) ?>"></option>
+          <?php endforeach; ?>
+        </datalist>
       </div>
       <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
       <div class="form-group">
@@ -241,6 +297,7 @@ include __DIR__ . '/../includes/header.php';
       <input type="hidden" name="page_id" value="">
       <input type="hidden" name="action" value="create">
       <input type="hidden" name="remove_existing_files" value="0">
+      <input type="hidden" name="status" value="Belum">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>
@@ -251,7 +308,7 @@ include __DIR__ . '/../includes/header.php';
 
 <script>
 const BASE = '<?= $base ?>';
-const CURRENT_SORT = '<?= $selectedSort ?>';
+const CURRENT_SORT = 'desc'; // fitur pilih Urutan sudah dihapus, tabel selalu tampilkan yang paling baru dulu
 
 // Data agenda yang lagi tampil di halaman ini (buat isi form Edit)
 const AGENDA_DATA = <?= json_encode(array_map(function ($a) {
@@ -496,6 +553,65 @@ function statusTone(status){
   if (s.includes('belum') || s.includes('menunggu')) return 'gray';
   return 'blue';
 }
+
+// Dropdown status yang dipakai di tiap baris tabel — cuma "Belum"/"Selesai",
+// langsung bisa diganti dari tabel tanpa buka modal Edit.
+function renderStatusSelect(pageId, status){
+  const cur = (status || '').toLowerCase().includes('selesai') ? 'Selesai' : 'Belum';
+  return `
+    <span class="status-select-wrap" title="Klik untuk ubah status">
+      <select class="status-select status-tag ${statusTone(cur)}" data-id="${pageId || ''}" data-prev="${cur}" onchange="updateStatusInline(this)">
+        <option value="Belum" ${cur === 'Belum' ? 'selected' : ''}>Belum</option>
+        <option value="Selesai" ${cur === 'Selesai' ? 'selected' : ''}>Selesai</option>
+      </select>
+      <i class="ri-arrow-down-s-line status-select-arrow"></i>
+    </span>
+  `;
+}
+
+// Ganti status langsung dari dropdown di tabel, kirim ke api/agenda.php
+// (action=update) pakai data lengkap baris tsb dari AGENDA_DATA, tanpa perlu
+// buka modal Edit. Kalau gagal, dropdown dikembalikan ke nilai semula.
+async function updateStatusInline(selectEl){
+  const pageId = selectEl.dataset.id;
+  const newStatus = selectEl.value;
+  const prevValue = selectEl.dataset.prev || (newStatus === 'Selesai' ? 'Belum' : 'Selesai');
+  const entry = AGENDA_DATA.find(a => a.id === pageId);
+  if (!entry) {
+    alert('Data agenda tidak ditemukan di halaman ini, silakan reload halaman lalu coba lagi.');
+    selectEl.value = prevValue;
+    return;
+  }
+
+  selectEl.disabled = true;
+  const formData = new FormData();
+  formData.append('action', 'update');
+  formData.append('page_id', pageId);
+  formData.append('kegiatan', entry.title);
+  formData.append('tanggal', entry.date);
+  formData.append('waktu', entry.time);
+  formData.append('lokasi_kegiatan', entry.lokasi);
+  formData.append('kategori', entry.kategori);
+  formData.append('status', newStatus);
+  formData.append('catatan', entry.catatan || '');
+  formData.append('remove_existing_files', '0');
+
+  try {
+    const res = await fetch(`${BASE}/api/agenda.php`, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(JSON.stringify(data));
+
+    entry.status = newStatus;
+    selectEl.className = `status-select status-tag ${statusTone(newStatus)}`;
+    selectEl.dataset.prev = newStatus;
+  } catch (err) {
+    console.error('[updateStatusInline] gagal ubah status:', err);
+    alert('Gagal mengubah status: ' + (err.message || err));
+    selectEl.value = prevValue;
+  } finally {
+    selectEl.disabled = false;
+  }
+}
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str ?? '';
@@ -567,7 +683,7 @@ function addRowToTable(entry, pageId, dokumentasi){
     <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
     <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
     <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
-    <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
+    <td>${renderStatusSelect(pageId, entry.status)}</td>
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
     <td>${renderDokumenCell(dokumentasi)}</td>
     <td>

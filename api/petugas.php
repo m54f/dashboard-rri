@@ -45,7 +45,7 @@ function getPetugas() {
         $jabatan = $props['JABATAN']['select']['name'] ?? '-';
         $posisi  = $props['Posisi']['select']['name'] ?? '-';
         $pangkat = $props['PANGKAT/GOL.RUANG']['select']['name'] ?? '-';
-        
+        $no      = $props['NO']['number'] ?? 0;
         // Ambil NIP (Rich Text)
         $nip = '';
         if (isset($props['NIP/NIPPK/NRP']['rich_text']) && !empty($props['NIP/NIPPK/NRP']['rich_text'])) {
@@ -63,6 +63,7 @@ function getPetugas() {
         $results[] = [
             'page_id' => $page['id'],
             'name'    => $name,
+            'no'      => $no,
             'role'    => $jabatan,
             'posisi'  => $posisi,
             'pangkat' => $pangkat,
@@ -70,6 +71,10 @@ function getPetugas() {
             'init'    => $init ?: '?'
         ];
     }
+    
+    usort($results, function($a, $b) {
+        return $a['no'] <=> $b['no'];
+    });
     
     return $results;
 }
