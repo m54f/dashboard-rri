@@ -229,7 +229,6 @@ function getYoutubeVideos()
             'url'            => $url,
             'penyiar'        => $penyiarStr,
             'narasumber'     => $narasumber,
-            // 'narasumberStr'  => $narasumberStr,
             'teknik'         => $teknik,
             'pa'             => $pa,
         ];
