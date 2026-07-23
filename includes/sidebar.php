@@ -4,7 +4,7 @@ $menuOperasional = [
     'agenda'      => ['Daily Agenda',        'ri-calendar-line',          '/pages/agenda.php'],
     'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/pages/checklist.php'],
     'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
-    'pemadaman' => ['Log Pemadaman PLN',   'ri-flashlight-line',        '/pages/pemadaman.php'],
+    'Maintenance' => ['Listrik',   'ri-flashlight-line',        '/pages/pemadaman.php'],
     'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/pages/peminjaman.php'],
     'inventaris'  => ['Inventaris',          'ri-book-line',              '/pages/inventaris.php'],
 ];
