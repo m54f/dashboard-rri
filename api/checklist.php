@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/../config/notion.php';
+date_default_timezone_set('Asia/Jakarta');
 
 function getChecklist()
 {
@@ -83,9 +84,19 @@ function getChecklist()
                 $keterangan .= $rt['plain_text'] ?? '';
             }
 
-            // 2. Baca Submission time (created_time)
+            // // 2. Baca Submission time (created_time)
+            // $submissionRaw = $props['Submission time']['created_time'] ?? $item['created_time'] ?? null;
+            // $submission = $submissionRaw ? date('d M Y, H:i', strtotime($submissionRaw)) . ' WIB' : '-';
+
             $submissionRaw = $props['Submission time']['created_time'] ?? $item['created_time'] ?? null;
-            $submission = $submissionRaw ? date('d M Y, H:i', strtotime($submissionRaw)) . ' WIB' : '-';
+
+            if ($submissionRaw) {
+                $submissionDate = new DateTime($submissionRaw, new DateTimeZone('UTC'));
+                $submissionDate->setTimezone(new DateTimeZone('Asia/Jakarta'));
+                $submission = $submissionDate->format('d M Y, H:i') . ' WIB';
+            } else {
+                $submission = '-';
+            }
 
             // 3. Baca Respondent (created_by) - Jika nanti ingin ditampilkan
             $respondentName = $props['Respondent']['created_by']['name'] ?? 'Unknown';

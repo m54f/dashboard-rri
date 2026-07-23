@@ -9,6 +9,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $petugas = $_POST['petugas'] ?? [];
     $eviden_3 = $_POST['eviden_3_link'] ?? '';
 
+    $uploadedFiles = [];
+
+    if (!empty($_FILES['dokumentasi']['name'][0])) {
+
+        $uploadDir = __DIR__ . '/../uploads/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        foreach ($_FILES['dokumentasi']['name'] as $i => $name) {
+
+            if ($_FILES['dokumentasi']['error'][$i] === UPLOAD_ERR_OK) {
+
+                $ext = pathinfo($name, PATHINFO_EXTENSION);
+                $newName = uniqid() . '.' . $ext;
+
+                move_uploaded_file(
+                    $_FILES['dokumentasi']['tmp_name'][$i],
+                    $uploadDir . $newName
+                );
+
+                $uploadedFiles[] = $newName;
+            }
+        }
+    }
+
     $properties = [
         'Nama Kegiatan' => ['title' => [['text' => ['content' => $nama_kegiatan]]]],
         'Date' => ['date' => ['start' => $iso_date]]
@@ -25,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $payload = [
-        'parent' => ['database_id' => DATABASE_ID_JURNAL],
+        'parent' => ['database_id' => DATABASE_ID_KEGIATAN],
         'properties' => $properties
     ];
 
