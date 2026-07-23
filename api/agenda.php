@@ -24,37 +24,55 @@ function getAgenda($date = null, $sort = 'asc')
         "Content-Type: application/json"
     ];
 
-    $ch = curl_init($url);
+    // Notion API membatasi max 100 hasil per request (page_size). Supaya
+    // SEMUA data ikut terambil (bukan cuma 100 pertama), kita loop pakai
+    // start_cursor/has_more sampai seluruh halaman habis, lalu gabungkan
+    // hasilnya ke $allResults sebelum diproses seperti biasa.
+    $allResults = [];
+    $startCursor = null;
 
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode((object)[]));
+    do {
+        $payload = ['page_size' => 100];
+        if ($startCursor !== null) {
+            $payload['start_cursor'] = $startCursor;
+        }
 
-    $response = curl_exec($ch);
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
-    if (curl_errno($ch)) {
-        $error = curl_error($ch);
+        $response = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return ['error' => $error];
+        }
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        return ['error' => $error];
-    }
 
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+        if ($httpCode !== 200) {
+            return ['error' => "HTTP Error: {$httpCode}", 'raw' => $response];
+        }
 
-    if ($httpCode !== 200) {
-        return ['error' => "HTTP Error: {$httpCode}", 'raw' => $response];
-    }
+        $data = json_decode($response, true);
 
-    $data = json_decode($response, true);
+        if (!$data || !isset($data['results'])) {
+            return ['error' => 'Invalid API response', 'raw' => $response];
+        }
 
-    if (!$data || !isset($data['results'])) {
-        return ['error' => 'Invalid API response', 'raw' => $response];
-    }
+        $allResults = array_merge($allResults, $data['results']);
+
+        $hasMore = $data['has_more'] ?? false;
+        $startCursor = $data['next_cursor'] ?? null;
+    } while ($hasMore && $startCursor !== null);
 
     $agenda = [];
 
-    foreach ($data['results'] as $item) {
+    foreach ($allResults as $item) {
         $props = $item['properties'];
 
         // 1. Judul Kegiatan (Title)
@@ -356,6 +374,12 @@ function buildAgendaBaseProperties($data)
     $lokasi   = trim($data['lokasi_kegiatan'] ?? $data['pic'] ?? '');
     $kategori = trim($data['kategori'] ?? 'EVENT');
     $status   = trim($data['status'] ?? 'Belum');
+    // Status cuma boleh "Belum" atau "Selesai" (opsi "Cancel" sudah dihapus
+    // dari alur ini) — kalau yang dikirim bukan salah satu dari itu (kosong,
+    // typo, atau nilai lama seperti "Cancel"/"Proses"), fallback aman ke "Belum".
+    if (!in_array($status, ['Belum', 'Selesai'], true)) {
+        $status = 'Belum';
+    }
 
     if ($judul === '' || $tanggal === '' || $waktu === '') {
         return ['error' => 'Judul, tanggal, dan waktu wajib diisi'];
