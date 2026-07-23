@@ -29,12 +29,12 @@ $activeMenu = 'pemadaman';
 $petugasList = ['Alfian','Alif','Saiful','Winsa','Yayang','Yhanuar','Yuda','Deny','Selvy','Anggi','Dedy','Syukur'];
 
 $pemancarList = [
-    'Pemancar Studio', 
-    'Pemancar Ngijo', 
-    'Pemancar Ngadirejo', 
-    'Pemancar Probolinggo',
-    'Panel Auditorium',
-    'Maintenance Genset'
+    'Pemadaman PLN Pemancar Studio', 
+    'Pemadaman PLN Pemancar Ngijo', 
+    'Pemadaman PLN Pemancar Ngadirejo', 
+    'Pemadaman PLN Pemancar Probolinggo',
+    'Penggunaan Listrik Panel Auditorium',
+    'Pemanasan Mesin Genset'
 ];
 
 include __DIR__ . '/../includes/header.php';
