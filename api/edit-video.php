@@ -171,8 +171,8 @@ $properties = [
     'Narasumber 1' => ['rich_text' => richTextPayload($narasumber1)],
     'Narasumber 2' => ['rich_text' => richTextPayload($narasumber2)],
     'Narasumber 3' => ['rich_text' => richTextPayload($narasumber3)],
-    'Petugas PT Produksi' => ['multi_select' => $teknikMultiSelect],
-    'Petugas PT Setting'  => ['multi_select' => $paMultiSelect],
+    'Petugas PT Setting'   => ['multi_select' => $teknikMultiSelect],
+    'Petugas PT Produksi'  => ['multi_select' => $paMultiSelect],
 ];
 
 // Flyer HANYA disertakan (dan diganti) kalau ada file baru yang diupload.

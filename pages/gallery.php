@@ -60,8 +60,8 @@ include __DIR__ . '/../includes/header.php';
           <th>Jam</th>
           <th>Penyiar</th>
           <th>Narasumber</th>
-          <th>Petugas PT</th>
-          <th>Petugas PA</th>
+          <th>Petugas PT Setting</th>
+          <th>Petugas PT Produksi</th>
           <th>Aksi</th>
         </tr>
       </thead>

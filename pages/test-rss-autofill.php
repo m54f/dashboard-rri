@@ -126,15 +126,15 @@ function parseDeskripsi($description) {
         $data['penyiar'] = trim(str_replace(['(Presenter)', '(Host)'], '', $m[1]));
     }
 
-    // 5. PT
-    if (preg_match('/(?:Petugas Teknik|Petugas PT|Pengarah Teknik)\s*[:\-]?\s*([^\n\r]+)|\bPT\b\s*[:\-]\s*([^\n\r]+)/i', $cleanDesc, $m)) {
+    // 5. PT Setting
+    if (preg_match('/(?:Petugas Teknik|Petugas PT(?: Setting)?|Pengarah Teknik)\s*[:\-]?\s*([^\n\r]+)|\bPT(?: Setting)?\b\s*[:\-]\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         // Ambil nama dari grup regex pertama atau kedua yang berhasil cocok
         $ptString = !empty($m[1]) ? $m[1] : (isset($m[2]) ? $m[2] : '');
         $data['pt'] = mapPetugasToMaster($ptString);
     }
 
-    // 6. PA
-    if (preg_match('/(?:Petugas PA|Pengarah Acara|\bPA\b)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
+    // 6. PT Produksi (PA)
+    if (preg_match('/(?:Petugas PA|Pengarah Acara|PT Produksi|\bPA\b)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['pa'] = mapPetugasToMaster($m[1]);
     }
 
@@ -269,10 +269,30 @@ function mapPetugasToMaster($rawString) {
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
+        /* State saat file diseret (Drag & Drop) */
+        .dropzone-mini.dragover { background: #e2e8f0; border-color: #94a3b8; }
+        
+        /* Tombol hapus flyer (Silang) */
+        .remove-flyer-btn {
+            position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.9); color: white;
+            border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; font-weight: bold;
+            cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;
+        }
+        .remove-flyer-btn:hover { background: #dc2626; }
+        
+        /* Modal Pop-up Gambar */
+        .image-modal {
+            display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;
+        }
+        .image-modal img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: zoom-out; }
     </style>
 </head>
 <body>
-
+<!-- Modal Pop-up Gambar -->
+<div id="imageModal" class="image-modal" onclick="this.style.display='none'">
+    <img id="imageModalSrc" src="" alt="Pop-up Flyer">
+</div>
 <div class="container">
     <h2>Sinkronisasi Harian dari YouTube (RSS)</h2>
     
@@ -286,8 +306,10 @@ function mapPetugasToMaster($rawString) {
             <!-- Menggunakan tanggal hari ini berdasarkan context server -->
             <input type="date" id="targetDate" value="<?php echo date('Y-m-d'); ?>">
         </div>
-        <div class="form-group">
-            <button class="btn btn-primary" onclick="tarikRss()">Tarik Data Video</button>
+        <div class="form-group" style="display: flex; gap: 10px; flex-direction: row; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="tarikRss()">Tarik Data</button>
+            <button class="btn" style="background:#f59e0b; color:white;" onclick="bersihkanTabel()">Clear Tabel</button>
+            <button class="btn btn-success" onclick="simpanSemuaKeNotion()">Simpan Semua</button>
         </div>
         <div id="loadingStatus" class="loading">Menghubungi YouTube & Mengekstrak Data...</div>
     </div>
@@ -299,7 +321,7 @@ function mapPetugasToMaster($rawString) {
                     <th width="19%">Acara & Tema</th>
                     <th width="15%">Jadwal & Programa</th>
                     <th width="20%">Pemandu & Narasumber</th>
-                    <th width="20%">Petugas (PT & PA)</th>
+                    <th width="20%">Petugas (PT Setting & PT Produksi)</th>
                     <th width="15%">Media (URL & Flyer)</th>
                     <th width="8%">Aksi</th>
                 </tr>
@@ -318,7 +340,7 @@ function mapPetugasToMaster($rawString) {
 <script>
 // --- TAMBAHAN KODE: Mengambil data acara dan penyiar terkelompok ---
 const { acaraToProgramaMap, masterAcaraGrouped, masterPenyiarGrouped } = <?php 
-    $masterDataPath = __DIR__ . '/data/master-data.json'; 
+    $masterDataPath = __DIR__ . '/../data/master-data.json';
     $mapAcaraProg = [];
     $groupedAcara = [];
     $groupedPenyiar = [];
@@ -377,8 +399,6 @@ function updatePrograma(index, selectedAcara) {
     const progSelect = document.getElementById(`programa_${index}`);
     if (progSelect && acaraToProgramaMap[selectedAcara]) {
         progSelect.value = acaraToProgramaMap[selectedAcara];
-        // Ikut perbarui daftar pemandu sesuai programa yang baru
-        updatePemanduOptions(index, progSelect.value);
     }
 }
 
@@ -594,11 +614,11 @@ function renderTabel(videos) {
             </td>
             <td>
                 <div class="row-group">
-                    <label class="tabel-label">Teknik (PT)</label>
+                    <label class="tabel-label">Petugas PT Setting</label>
                     <div id="${idPT}"></div>
                     <input type="hidden" id="${hidPT}" value="${vid.pt.join(', ')}">
                     
-                    <label class="tabel-label" style="margin-top:6px;">PA / Acara</label>
+                    <label class="tabel-label" style="margin-top:6px;">Petugas PT Produksi</label>
                     <div id="${idPA}"></div>
                     <input type="hidden" id="${hidPA}" value="${vid.pa.join(', ')}">
                 </div>
@@ -609,18 +629,19 @@ function renderTabel(videos) {
                     <input type="url" value="${vid.url}" placeholder="URL YouTube">
                     
                     <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
-                    <div class="dropzone-mini" style="padding: 0; overflow: hidden; position: relative; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 2px dashed #cbd5e1;">
+                    <div id="dropzone_${index}" class="dropzone-mini" style="padding: 0; overflow: hidden; position: relative; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 2px dashed #cbd5e1;" onclick="document.getElementById('flyer_input_${index}').click()">
+                        <input type="file" id="flyer_input_${index}" accept="image/*" style="display:none;" onchange="handleFlyerSelect(this, '${index}')">
                         ${vid.flyer 
-                            ? `<img src="${vid.flyer}" style="width: 100%; height: 100%; object-fit: cover; position: absolute;" alt="Flyer">` 
+                            ? `<img src="${vid.flyer}" style="width: 100%; height: 100%; object-fit: cover; position: absolute;" alt="Flyer" onclick="event.stopPropagation(); openImagePopup(this.src)"><button type="button" class="remove-flyer-btn" onclick="hapusFlyer('${index}', event)">&times;</button>` 
                             : `<span style="padding:10px;">Pilih / Tarik Flyer</span>`
                         }
                     </div>
-                    <input type="hidden" class="hidden-flyer-url" value="${vid.flyer || ''}">
+                    <input type="hidden" id="hidden_flyer_${index}" class="hidden-flyer-url" value="${vid.flyer || ''}">
                 </div>
             </td>
             <td style="vertical-align:middle; text-align:center;">
                 <div style="display:flex; flex-direction:column; gap:8px;">
-                    <button class="btn btn-success" onclick="alert('Ini simulasi. Tombol ini nantinya mengirim data baris ini ke database Notion.')">Simpan</button>
+                    <button class="btn btn-success" onclick="simpanKeNotion(this, '${index}')">Simpan</button>
                     <button class="btn" style="background:#ef4444; color:white;" onclick="hapusBaris(this)">Hapus</button>
                 </div>
             </td>
@@ -852,11 +873,11 @@ function tambahBarisKosong() {
         </td>
         <td>
             <div class="row-group">
-                <label class="tabel-label">Teknik (PT)</label>
+                <label class="tabel-label">Petugas PT Setting</label>
                 <div id="${idPT}"></div>
                 <input type="hidden" id="${hidPT}" value="">
                 
-                <label class="tabel-label" style="margin-top:6px;">PA / Acara</label>
+                <label class="tabel-label" style="margin-top:6px;">Petugas PT Produksi</label>
                 <div id="${idPA}"></div>
                 <input type="hidden" id="${hidPA}" value="">
             </div>
@@ -867,15 +888,16 @@ function tambahBarisKosong() {
                 <input type="url" placeholder="URL YouTube">
                 
                 <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
-                <div class="dropzone-mini" style="padding: 0; overflow: hidden; position: relative; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 2px dashed #cbd5e1;">
+                <div id="dropzone_${uniqueId}" class="dropzone-mini" style="padding: 0; overflow: hidden; position: relative; min-height: 80px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 2px dashed #cbd5e1;" onclick="document.getElementById('flyer_input_${uniqueId}').click()">
+                    <input type="file" id="flyer_input_${uniqueId}" accept="image/*" style="display:none;" onchange="handleFlyerSelect(this, '${uniqueId}')">
                     <span style="padding:10px;">Pilih / Tarik Flyer</span>
                 </div>
-                <input type="hidden" class="hidden-flyer-url" value="">
+                <input type="hidden" id="hidden_flyer_${uniqueId}" class="hidden-flyer-url" value="">
             </div>
         </td>
         <td style="vertical-align:middle; text-align:center;">
             <div style="display:flex; flex-direction:column; gap:8px;">
-                <button class="btn btn-success" onclick="alert('Baris manual ini siap disimpan.')">Simpan</button>
+                <button class="btn btn-success" onclick="simpanKeNotion(this, '${uniqueId}')">Simpan</button>
                 <button class="btn" style="background:#ef4444; color:white;" onclick="hapusBaris(this)">Hapus</button>
             </div>
         </td>
@@ -915,6 +937,94 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
+// FUNGSI FLYER: DRAG & DROP, PREVIEW, POP-UP
+// ==========================================
+function attachDropzoneEvents(id) {
+    const zone = document.getElementById(`dropzone_${id}`);
+    if (!zone) return;
+    
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if(files.length > 0) {
+            const input = document.getElementById(`flyer_input_${id}`);
+            input.files = files; // Salin file dari Drop ke Input File
+            handleFlyerSelect(input, id);
+        }
+    });
+}
+
+function handleFlyerSelect(input, id) {
+    const file = input.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Harap pilih file gambar.'); return; }
+    if (file.size > 10 * 1024 * 1024) { alert('Ukuran gambar maksimal 10MB.'); return; }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const dropzone = document.getElementById(`dropzone_${id}`);
+        const hidden = document.getElementById(`hidden_flyer_${id}`);
+        
+        // Bersihkan isi dropzone (kecuali tag input file)
+        Array.from(dropzone.children).forEach(child => {
+            if(child.tagName !== 'INPUT') dropzone.removeChild(child);
+        });
+        
+        // Buat tag Gambar Preview
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover; position: absolute;";
+        img.alt = "Flyer";
+        img.onclick = (event) => { event.stopPropagation(); openImagePopup(img.src); };
+        
+        // Buat Tombol Hapus (Silang)
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'remove-flyer-btn';
+        btn.innerHTML = '&times;';
+        btn.onclick = (event) => hapusFlyer(id, event);
+
+        dropzone.appendChild(img);
+        dropzone.appendChild(btn);
+        
+        // Simpan data Base64 ke input hidden (agar bisa disubmit)
+        if (hidden) hidden.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function hapusFlyer(id, event) {
+    if (event) event.stopPropagation(); // Mencegah jendela pilih file terbuka saat klik silang
+    
+    const dropzone = document.getElementById(`dropzone_${id}`);
+    const input = document.getElementById(`flyer_input_${id}`);
+    const hidden = document.getElementById(`hidden_flyer_${id}`);
+    
+    if (input) input.value = '';
+    if (hidden) hidden.value = '';
+    
+    // Kembalikan kotak ke tampilan default
+    Array.from(dropzone.children).forEach(child => {
+        if(child.tagName !== 'INPUT') dropzone.removeChild(child);
+    });
+    
+    const span = document.createElement('span');
+    span.style.padding = '10px';
+    span.textContent = 'Pilih / Tarik Flyer';
+    dropzone.appendChild(span);
+}
+
+function openImagePopup(src) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('imageModalSrc');
+    modalImg.src = src;
+    modal.style.display = 'flex';
+}
+
+// ==========================================
 // FUNGSI HAPUS BARIS
 // ==========================================
 function hapusBaris(btn) {
@@ -925,6 +1035,170 @@ function hapusBaris(btn) {
             row.remove(); // Hapus baris dari tabel
             perbaruiNomorUrut(); // Hitung ulang nomor urut agar tidak loncat
         }
+    }
+}
+
+// ==========================================
+// FUNGSI BERSIHKAN TABEL (CLEAR ALL)
+// ==========================================
+function bersihkanTabel() {
+    // Tampilkan peringatan agar tidak terklik secara tidak sengaja
+    if (confirm("Apakah Anda yakin ingin menghapus semua isian di tabel ini?")) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ''; // Kosongkan seluruh isi tabel
+        
+        // Panggil fungsi tambah baris kosong untuk memunculkan 1 baris baru (seperti kondisi awal)
+        tambahBarisKosong(); 
+    }
+}
+
+// ==========================================
+// FUNGSI SIMPAN KE NOTION DATABASE
+// ==========================================
+async function simpanKeNotion(btn, id) {
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Mengekstrak...';
+    btn.style.opacity = '0.7';
+
+    try {
+        const row = btn.closest('tr');
+        if (!row) throw new Error("Baris tidak ditemukan.");
+
+        // 1. Ekstrak data dari input-input di dalam baris ini
+        const acaraSelect = document.getElementById(`acara_${id}`);
+        const namaAcara = acaraSelect ? acaraSelect.value : '';
+
+        const temaInput = row.querySelector('textarea[placeholder="Tema Acara"]');
+        const tema = temaInput ? temaInput.value : '';
+
+        // Mapping Programa ke format "Live Dimana" bawaan database Notion
+        const programaSelect = document.getElementById(`programa_${id}`);
+        const programaRaw = programaSelect ? programaSelect.value : '';
+        let liveValue = '';
+        if (programaRaw.includes('Pro 1')) liveValue = '94,6 FM Pro 1 RRI Malang dan Youtube RRI Malang Official';
+        else if (programaRaw.includes('Pro 2')) liveValue = '87.9 FM Pro 2 RRI Malang dan Youtube RRI Malang Official';
+        else if (programaRaw.includes('Pro 4')) liveValue = '105.3 FM Pro 4 RRI Malang dan Youtube RRI Malang Official';
+
+        const tglInput = row.querySelector('input[type="date"]');
+        const tanggal = tglInput ? tglInput.value : '';
+
+        const timeInputs = row.querySelectorAll('input[type="time"]');
+        const jamMulai = timeInputs[0] ? timeInputs[0].value : '';
+        const jamSelesai = timeInputs[1] ? timeInputs[1].value : '';
+
+        const pemanduSelect = document.getElementById(`pemandu_${id}`);
+        const pemandu = pemanduSelect ? pemanduSelect.value : '';
+
+        // Gabungkan list narasumber (dipisahkan enter/newline)
+        const narasumberContainer = document.getElementById(`narasumber_container_${id}`);
+        let narasumberText = '';
+        if (narasumberContainer) {
+            const nsInputs = narasumberContainer.querySelectorAll('input[type="text"]');
+            let nsArray = [];
+            nsInputs.forEach(input => {
+                if (input.value.trim() !== '') nsArray.push(input.value.trim());
+            });
+            narasumberText = nsArray.join('\n');
+        }
+
+        const teknik = document.getElementById(`hidden_pt_${id}`).value;
+        const pa = document.getElementById(`hidden_pa_${id}`).value;
+
+        const urlInput = row.querySelector('input[type="url"]');
+        const link = urlInput ? urlInput.value : '';
+
+        // 2. Susun Payload Teks
+        const plainObject = {
+            live: liveValue,
+            program: namaAcara,
+            namaAcaraDisplay: namaAcara, // Duplicate untuk field nama acara teks (opsional, disamakan dgn gallery)
+            tema: tema,
+            tanggal: tanggal,
+            jamMulai: jamMulai,
+            jamSelesai: jamSelesai,
+            jenisPenyiar: 'Presenter', // Default peran
+            penyiar: pemandu,
+            narasumber: narasumberText,
+            teknik: teknik,
+            pa: pa,
+            link: link
+        };
+
+        // 3. Upload File Gambar (Jika Ada File Baru dari Drag & Drop)
+        const fileInput = document.getElementById(`flyer_input_${id}`);
+        let uploadedFilesPayload = [];
+        
+        if (fileInput && fileInput.files.length > 0) {
+            btn.textContent = 'Upload Flyer...';
+            const formData = new FormData();
+            formData.append('dokumentasi[]', fileInput.files[0]);
+            
+            const uploadRes = await fetch('../api/upload-to-notion.php', { method: 'POST', body: formData });
+            const uploadData = await uploadRes.json();
+            
+            if (!uploadData.success) {
+                throw new Error(uploadData.error || 'Gagal mengupload flyer ke S3');
+            }
+            uploadedFilesPayload = uploadData.files.map(f => ({ id: f.id, name: f.original }));
+        }
+        
+        plainObject['flyer_urls'] = uploadedFilesPayload;
+
+        // 4. Kirim Data JSON ke Notion Database
+        btn.textContent = 'Menyimpan...';
+        const res = await fetch('../api/add-video.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(plainObject)
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+            btn.textContent = 'Tersimpan';
+            btn.style.background = '#475569'; // Ganti warna jadi abu-abu
+            btn.disabled = true; // Matikan tombol agar tidak di-klik double
+        } else {
+            throw new Error(data.error || data.details || 'Kesalahan API Notion');
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert('Gagal menyimpan: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.opacity = '1';
+    }
+}
+// ==========================================
+// FUNGSI SIMPAN SEMUA BARIS KE NOTION
+// ==========================================
+function simpanSemuaKeNotion() {
+    // Cari semua tombol ber-class btn-success (tombol Simpan) di dalam tabel
+    const saveButtons = document.querySelectorAll('#tableBody .btn-success');
+    let jumlahDiproses = 0;
+
+    // Cek apakah ada baris yang bisa disimpan
+    saveButtons.forEach(btn => {
+        if (!btn.disabled && btn.textContent.includes('Simpan')) {
+            jumlahDiproses++;
+        }
+    });
+
+    if (jumlahDiproses === 0) {
+        alert('Tidak ada baris baru yang bisa disimpan (tabel kosong atau semua data sudah tersimpan).');
+        return;
+    }
+
+    // Munculkan konfirmasi sebelum eksekusi massal
+    if (confirm(`Apakah Anda yakin ingin menyimpan ${jumlahDiproses} baris ini ke database Notion secara bersamaan?`)) {
+        saveButtons.forEach(btn => {
+            // Hanya klik tombol yang belum disable (belum diklik / belum sukses)
+            if (!btn.disabled && btn.textContent.includes('Simpan')) {
+                btn.click(); // Eksekusi fungsi simpanKeNotion pada tiap baris
+            }
+        });
     }
 }
 </script>

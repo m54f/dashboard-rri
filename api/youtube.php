@@ -169,10 +169,13 @@ function getYoutubeVideos()
                 $narasumber[] = $props[$key]['rich_text'][0]['plain_text'];
             }
         }
+        // $narasumberStr = implode(', ', $narasumber);
+        // $narasumber tetap array untuk dikirim sebagai list ke frontend
 
-        // 7. Petugas Teknik (Menggunakan nama kolom dari Notion: "Petugas PT Produksi")
+        // 7. Petugas Teknik
+        // 7. Petugas Teknik (Menggunakan nama kolom dari Notion: "Petugas PT Setting")
         $teknik = '';
-        foreach (['Petugas PT Produksi', 'Petugas Teknik', 'Teknik', 'Pengarah Teknik'] as $key) {
+        foreach (['Petugas PT Setting', 'Petugas Teknik', 'Teknik', 'Pengarah Teknik'] as $key) {
             if (isset($props[$key]['rich_text'][0]['plain_text'])) {
                 $teknik = $props[$key]['rich_text'][0]['plain_text'];
                 break;
@@ -191,9 +194,9 @@ function getYoutubeVideos()
             }
         }
 
-        // 8. Petugas PA / Acara (Diasumsikan menggunakan kolom: "Petugas PT Setting")
+        // 8. Petugas PA / Acara (Diasumsikan menggunakan kolom: "Petugas PT Produksi")
         $pa = '';
-        foreach (['Petugas PT Setting', 'Petugas PA', 'PA', 'Pengarah Acara'] as $key) {
+        foreach (['Petugas PT Produksi', 'Petugas PA', 'PA', 'Pengarah Acara'] as $key) {
             if (isset($props[$key]['rich_text'][0]['plain_text'])) {
                 $pa = $props[$key]['rich_text'][0]['plain_text'];
                 break;

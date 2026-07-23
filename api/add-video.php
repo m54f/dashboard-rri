@@ -38,6 +38,7 @@ if (!$input) {
 }
 
 $namaAcaraDisplay = trim($input['namaAcaraDisplay'] ?? '');
+$tema             = trim($input['tema'] ?? '');
 $judul            = trim($input['judul'] ?? '');
 $tanggal          = trim($input['tanggal'] ?? '');
 $jamMulai         = trim($input['jamMulai'] ?? '');
@@ -165,10 +166,10 @@ if ($narasumber3 !== '') {
 }
 
 if (!empty($teknikMultiSelect)) {
-    $properties['Petugas PT Produksi'] = ['multi_select' => $teknikMultiSelect];
+    $properties['Petugas PT Setting'] = ['multi_select' => $teknikMultiSelect];
 }
 if (!empty($paMultiSelect)) {
-    $properties['Petugas PT Setting'] = ['multi_select' => $paMultiSelect];
+    $properties['Petugas PT Produksi'] = ['multi_select' => $paMultiSelect];
 }
 
 // Map payload Flyer (Files) jika ada ID file dari Notion File Upload API
