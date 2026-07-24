@@ -18,7 +18,8 @@ if (!isset($activeMenu)) $activeMenu = 'dashboard';
 <title><?= htmlspecialchars($pageTitle) ?> — TMB RRI Malang</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-<link href="<?= $base ?>/assets/css/style.css" rel="stylesheet">
+<?php $cssPath = __DIR__ . '/../assets/css/style.css'; $cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time(); ?>
+<link href="<?= $base ?>/assets/css/style.css?v=<?= $cssVersion ?>" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -33,11 +34,24 @@ if (!isset($activeMenu)) $activeMenu = 'dashboard';
 <script>
   // Script untuk toggle sidebar
   function toggleSidebar() {
-    // Cek apakah layar mobile atau desktop
     if (window.innerWidth <= 768) {
-      document.body.classList.toggle('sidebar-open');
+      // Di HP: sidebar defaultnya sudah collapse (strip ikon) lewat CSS.
+      // Tap tombol ini buka-tutup mode overlay (sidebar melebar nutupin konten).
+      document.body.classList.toggle('sidebar-mobile-expanded');
     } else {
+      // Di laptop/desktop: toggle collapse <-> expanded biasa.
       document.body.classList.toggle('sidebar-hidden');
     }
   }
+
+  // Di HP, tap di luar sidebar (area konten yang ketutup) otomatis menutup overlay-nya
+  document.addEventListener('click', function (e) {
+    if (window.innerWidth > 768) return;
+    if (!document.body.classList.contains('sidebar-mobile-expanded')) return;
+    const sidebarEl = document.getElementById('sidebar');
+    const isToggleBtn = e.target.closest('.menu-toggle');
+    if (sidebarEl && !sidebarEl.contains(e.target) && !isToggleBtn) {
+      document.body.classList.remove('sidebar-mobile-expanded');
+    }
+  });
 </script>
