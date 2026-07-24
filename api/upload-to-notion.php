@@ -13,8 +13,8 @@ if (empty($_FILES['eviden'])) {
     exit;
 }
 
-$uploadedFiles = [];
-$errors = [];
+ $uploadedFiles = [];
+ $errors = [];
 
 foreach ($_FILES['eviden']['name'] as $idx => $name) {
     if ($_FILES['eviden']['error'][$idx] !== UPLOAD_ERR_OK) {
@@ -23,77 +23,61 @@ foreach ($_FILES['eviden']['name'] as $idx => $name) {
     }
 
     $tmpName = $_FILES['eviden']['tmp_name'][$idx];
-    $mimeType = $_FILES['eviden']['type'][$idx];
+    $mimeType = $_FILES['eviden']['type'][$idx] ?: 'application/octet-stream';
     $fileData = file_get_contents($tmpName);
 
+    // Sanitasi nama file
     $safeName = str_replace(' ', '_', $name);
     $safeName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $safeName);
 
-    // ===== LANGKAH 1: Create File Upload object (JSON, bukan multipart) =====
-    $ch1 = curl_init('https://api.notion.com/v1/file_uploads');
-    curl_setopt($ch1, CURLOPT_POST, true);
-    curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch1, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer " . NOTION_TOKEN,
-        "Notion-Version: " . NOTION_VERSION,
-        "Content-Type: application/json"
-    ]);
-    curl_setopt($ch1, CURLOPT_POSTFIELDS, json_encode([
-        'filename' => $safeName,
-        'content_type' => $mimeType
-    ]));
-
-    $createResponse = curl_exec($ch1);
-    $createHttpCode = curl_getinfo($ch1, CURLINFO_HTTP_CODE);
-    curl_close($ch1);
-
-    if ($createHttpCode !== 200) {
-        $err = json_decode($createResponse, true);
-        $errors[] = "Gagal membuat file upload untuk $name (HTTP $createHttpCode): " . ($err['message'] ?? 'Unknown error');
-        continue;
-    }
-
-    $createData = json_decode($createResponse, true);
-    $fileUploadId = $createData['id'] ?? null;
-    if (!$fileUploadId) {
-        $errors[] = "Tidak dapat ID file upload untuk $name";
-        continue;
-    }
-
-    // ===== LANGKAH 2: Send isi file (multipart, HANYA field 'file') =====
-    $boundary = uniqid();
+    // Buat boundary unik yang panjang
+    $boundary = '----WebKitFormBoundary' . md5(time() . uniqid());
+    
+    // === BANGUN MULTIPART FORM SECARA MANUAL ===
     $body = "--" . $boundary . "\r\n";
+    $body .= "Content-Disposition: form-data; name=\"mode\"\r\n\r\n";
+    $body .= "single_page\r\n";
+    
+    $body .= "--" . $boundary . "\r\n";
     $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"" . $safeName . "\"\r\n";
     $body .= "Content-Type: " . $mimeType . "\r\n\r\n";
     $body .= $fileData . "\r\n";
     $body .= "--" . $boundary . "--\r\n";
+    // ============================================
 
-    $ch2 = curl_init("https://api.notion.com/v1/file_uploads/{$fileUploadId}/send");
-    curl_setopt($ch2, CURLOPT_POST, true);
-    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch2, CURLOPT_HTTPHEADER, [
+    $ch = curl_init('https://api.notion.com/v1/file_uploads');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
         "Authorization: Bearer " . NOTION_TOKEN,
-        "Notion-Version: " . NOTION_VERSION,
-        "Content-Type: multipart/form-data; boundary=" . $boundary
+        "Notion-Version: 2022-06-28", // Hardcode versi agar pasti didukung
+        "Content-Type: multipart/form-data; boundary=" . $boundary,
+        "Expect: " // Wajib dikosongkan agar cURL tidak kirim header Expect: 100-continue
     ]);
-    curl_setopt($ch2, CURLOPT_POSTFIELDS, $body);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 
-    $sendResponse = curl_exec($ch2);
-    $sendHttpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
-    curl_close($ch2);
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-    if ($sendHttpCode === 200) {
-        $uploadedFiles[] = [
-            'id' => $fileUploadId,
-            'name' => $name
-        ];
+    if ($http_code === 200) {
+        $data = json_decode($response, true);
+        if (isset($data['id'])) {
+            $uploadedFiles[] = [
+                'id' => $data['id'],
+                'name' => $name 
+            ];
+        } else {
+            $errors[] = "Gagal parse ID dari Notion untuk $name";
+        }
     } else {
-        $err = json_decode($sendResponse, true);
-        $errors[] = "Notion menolak isi file $name (HTTP $sendHttpCode): " . ($err['message'] ?? 'Unknown error');
+        $err_data = json_decode($response, true);
+        $err_msg = $err_data['message'] ?? 'Unknown Notion Error';
+        $errors[] = "Notion menolak $name (HTTP $http_code): $err_msg";
     }
 }
 
-$finalError = '';
+ $finalError = '';
 if (!empty($errors)) {
     $finalError = implode(' | ', $errors);
 }
