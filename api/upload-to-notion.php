@@ -1,11 +1,6 @@
 <?php
-/**
- * api/upload-to-notion.php
- * Upload foto dokumentasi LANGSUNG ke Notion via Notion File Upload API.
- * Tidak menyimpan ke folder lokal sama sekali.
- */
-
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../config/notion.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -13,69 +8,98 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-require_once __DIR__ . '/../config/notion.php';
-require_once __DIR__ . '/notion-file-helpers.php';
-
-if (!isset($_FILES['dokumentasi'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Tidak ada file dokumentasi yang dikirim']);
+if (empty($_FILES['eviden'])) {
+    echo json_encode(['success' => false, 'error' => 'Tidak ada file diterima server.']);
     exit;
 }
 
-$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-$maxSize = 10 * 1024 * 1024; // 10MB per file
-
-$files = $_FILES['dokumentasi'];
-$fileCount = is_array($files['name']) ? count($files['name']) : 1;
-
-$uploaded = [];
+$uploadedFiles = [];
 $errors = [];
 
-for ($i = 0; $i < $fileCount; $i++) {
-    $name    = is_array($files['name'])     ? $files['name'][$i]     : $files['name'];
-    $tmpName = is_array($files['tmp_name']) ? $files['tmp_name'][$i] : $files['tmp_name'];
-    $error   = is_array($files['error'])    ? $files['error'][$i]    : $files['error'];
-    $size    = is_array($files['size'])     ? $files['size'][$i]     : $files['size'];
-
-    if ($error !== UPLOAD_ERR_OK) {
-        $errors[] = "File '{$name}': Upload error code {$error}";
+foreach ($_FILES['eviden']['name'] as $idx => $name) {
+    if ($_FILES['eviden']['error'][$idx] !== UPLOAD_ERR_OK) {
+        $errors[] = "Server gagal menerima $name";
         continue;
     }
 
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $tmpName);
-    finfo_close($finfo);
+    $tmpName = $_FILES['eviden']['tmp_name'][$idx];
+    $mimeType = $_FILES['eviden']['type'][$idx];
+    $fileData = file_get_contents($tmpName);
 
-    if (!in_array($mimeType, $allowedTypes)) {
-        $errors[] = "File '{$name}': Tipe file tidak diizinkan ({$mimeType})";
+    $safeName = str_replace(' ', '_', $name);
+    $safeName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $safeName);
+
+    // ===== LANGKAH 1: Create File Upload object (JSON, bukan multipart) =====
+    $ch1 = curl_init('https://api.notion.com/v1/file_uploads');
+    curl_setopt($ch1, CURLOPT_POST, true);
+    curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch1, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION,
+        "Content-Type: application/json"
+    ]);
+    curl_setopt($ch1, CURLOPT_POSTFIELDS, json_encode([
+        'filename' => $safeName,
+        'content_type' => $mimeType
+    ]));
+
+    $createResponse = curl_exec($ch1);
+    $createHttpCode = curl_getinfo($ch1, CURLINFO_HTTP_CODE);
+    curl_close($ch1);
+
+    if ($createHttpCode !== 200) {
+        $err = json_decode($createResponse, true);
+        $errors[] = "Gagal membuat file upload untuk $name (HTTP $createHttpCode): " . ($err['message'] ?? 'Unknown error');
         continue;
     }
-    if ($size > $maxSize) {
-        $errors[] = "File '{$name}': Ukuran melebihi 10MB";
+
+    $createData = json_decode($createResponse, true);
+    $fileUploadId = $createData['id'] ?? null;
+    if (!$fileUploadId) {
+        $errors[] = "Tidak dapat ID file upload untuk $name";
         continue;
     }
 
-    try {
-        $fileUploadId = notionUploadSingleFile($tmpName, $name, $mimeType);
-        $uploaded[] = [
-            'id'       => $fileUploadId, // dipakai untuk attach ke property "files" saat create/update
-            'original' => $name,
-            'size'     => $size,
+    // ===== LANGKAH 2: Send isi file (multipart, HANYA field 'file') =====
+    $boundary = uniqid();
+    $body = "--" . $boundary . "\r\n";
+    $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"" . $safeName . "\"\r\n";
+    $body .= "Content-Type: " . $mimeType . "\r\n\r\n";
+    $body .= $fileData . "\r\n";
+    $body .= "--" . $boundary . "--\r\n";
+
+    $ch2 = curl_init("https://api.notion.com/v1/file_uploads/{$fileUploadId}/send");
+    curl_setopt($ch2, CURLOPT_POST, true);
+    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch2, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer " . NOTION_TOKEN,
+        "Notion-Version: " . NOTION_VERSION,
+        "Content-Type: multipart/form-data; boundary=" . $boundary
+    ]);
+    curl_setopt($ch2, CURLOPT_POSTFIELDS, $body);
+
+    $sendResponse = curl_exec($ch2);
+    $sendHttpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+    curl_close($ch2);
+
+    if ($sendHttpCode === 200) {
+        $uploadedFiles[] = [
+            'id' => $fileUploadId,
+            'name' => $name
         ];
-    } catch (Exception $e) {
-        $errors[] = "File '{$name}': " . $e->getMessage();
+    } else {
+        $err = json_decode($sendResponse, true);
+        $errors[] = "Notion menolak isi file $name (HTTP $sendHttpCode): " . ($err['message'] ?? 'Unknown error');
     }
 }
 
-if (empty($uploaded) && !empty($errors)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => implode('; ', $errors), 'files' => []]);
-    exit;
+$finalError = '';
+if (!empty($errors)) {
+    $finalError = implode(' | ', $errors);
 }
 
 echo json_encode([
-    'success' => true,
-    'message' => count($uploaded) . ' file berhasil diupload ke Notion',
-    'files'   => $uploaded,
-    'errors'  => $errors,
+    'success' => count($uploadedFiles) > 0,
+    'files'   => $uploadedFiles,
+    'error'   => $finalError
 ]);
