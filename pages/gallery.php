@@ -459,7 +459,7 @@ include __DIR__ . '/../includes/header.php';
 
       <div class="form-group">
         <label>Live Dimana (Programa)</label>
-        <select id="live" name="live" onchange="handleLiveChange(); generateDescription();" required>
+        <select id="live" name="live" onchange="handleLiveChange();" required>
           <option value="94,6 FM Pro 1 RRI Malang dan Youtube RRI Malang Official">Pro 1 FM 94.6 Mhz</option>
           <option value="87.9 FM Pro 2 RRI Malang dan Youtube RRI Malang Official">Pro 2 FM 87.9 Mhz</option>
           <option value="105.3 FM Pro 4 RRI Malang dan Youtube RRI Malang Official">Pro 4 FM 105.3 Mhz</option>
@@ -562,26 +562,29 @@ async function loadMasterData(){
         console.error('Gagal memuat master data:', err);
     } finally {
         masterDataLoaded = true;
-        // Isi dropdown sesuai Live Dimana yang sedang terpilih (kalau form sedang terbuka)
-        populateProgramOptions();
-        populatePenyiarOptions();
+        // Nama Acara & Pemandu sudah tidak butuh "pre-populate" di sini --
+        // keduanya sekarang dibangun on-demand langsung dari masterData lewat
+        // createRssSingleSelect()/createRssMultiCreatableSelect() saat form
+        // Edit atau tabel RSS dibuka. Yang masih perlu di-refresh di sini
+        // cuma widget Petugas Teknik & PA (flat list, bukan grouped).
         populateTeknikOptions();
         populatePaOptions();
     }
 }
 
 // Fungsi untuk mengisi dropdown filter petugas saat master data selesai dimuat
-// function initFilterPetugas() {
-//     var select = document.getElementById('filterPetugas');
-//     var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
-    
-//     petugasList.forEach(function(nama) {
-//         var opt = document.createElement('option');
-//         opt.value = nama;
-//         opt.textContent = nama;
-//         select.appendChild(opt);
-//     });
-// }
+function initFilterPetugas() {
+    var select = document.getElementById('filterPetugas');
+    if (!select) return; // Elemen filter ini cuma ada di galleryMainView -- aman diskip di halaman/view lain
+    var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
+
+    petugasList.forEach(function(nama) {
+        var opt = document.createElement('option');
+        opt.value = nama;
+        opt.textContent = nama;
+        select.appendChild(opt);
+    });
+}
 
 function getProgramaLabelFromLive(){
     var liveVal = document.getElementById('live').value;
@@ -671,7 +674,6 @@ function createCustomMultiSelect(containerId, hiddenInputId, options) {
         }
         
         hiddenInput.value = selectedValues.join(', ');
-        if (typeof generateDescription === 'function') generateDescription();
     }
 
     // Toggle (Centang / Hapus Centang)
@@ -719,6 +721,7 @@ function createCustomMultiSelect(containerId, hiddenInputId, options) {
             cb.style.cssText = 'margin:0 10px 0 0 !important; position:static !important; float:none !important; width:auto !important; flex-shrink:0 !important;';
             
             cb.onchange = function(e) {
+                e.stopPropagation();
                 toggleValue(opt, e.target.checked);
             };
 
@@ -779,11 +782,6 @@ function populatePaOptions() {
 
 // Dipanggil saat Live Dimana (Programa) berubah: isi ulang dropdown Nama Acara & Nama Pemandu
 function handleLiveChange(){
-    var programSelect = document.getElementById('program');
-    var penyiarSelect = document.getElementById('penyiar');
-    var currentProgram = programSelect ? programSelect.value : '';
-    var currentPenyiar = penyiarSelect ? penyiarSelect.value : '';
-
     populateTeknikOptions();
     populatePaOptions();
 }
@@ -909,7 +907,7 @@ function showAddView(){
 }
 
 function openEditView(videoData){
-  console.log("Data Video dari Notion:", videoData);
+//   console.log("Data Video dari Notion:", videoData);
     editingPageId = videoData.id;
 
     document.getElementById('galleryMainView').style.display = 'none';
@@ -935,7 +933,7 @@ function openEditView(videoData){
     // ---- Pemandu Acara (dropdown diisi sesuai Programa di atas) ----
     var namaPenyiar = videoData.penyiar || '';
     document.getElementById('hidden_edit_pemandu').value = namaPenyiar;
-    createRssSingleSelect('editPemanduContainer', 'hidden_edit_pemandu', masterData.pemandu || {}, 'Pilih Pemandu');
+    createRssMultiCreatableSelect('editPemanduContainer', 'hidden_edit_pemandu', masterData.pemandu || {}, 'Pilih Pemandu');
 
     // ---- Petugas Teknik & PA ----
     // 1. Masukkan data dari database ke dalam hidden input
@@ -945,25 +943,6 @@ function openEditView(videoData){
     // 2. Baru panggil pembentuk UI (skrip kita otomatis membaca hidden input di atas)
     populateTeknikOptions();
     populatePaOptions();
-
-    // // ---- Centang Checkbox Petugas Teknik & PA Saat Edit ----
-    // if (videoData.teknik) {
-    //     var arrTeknik = videoData.teknik.split(',').map(function(s){ return s.trim(); });
-    //     var cbsTeknik = document.getElementById('teknikSelectContainer').querySelectorAll('input[type="checkbox"]');
-    //     cbsTeknik.forEach(function(cb) {
-    //         if (arrTeknik.includes(cb.value)) cb.checked = true;
-    //     });
-    //     updateTeknikHidden();
-    // }
-
-    // if (videoData.pa) {
-    //     var arrPa = videoData.pa.split(',').map(function(s){ return s.trim(); });
-    //     var cbsPa = document.getElementById('paSelectContainer').querySelectorAll('input[type="checkbox"]');
-    //     cbsPa.forEach(function(cb) {
-    //         if (arrPa.includes(cb.value)) cb.checked = true;
-    //     });
-    //     updatePaHidden();
-    // }
 
     // ---- Tema (diambil langsung dari properti "Tema Acara" di Notion) ----
     var tema = videoData.tema || '';
@@ -1016,8 +995,6 @@ function openEditView(videoData){
         hint.textContent = 'Flyer saat ini. Pilih foto baru di atas untuk menggantinya, atau biarkan untuk tetap memakai flyer ini.';
         document.getElementById('dropzone').insertAdjacentElement('afterend', hint);
     }
-
-    generateDescription();
 }
 
 function hideAddView(){
@@ -1455,7 +1432,7 @@ function renderTabelRss(videos) {
 
         // Render komponen select kustom
         createRssSingleSelect('acara_container_' + index, 'hidden_acara_' + index, acaraGrouped, 'Pilih Acara');
-        createRssSingleSelect('pemandu_container_' + index, 'hidden_pemandu_' + index, penyiarGrouped, 'Pilih Pemandu');
+        createRssMultiCreatableSelect('pemandu_container_' + index, 'hidden_pemandu_' + index, penyiarGrouped, 'Pilih Pemandu');
     });
     perbaruiNomorUrut();
 }
@@ -1549,7 +1526,7 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
             cb.value = opt;
             cb.checked = selectedValues.includes(opt);
             cb.style.cssText = 'margin:0 8px 0 0;';
-            cb.onchange = function(e){ toggleValue(opt, e.target.checked); };
+            cb.onchange = function(e){ e.stopPropagation(); toggleValue(opt, e.target.checked); };
 
             label.appendChild(cb);
             label.appendChild(document.createTextNode(opt));
@@ -1693,7 +1670,7 @@ function tambahBarisKosong() {
     tbody.appendChild(tr);
 
     createRssSingleSelect('acara_container_' + uniqueId, 'hidden_acara_' + uniqueId, acaraGrouped, 'Pilih Acara');
-    createRssSingleSelect('pemandu_container_' + uniqueId, 'hidden_pemandu_' + uniqueId, penyiarGrouped, 'Pilih Pemandu');
+    createRssMultiCreatableSelect('pemandu_container_' + uniqueId, 'hidden_pemandu_' + uniqueId, penyiarGrouped, 'Pilih Pemandu');
 
     addNarasumberField(uniqueId, '');
     createRssMultiSelect(idPT, hidPT, petugasList);
@@ -2052,7 +2029,7 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
             var manualOpt = document.createElement('div');
             manualOpt.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; background:#f0fdf4; color:#166534; font-weight:bold; border-top:1px solid #bbf7d0;';
             manualOpt.innerHTML = 'Gunakan Manual: "<i>' + filterText + '</i>"';
-            manualOpt.onclick = function() { setValue(filterText); };
+            manualOpt.onclick = function(e) { e.stopPropagation(); setValue(filterText); };
             listDiv.appendChild(manualOpt);
         } else if (listDiv.children.length === 0) {
             var empty = document.createElement('div');
@@ -2076,6 +2053,171 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
 
     searchInput.onclick = function(e) { e.stopPropagation(); };
     searchInput.oninput = function(e) { renderList(e.target.value); };
+}
+
+// ==========================================
+// MULTI-SELECT + CREATABLE (chip multi-pilih, plus bisa ketik nama baru
+// yang belum ada di master data) -- dipakai untuk Pemandu/Host/Penyiar,
+// gabungan pola createRssMultiSelect (petugas) & createRssSingleSelect (acara)
+// ==========================================
+function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGrouped, placeholderText) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    container.style.position = 'relative';
+    container.style.width = '100%';
+
+    var hiddenInput = document.getElementById(hiddenInputId);
+    var selectedValues = hiddenInput.value ? hiddenInput.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+
+    var selectBox = document.createElement('div');
+    selectBox.style.cssText = 'min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 6px; background:#fff; cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px; font-size:12px;';
+
+    var arrow = document.createElement('div');
+    arrow.innerHTML = '▼';
+    arrow.style.cssText = 'position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:10px; color:#6c757d;';
+    selectBox.appendChild(arrow);
+
+    var dropdown = document.createElement('div');
+    dropdown.className = 'custom-dropdown-menu';
+    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+
+    var searchDiv = document.createElement('div');
+    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid #eee;';
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Ketik untuk cari / input manual...';
+    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:12px;';
+    searchDiv.appendChild(searchInput);
+    dropdown.appendChild(searchDiv);
+
+    var listDiv = document.createElement('div');
+    listDiv.style.cssText = 'max-height:180px; overflow-y:auto; padding:4px 0; text-align:left;';
+    dropdown.appendChild(listDiv);
+
+    container.appendChild(selectBox);
+    container.appendChild(dropdown);
+
+    function renderChips() {
+        Array.from(selectBox.children).forEach(function(el){ if (el !== arrow) selectBox.removeChild(el); });
+
+        if (selectedValues.length === 0) {
+            var placeholder = document.createElement('span');
+            placeholder.textContent = '-- ' + placeholderText + ' --';
+            placeholder.style.color = '#94a3b8';
+            selectBox.insertBefore(placeholder, arrow);
+        } else {
+            selectedValues.forEach(function(val) {
+                var chip = document.createElement('span');
+                chip.style.cssText = 'background:#e2e8f0; color:#334155; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-flex; align-items:center; gap:4px; border:1px solid #cbd5e1;';
+                chip.textContent = val;
+
+                var closeBtn = document.createElement('span');
+                closeBtn.innerHTML = '&times;';
+                closeBtn.style.cssText = 'cursor:pointer; font-size:12px; font-weight:bold; color:#64748b;';
+                closeBtn.onclick = function(e) { e.stopPropagation(); toggleValue(val, false); };
+                chip.appendChild(closeBtn);
+                selectBox.insertBefore(chip, arrow);
+            });
+        }
+        hiddenInput.value = selectedValues.join(', ');
+    }
+
+    function toggleValue(val, isChecked) {
+        val = (val || '').trim();
+        if (val === '') return;
+        if (isChecked && !selectedValues.includes(val)) selectedValues.push(val);
+        else if (!isChecked) selectedValues = selectedValues.filter(function(v){ return v !== val; });
+        renderChips();
+        renderList(searchInput.value);
+    }
+
+    function renderList(filterText) {
+        listDiv.innerHTML = '';
+        var query = (filterText || '').toLowerCase().trim();
+        var exactMatch = false;
+
+        Object.keys(optionsGrouped).forEach(function(group) {
+            var items = optionsGrouped[group] || [];
+            var filteredItems = items.filter(function(item) {
+                if (item.toLowerCase() === query) exactMatch = true;
+                return item.toLowerCase().indexOf(query) !== -1;
+            });
+
+            if (filteredItems.length > 0) {
+                var groupHeader = document.createElement('div');
+                groupHeader.style.cssText = 'padding:4px 8px; background:#f8fafc; font-weight:bold; font-size:11px; color:#64748b; border-bottom:1px solid #e2e8f0; border-top:1px solid #e2e8f0;';
+                groupHeader.textContent = '=== ' + group + ' ===';
+                listDiv.appendChild(groupHeader);
+
+                filteredItems.forEach(function(item) {
+                    var label = document.createElement('label');
+                    label.style.cssText = 'display:flex; align-items:center; padding:6px 12px; cursor:pointer; font-size:12px; color:#334155; margin:0;';
+                    label.onmouseover = function(){ label.style.background = '#f8f9fa'; };
+                    label.onmouseout = function(){ label.style.background = 'transparent'; };
+
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.value = item;
+                    cb.checked = selectedValues.includes(item);
+                    cb.style.cssText = 'margin:0 8px 0 0;';
+                    cb.onchange = function(e){ e.stopPropagation(); toggleValue(item, e.target.checked); };
+
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(item));
+                    listDiv.appendChild(label);
+                });
+            }
+        });
+
+        // OPSI INPUT MANUAL: kalau yang diketik belum ada persis di daftar
+        if (query !== '' && !exactMatch) {
+            var manualOpt = document.createElement('div');
+            manualOpt.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; background:#f0fdf4; color:#166534; font-weight:bold; border-top:1px solid #bbf7d0;';
+            manualOpt.innerHTML = '+ Tambah Manual: "<i>' + filterText + '</i>"';
+            manualOpt.onclick = function(e) {
+                e.stopPropagation();
+                toggleValue(filterText, true);
+                searchInput.value = '';
+                searchInput.focus();
+            };
+            listDiv.appendChild(manualOpt);
+        } else if (listDiv.children.length === 0) {
+            var empty = document.createElement('div');
+            empty.textContent = 'Tidak ditemukan';
+            empty.style.cssText = 'padding:8px; color:#999; text-align:center; font-size:12px;';
+            listDiv.appendChild(empty);
+        }
+    }
+
+    selectBox.onclick = function(e) {
+        e.stopPropagation();
+        var isOpen = dropdown.style.display === 'block';
+        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ d.style.display = 'none'; });
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+            searchInput.value = '';
+            searchInput.focus();
+            renderList('');
+        }
+    };
+
+    searchInput.onclick = function(e) { e.stopPropagation(); };
+    searchInput.oninput = function(e) { renderList(e.target.value); };
+    // Enter = tambah manual langsung tanpa perlu klik opsi "Tambah Manual"
+    searchInput.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var val = searchInput.value.trim();
+            if (val !== '') {
+                toggleValue(val, true);
+                searchInput.value = '';
+                renderList('');
+            }
+        }
+    };
+
+    renderChips();
 }
 
 document.addEventListener('click', function(e) {
