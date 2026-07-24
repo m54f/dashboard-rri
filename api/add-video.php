@@ -131,7 +131,7 @@ $jamMulaiFormatted   = jamKeFormatTitik($jamMulai);
 // ===== Bangun Properties Sesuai Schema Database Notion =====
 $properties = [
     'Tema Acara' => [
-        'title' => richTextPayload($judul !== '' ? $judul : $namaAcaraDisplay)
+        'title' => richTextPayload($tema !== '' ? $tema : $namaAcaraDisplay)
     ],
     'Programa' => [
         'select' => ['name' => $programaLabel]

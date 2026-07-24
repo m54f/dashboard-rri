@@ -1,6 +1,7 @@
 <?php
 /* Peta menu: key => [label, icon, link relatif dari $base] */
 $menuOperasional = [
+    'jadwal'      => ['Jadwal Shift',        'ri-time-line',          '/pages/jadwal.php'],
     'agenda'      => ['Daily Agenda',        'ri-calendar-line',          '/pages/agenda.php'],
     'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/pages/checklist.php'],
     'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
@@ -12,6 +13,7 @@ $menuDokumentasi = [
     'jurnal'   => ['Jurnal Kegiatan', 'ri-file-list-3-line', '/pages/jurnal.php'],
     'gallery'  => ['Rekap Youtube',   'ri-play-line',        '/pages/gallery.php'],
     'calendar' => ['Calendar Recap',  'ri-calendar-2-line',  '/pages/calendar.php'],
+    'aplikasi' => ['Aplikasi RRI',  'ri-folder-line',  '/pages/aplikasi.php'],
 ];
 $menuPersonal = [
     'petugas'  => ['Petugas', 'ri-team-line', '/pages/petugas.php'],

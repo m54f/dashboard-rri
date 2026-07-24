@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 function parseDeskripsiRss($description) {
     $data = [
         'tema' => '', 'penyiar' => '', 'narasumber' => '',
-        'pt' => [], 'pa' => [], 'programa' => '', 'jamMulai' => '', 'jamSelesai' => '',
+        'pt' => [], 'pa' => [], 'programa' => '', 'jamMulai' => '',
         'tanggal_asli' => ''
     ];
 
@@ -111,9 +111,6 @@ function parseDeskripsiRss($description) {
     // 3. Ekstrak Jam (Contoh: 15.00 - 16.00, 15.00 – 16.00, atau 06.00 s/d Selesai)
     if (preg_match('/(\d{2}[.:]\d{2})\s*(?:s\/d|-|–|—|sd)\s*(Selesai|\d{2}[.:]\d{2})?/i', $cleanDesc, $m)) {
         $data['jamMulai'] = str_replace('.', ':', $m[1]);
-        if (isset($m[2]) && strtolower($m[2]) !== 'selesai') {
-            $data['jamSelesai'] = str_replace('.', ':', $m[2]);
-        }
     }
 
     // 4. Pemandu
@@ -251,11 +248,6 @@ include __DIR__ . '/../includes/header.php';
             <option value="Pro 2">Pro 2</option>
             <option value="Pro 4">Pro 4</option>
         </select>
-        <!-- Filter Petugas Menggunakan Select -->
-        <select id="filterPetugas" onchange="filterTable()" style="padding:5px; border-radius:4px;">
-            <option value="">Semua Petugas</option>
-            <!-- Opsi akan diisi otomatis oleh JS -->
-        </select>
     </div>
   </div>
   <div class="table-wrap">
@@ -351,7 +343,17 @@ include __DIR__ . '/../includes/header.php';
               <td class="cell-sub"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></td>
               <td class="cell-sub"><?= htmlspecialchars($time, ENT_QUOTES, 'UTF-8') ?></td>
               <td class="cell-sub"><?= $penyiar !== '' ? htmlspecialchars($penyiar, ENT_QUOTES, 'UTF-8') : '—' ?></td>
-              <td class="cell-sub"><?= !empty($narasumber) ? htmlspecialchars(implode(', ', $narasumber), ENT_QUOTES, 'UTF-8') : '—' ?></td>
+              <td class="cell-sub">
+                <?php if (!empty($narasumber)): ?>
+                    <ul style="margin: 0; padding-left: 1.2rem; list-style-type: disc;">
+                    <?php foreach ($narasumber as $item): ?>
+                        <li style="margin-bottom: 6px;"><?= htmlspecialchars($item, ENT_QUOTES, 'UTF-8') ?></li>
+                    <?php endforeach; ?>
+                    </ul>
+                <?php else: ?>
+                    —
+                <?php endif; ?>
+                </td>
               <td class="cell-sub"><?= $teknik !== '' ? htmlspecialchars($teknik, ENT_QUOTES, 'UTF-8') : '—' ?></td>
               <td class="cell-sub"><?= $pa !== '' ? htmlspecialchars($pa, ENT_QUOTES, 'UTF-8') : '—' ?></td>
               <td class="cell-actions">
@@ -391,12 +393,11 @@ include __DIR__ . '/../includes/header.php';
 <div id="addVideoView" style="display:none;">
   <div class="page-head">
     <div>
-      <button class="btn btn-secondary" onclick="hideAddView()"><i class="ri-arrow-left-line"></i> Kembali</button>
+      <button class="btn btn-secondary" onclick="handleBackFromAddView()"><i class="ri-arrow-left-line"></i> Kembali</button>
     </div>
   </div>
-
-  <h2 style="margin-bottom:4px;">Sinkronisasi dari YouTube (RSS)</h2>
-  <p style="color:var(--text-secondary); margin-bottom:24px;">Tarik video dari RSS feed channel Youtube, cocokkan detailnya per baris, lalu simpan ke rekap. Baris kosong bisa ditambah manual untuk video yang tidak muncul di RSS.</p>
+  <h2 style="margin-bottom:4px;">Tambah Video</h2>
+  <p style="color:var(--text-secondary); margin-bottom:24px; font-size: 0.95rem;">Tarik video dari RSS feed channel Youtube, cocokkan detailnya per baris, lalu simpan ke rekap.<br>Baris kosong bisa ditambah manual untuk video yang tidak muncul di RSS.</p>
 
   <div class="card" style="margin-bottom:20px;">
     <div class="card-header" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
@@ -418,7 +419,7 @@ include __DIR__ . '/../includes/header.php';
 
     <div class="table-wrap">
       <table class="data-table" id="rssTable">
-        <thead>
+        <!-- <thead>
           <tr>
             <th style="width:3%;">No.</th>
             <th style="width:19%;">Acara &amp; Tema</th>
@@ -428,7 +429,7 @@ include __DIR__ . '/../includes/header.php';
             <th style="width:15%;">Media (URL &amp; Flyer)</th>
             <th style="width:8%;">Aksi</th>
           </tr>
-        </thead>
+        </thead> -->
         <tbody id="rssTableBody">
           <tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:30px;">Belum ada data ditarik. Masukkan ID Channel dan klik Tarik Data.</td></tr>
         </tbody>
@@ -450,7 +451,7 @@ include __DIR__ . '/../includes/header.php';
   <div style="display:grid; grid-template-columns:1fr; gap:20px; align-items:start;">
     <div>
     <h2 id="addVideoTitle" style="margin-bottom:4px;">Edit Video</h2>
-    <p style="color:var(--text-secondary); margin-bottom:24px;">Perbarui detail video yang sudah ada di rekap.</p>
+    <p style="color:var(--text-secondary); margin-bottom:24px; font-size: 0.95rem;">Perbarui detail video yang sudah ada di rekap.</p>
 
     <form id="addVideoForm" onsubmit="event.preventDefault(); submitAddVideo();">
       <input type="hidden" id="judulVideo" name="judul">
@@ -467,11 +468,8 @@ include __DIR__ . '/../includes/header.php';
 
       <div class="form-group">
         <label>Nama Program / Acara</label>
-        <div id="programContainer" class="form-row" style="grid-template-columns:1fr;">
-          <select id="program" name="program" onchange="generateDescription()" required>
-            <option value="">— Pilih Nama Acara —</option>
-          </select>
-        </div>
+        <div id="editAcaraContainer"></div>
+        <input type="hidden" id="hidden_edit_acara" name="program">
       </div>
 
       <div class="form-group">
@@ -485,16 +483,12 @@ include __DIR__ . '/../includes/header.php';
           <input type="date" id="tanggal" name="tanggal" required>
         </div>
         <div class="form-group"><label>Jam Mulai</label><input type="time" id="jamMulai" name="jamMulai" required></div>
-        <div class="form-group"><label>Jam Selesai</label><input type="time" id="jamSelesai" name="jamSelesai"></div>
       </div>
 
       <div class="form-group">
         <label>Pemandu Acara</label>
-        <div class="form-row" style="grid-template-columns: 1fr;">
-          <select id="penyiar" name="penyiar" onchange="generateDescription()">
-            <option value="">— Pilih Nama Pemandu —</option>
-          </select>
-        </div>
+        <div id="editPemanduContainer"></div>
+        <input type="hidden" id="hidden_edit_pemandu" name="penyiar">
       </div>
 
       <div class="form-group">
@@ -504,13 +498,13 @@ include __DIR__ . '/../includes/header.php';
 
       <div class="form-row">
         <div class="form-group">
-          <label>Petugas Teknik (PT)</label>
+          <label>Petugas PT Setting</label>
           <!-- Container untuk custom dropdown -->
           <div id="teknikContainer"></div>
           <input type="hidden" id="teknik" name="teknik">
         </div>
         <div class="form-group">
-          <label>Petugas PA / Acara</label>
+          <label>Petugas PT Produksi</label>
           <!-- Container untuk custom dropdown -->
           <div id="paContainer"></div>
           <input type="hidden" id="pa" name="pa">
@@ -577,17 +571,17 @@ async function loadMasterData(){
 }
 
 // Fungsi untuk mengisi dropdown filter petugas saat master data selesai dimuat
-function initFilterPetugas() {
-    var select = document.getElementById('filterPetugas');
-    var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
+// function initFilterPetugas() {
+//     var select = document.getElementById('filterPetugas');
+//     var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
     
-    petugasList.forEach(function(nama) {
-        var opt = document.createElement('option');
-        opt.value = nama;
-        opt.textContent = nama;
-        select.appendChild(opt);
-    });
-}
+//     petugasList.forEach(function(nama) {
+//         var opt = document.createElement('option');
+//         opt.value = nama;
+//         opt.textContent = nama;
+//         select.appendChild(opt);
+//     });
+// }
 
 function getProgramaLabelFromLive(){
     var liveVal = document.getElementById('live').value;
@@ -595,55 +589,6 @@ function getProgramaLabelFromLive(){
     if (liveVal.indexOf('Pro 2') !== -1) return 'Pro 2';
     if (liveVal.indexOf('Pro 4') !== -1) return 'Pro 4';
     return 'Pro 1';
-}
-
-// Isi ulang dropdown Nama Acara sesuai Programa terpilih (murni dari master-data.json).
-// selectedValue (opsional): value yang ingin dipertahankan/dipilih setelah dropdown diisi ulang.
-function populateProgramOptions(selectedValue){
-    var select = document.getElementById('program');
-    var label = getProgramaLabelFromLive();
-    var names = (masterData.acara && masterData.acara[label]) ? masterData.acara[label] : [];
-
-    select.innerHTML = '';
-    var placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = masterDataLoaded ? '— Pilih Nama Acara —' : 'Memuat daftar acara...';
-    select.appendChild(placeholder);
-
-    names.forEach(function(name){
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-    });
-
-    if (selectedValue && Array.from(select.options).some(function(o){ return o.value === selectedValue; })) {
-        select.value = selectedValue;
-    }
-}
-
-// Isi ulang dropdown Nama Pemandu sesuai Programa terpilih (murni dari master-data.json).
-function populatePenyiarOptions(selectedValue){
-    var select = document.getElementById('penyiar');
-    var label = getProgramaLabelFromLive();
-    var names = (masterData.pemandu && masterData.pemandu[label]) ? masterData.pemandu[label] : [];
-
-    select.innerHTML = '';
-    var placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = masterDataLoaded ? '— Pilih Nama Pemandu —' : 'Memuat daftar pemandu...';
-    select.appendChild(placeholder);
-
-    names.forEach(function(name){
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-    });
-
-    if (selectedValue && Array.from(select.options).some(function(o){ return o.value === selectedValue; })) {
-        select.value = selectedValue;
-    }
 }
 
 // Isi ulang dropdown multi-select Petugas Teknik (PT) sesuai Programa terpilih.
@@ -661,7 +606,7 @@ function createCustomMultiSelect(containerId, hiddenInputId, options) {
 
     // 1. Kotak Pilih (Visual pengganti select)
     var selectBox = document.createElement('div');
-    selectBox.style.cssText = 'min-height:38px; border:1px solid var(--border-color, #ced4da); border-radius:4px; padding:6px 30px 6px 8px; background:#fff; cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px;';
+    selectBox.style.cssText = 'width:100%; box-sizing:border-box; min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 8px; background:#fff; cursor:pointer; display:flex; align-items:center; position:relative; font-size:12px; font-weight:600; color:#334155;';
 
     // Panah dropdown
     var arrow = document.createElement('div');
@@ -839,8 +784,6 @@ function handleLiveChange(){
     var currentProgram = programSelect ? programSelect.value : '';
     var currentPenyiar = penyiarSelect ? penyiarSelect.value : '';
 
-    populateProgramOptions(currentProgram);
-    populatePenyiarOptions(currentPenyiar);
     populateTeknikOptions();
     populatePaOptions();
 }
@@ -985,43 +928,14 @@ function openEditView(videoData){
     }
 
     // ---- Program / Nama Acara (dropdown diisi sesuai Programa di atas) ----
-    populateProgramOptions();
-    var programSelect = document.getElementById('program');
     var namaAcara = videoData.namaAcara || '';
-    var matchedOption = Array.from(programSelect.options).find(function(opt){
-        return opt.value !== '' && opt.text === namaAcara;
-    });
-
-    if (matchedOption) {
-        programSelect.value = matchedOption.value;
-    } else if (namaAcara !== '') {
-        // Nama acara ini belum terdaftar di master-data.json -- tetap tampilkan
-        // apa adanya supaya data lama tidak hilang saat diedit.
-        var extraOpt = document.createElement('option');
-        extraOpt.value = namaAcara;
-        extraOpt.textContent = namaAcara + ' (belum ada di daftar)';
-        programSelect.appendChild(extraOpt);
-        programSelect.value = namaAcara;
-    }
+    document.getElementById('hidden_edit_acara').value = namaAcara;
+    createRssSingleSelect('editAcaraContainer', 'hidden_edit_acara', masterData.acara || {}, 'Pilih Acara');
 
     // ---- Pemandu Acara (dropdown diisi sesuai Programa di atas) ----
-    populatePenyiarOptions();
-    var penyiarSelect = document.getElementById('penyiar');
     var namaPenyiar = videoData.penyiar || '';
-    var matchedPenyiar = Array.from(penyiarSelect.options).find(function(opt){
-        return opt.value !== '' && opt.value === namaPenyiar;
-    });
-    if (matchedPenyiar) {
-        penyiarSelect.value = namaPenyiar;
-    } else if (namaPenyiar !== '') {
-        // Nama pemandu ini belum terdaftar di master-data.json -- tetap tampilkan
-        // apa adanya supaya data lama tidak hilang saat diedit.
-        var extraPenyiarOpt = document.createElement('option');
-        extraPenyiarOpt.value = namaPenyiar;
-        extraPenyiarOpt.textContent = namaPenyiar + ' (belum ada di daftar)';
-        penyiarSelect.appendChild(extraPenyiarOpt);
-        penyiarSelect.value = namaPenyiar;
-    }
+    document.getElementById('hidden_edit_pemandu').value = namaPenyiar;
+    createRssSingleSelect('editPemanduContainer', 'hidden_edit_pemandu', masterData.pemandu || {}, 'Pilih Pemandu');
 
     // ---- Petugas Teknik & PA ----
     // 1. Masukkan data dari database ke dalam hidden input
@@ -1078,7 +992,6 @@ function openEditView(videoData){
     document.getElementById('tanggal').value = parseTanggalToISO(videoData.date);
     var jamParsed = parseJamGabungToInputs(videoData.time);
     document.getElementById('jamMulai').value = jamParsed.mulai;
-    document.getElementById('jamSelesai').value = jamParsed.selesai;
 
     // ---- Narasumber ----
     document.getElementById('narasumber').value = Array.isArray(videoData.narasumber) ? videoData.narasumber.join('\n') : '';
@@ -1112,6 +1025,27 @@ function hideAddView(){
     document.getElementById('galleryMainView').style.display = 'block';
 }
 
+// Fungsi untuk menangani klik tombol Kembali pada form Tambah Video
+function handleBackFromAddView() {
+    // Cari tombol Simpan di dalam tabel yang statusnya sudah 'Tersimpan'
+    var savedButtons = document.querySelectorAll('#rssTableBody .btn-success[disabled]');
+    var isAnySaved = false;
+
+    savedButtons.forEach(function(btn) {
+        if (btn.textContent.trim() === 'Tersimpan') {
+            isAnySaved = true;
+        }
+    });
+
+    // Jika ada baris yang tersimpan, refresh halaman agar data rekap diperbarui
+    if (isAnySaved) {
+        location.reload();
+    } else {
+        // Jika belum ada data yang tersimpan, kembali ke tampilan rekap tanpa refresh
+        hideAddView();
+    }
+}
+
 function hideEditView(){
     document.getElementById('editVideoView').style.display = 'none';
     document.getElementById('galleryMainView').style.display = 'block';
@@ -1130,9 +1064,6 @@ function hideEditView(){
 
 // UBAH MENJADI ASYNC FUNCTION
 async function submitAddVideo(){
-    var programSelect = document.getElementById('program');
-    document.getElementById('namaAcaraDisplayHidden').value = programSelect.options[programSelect.selectedIndex].text;
-
     var form = document.getElementById('addVideoForm');
     var isEditMode = !!editingPageId;
 
@@ -1143,6 +1074,21 @@ async function submitAddVideo(){
             plainObject[key] = typeof value === 'string' ? value.trim() : value;
         }
     });
+
+    // AMBIL NILAI DARI HIDDEN INPUT KUSTOM (Baik untuk mode Edit maupun Tambah jika menggunakan kustom)
+    var hiddenAcara = document.getElementById('hidden_edit_acara');
+    var hiddenPemandu = document.getElementById('hidden_edit_pemandu');
+    
+    // Fallback jika form edit aktif atau menggunakan elemen kustom
+    var finalAcara = hiddenAcara ? hiddenAcara.value.trim() : (plainObject['program'] || '');
+    var finalPemandu = hiddenPemandu ? hiddenPemandu.value.trim() : (plainObject['penyiar'] || '');
+
+    plainObject['program'] = finalAcara;
+    plainObject['namaAcaraDisplay'] = finalAcara;
+    plainObject['penyiar'] = finalPemandu;
+
+    // Set field 'judul' agar murni diisi nilai 'tema'
+    plainObject['judul'] = plainObject['tema'] || '';
 
     var missing = [];
     if (!plainObject.namaAcaraDisplay) missing.push('Nama Program / Acara');
@@ -1163,14 +1109,12 @@ async function submitAddVideo(){
     try {
         let uploadedFilesPayload = [];
         
-        // 2. Jalankan pre-upload ke Notion via AWS S3 (jika ada file baru di dropzone)
+        // Jalankan pre-upload ke Notion via AWS S3 (jika ada file baru di dropzone)
         if (selectedFiles.length > 0) {
             submitBtn.textContent = 'Menyimpan Gambar ke Notion S3...';
             uploadedFilesPayload = await uploadFiles(selectedFiles);
         }
 
-        // Simpan hasilnya ke key 'flyer_urls'. Saat edit dan tidak ada file baru,
-        // array ini kosong -> flyer lama di Notion tidak akan diubah.
         plainObject['flyer_urls'] = uploadedFilesPayload;
         submitBtn.textContent = 'Menyimpan ke Database...';
 
@@ -1180,7 +1124,6 @@ async function submitAddVideo(){
             endpoint = '../api/edit-video.php';
         }
 
-        // 3. Kirim data teks + manifes ID file dalam format JSON murni
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -1231,7 +1174,6 @@ function deleteVideoRow(pageId, title) {
 
 function filterTable() {
     var programFilter = document.getElementById('filterPrograma').value.toLowerCase();
-    var petugasFilter = document.getElementById('filterPetugas').value.toLowerCase();
     var rows = document.querySelectorAll('.video-row');
 
     rows.forEach(function(row) {
@@ -1239,12 +1181,8 @@ function filterTable() {
         
         // Cek Programa
         var matchPrograma = programFilter === "" || videoData.programa.toLowerCase().includes(programFilter);
-        
-        // Cek Petugas (Gabungkan PT dan PA untuk pencarian)
-        var petugasGabung = (videoData.teknik + " " + videoData.pa).toLowerCase();
-        var matchPetugas = petugasFilter === "" || petugasGabung.includes(petugasFilter);
 
-        if (matchPrograma && matchPetugas) {
+        if (matchPrograma) {
             row.style.display = "";
         } else {
             row.style.display = "none";
@@ -1410,9 +1348,9 @@ function renderTabelRss(videos) {
             <td>
                 <div class="row-group">
                     <label class="tabel-label">Nama Acara</label>
-                    <select id="acara_${index}" onchange="updatePrograma(${index}, this.value)" style="font-weight:bold;">
-                        ${optionsAcara}
-                    </select>
+                    <div id="acara_container_${index}"></div>
+                    <input type="hidden" id="hidden_acara_${index}" value="">
+                    
                     <label class="tabel-label" style="margin-top:6px;">Tema</label>
                     <textarea rows="3" placeholder="Tema Acara" style="resize:none;">${vid.tema || ''}</textarea>
                 </div>
@@ -1427,24 +1365,17 @@ function renderTabelRss(videos) {
                     </select>
                     <label class="tabel-label" style="margin-top:6px;">Tanggal Tayang</label>
                     <input type="date" value="${vid.tanggal || ''}">
-                    <div style="display:flex; gap:8px; margin-top:6px;">
-                        <div style="flex:1;">
-                            <label class="tabel-label">Mulai</label>
-                            <input type="time" value="${vid.jamMulai || ''}" title="Jam Mulai">
-                        </div>
-                        <div style="flex:1;">
-                            <label class="tabel-label">Selesai</label>
-                            <input type="time" value="${vid.jamSelesai || ''}" title="Jam Selesai">
-                        </div>
+                    <label class="tabel-label">Jam Mulai</label>
+                    <input type="time" value="${vid.jamMulai || ''}" title="Jam Mulai">
                     </div>
                 </div>
             </td>
             <td>
                 <div class="row-group">
                     <label class="tabel-label">Pemandu / Host / Penyiar</label>
-                    <select id="pemandu_${index}">
-                        ${optionsPenyiar}
-                    </select>
+                    <div id="pemandu_container_${index}"></div>
+                    <input type="hidden" id="hidden_pemandu_${index}" value="">
+                    
                     <label class="tabel-label" style="margin-top:6px;">Narasumber</label>
                     <div id="narasumber_container_${index}" style="display:flex; flex-direction:column; gap:4px;"></div>
                     <button type="button" onclick="addNarasumberField(${index})" style="margin-top:4px; font-size:11px; padding:4px 8px; cursor:pointer; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; color:#334155; font-weight:600;">+ Tambah Narasumber</button>
@@ -1496,8 +1427,36 @@ function renderTabelRss(videos) {
         createRssMultiSelect(idPT, hidPT, petugasList);
         createRssMultiSelect(idPA, hidPA, petugasList);
         attachDropzoneEvents(index);
-    });
+        // Pencocokan otomatis judul RSS ke master data
+        var matchedAcaraName = "";
+        Object.keys(acaraGrouped).forEach(function(prog) {
+            (acaraGrouped[prog] || []).forEach(function(ac) {
+                var norm = normalizeTextRss(ac);
+                if (normalizedTitle && norm && (normalizedTitle.includes(norm) || norm.includes(normalizedTitle))) {
+                    matchedAcaraName = ac;
+                }
+            });
+        });
 
+        var matchedPemanduName = "";
+        Object.keys(penyiarGrouped).forEach(function(prog) {
+            (penyiarGrouped[prog] || []).forEach(function(p) {
+                var norm = normalizeTextRss(p);
+                if (normalizedPenyiarTitle && norm && (normalizedPenyiarTitle.includes(norm) || norm.includes(normalizedPenyiarTitle))) {
+                    matchedPemanduName = p;
+                }
+            });
+        });
+        if (!matchedPemanduName && extractedPenyiar) matchedPemanduName = extractedPenyiar;
+
+        // Masukkan nilai ke hidden input
+        document.getElementById('hidden_acara_' + index).value = matchedAcaraName;
+        document.getElementById('hidden_pemandu_' + index).value = matchedPemanduName;
+
+        // Render komponen select kustom
+        createRssSingleSelect('acara_container_' + index, 'hidden_acara_' + index, acaraGrouped, 'Pilih Acara');
+        createRssSingleSelect('pemandu_container_' + index, 'hidden_pemandu_' + index, penyiarGrouped, 'Pilih Pemandu');
+    });
     perbaruiNomorUrut();
 }
 
@@ -1598,10 +1557,27 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
         });
     }
 
-    selectBox.onclick = function() {
+    // Event Klik untuk Buka/Tutup Dropdown
+    selectBox.onclick = function(e) {
+        e.stopPropagation(); // Mencegah klik menutup dropdown seketika
         var isOpen = dropdown.style.display === 'block';
-        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ d.style.display = 'none'; });
-        if (!isOpen) { dropdown.style.display = 'block'; searchInput.focus(); renderList(searchInput.value); }
+        
+        // Tutup semua dropdown custom lain yang sedang terbuka
+        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ 
+            d.style.display = 'none'; 
+        });
+        
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+            searchInput.value = '';
+            searchInput.focus();
+            renderList('');
+        }
+    };
+
+    // Mencegah klik di dalam kotak pencarian menutup dropdown
+    searchInput.onclick = function(e) { 
+        e.stopPropagation(); 
     };
     searchInput.oninput = function(e){ renderList(e.target.value); };
     renderChips();
@@ -1654,9 +1630,8 @@ function tambahBarisKosong() {
         <td>
             <div class="row-group">
                 <label class="tabel-label">Nama Acara</label>
-                <select id="acara_${uniqueId}" onchange="updatePrograma('${uniqueId}', this.value)" style="font-weight:bold;">
-                    ${optionsAcara}
-                </select>
+                <div id="acara_container_${uniqueId}"></div>
+                <input type="hidden" id="hidden_acara_${uniqueId}" value="">
                 <label class="tabel-label" style="margin-top:6px;">Tema</label>
                 <textarea rows="3" placeholder="Tema Acara" style="resize:none;"></textarea>
             </div>
@@ -1671,24 +1646,15 @@ function tambahBarisKosong() {
                 </select>
                 <label class="tabel-label" style="margin-top:6px;">Tanggal Tayang</label>
                 <input type="date" value="${targetDateVal}">
-                <div style="display:flex; gap:8px; margin-top:6px;">
-                    <div style="flex:1;">
-                        <label class="tabel-label">Mulai</label>
-                        <input type="time">
-                    </div>
-                    <div style="flex:1;">
-                        <label class="tabel-label">Selesai</label>
-                        <input type="time">
-                    </div>
-                </div>
+                <label class="tabel-label">Jam Mulai</label>
+                <input type="time">
             </div>
         </td>
         <td>
             <div class="row-group">
                 <label class="tabel-label">Pemandu / Host / Penyiar</label>
-                <select id="pemandu_${uniqueId}">
-                    ${optionsPenyiar}
-                </select>
+                <div id="pemandu_container_${uniqueId}"></div>
+                <input type="hidden" id="hidden_pemandu_${uniqueId}" value="">
                 <label class="tabel-label" style="margin-top:6px;">Narasumber</label>
                 <div id="narasumber_container_${uniqueId}" style="display:flex; flex-direction:column; gap:4px;"></div>
                 <button type="button" onclick="addNarasumberField('${uniqueId}')" style="margin-top:4px; font-size:11px; padding:4px 8px; cursor:pointer; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; color:#334155; font-weight:600;">+ Tambah Narasumber</button>
@@ -1725,6 +1691,9 @@ function tambahBarisKosong() {
     `;
 
     tbody.appendChild(tr);
+
+    createRssSingleSelect('acara_container_' + uniqueId, 'hidden_acara_' + uniqueId, acaraGrouped, 'Pilih Acara');
+    createRssSingleSelect('pemandu_container_' + uniqueId, 'hidden_pemandu_' + uniqueId, penyiarGrouped, 'Pilih Pemandu');
 
     addNarasumberField(uniqueId, '');
     createRssMultiSelect(idPT, hidPT, petugasList);
@@ -1860,8 +1829,7 @@ async function simpanKeNotion(btn, id) {
         var row = btn.closest('tr');
         if (!row) throw new Error("Baris tidak ditemukan.");
 
-        var acaraSelect = document.getElementById('acara_' + id);
-        var namaAcara = acaraSelect ? acaraSelect.value : '';
+        var namaAcara = document.getElementById('hidden_acara_' + id) ? document.getElementById('hidden_acara_' + id).value : '';
 
         var temaInput = row.querySelector('textarea[placeholder="Tema Acara"]');
         var tema = temaInput ? temaInput.value : '';
@@ -1878,10 +1846,8 @@ async function simpanKeNotion(btn, id) {
 
         var timeInputs = row.querySelectorAll('input[type="time"]');
         var jamMulai = timeInputs[0] ? timeInputs[0].value : '';
-        var jamSelesai = timeInputs[1] ? timeInputs[1].value : '';
 
-        var pemanduSelect = document.getElementById('pemandu_' + id);
-        var pemandu = pemanduSelect ? pemanduSelect.value : '';
+        var pemandu = document.getElementById('hidden_pemandu_' + id) ? document.getElementById('hidden_pemandu_' + id).value : '';
 
         var narasumberContainer = document.getElementById('narasumber_container_' + id);
         var narasumberText = '';
@@ -1905,10 +1871,9 @@ async function simpanKeNotion(btn, id) {
             program: namaAcara,
             namaAcaraDisplay: namaAcara,
             tema: tema,
-            judul: namaAcara + (tema ? (' - ' + tema) : ''),
+            judul: tema,
             tanggal: tanggal,
             jamMulai: jamMulai,
-            jamSelesai: jamSelesai,
             penyiar: pemandu,
             narasumber: narasumberText,
             teknik: teknik,
@@ -1984,6 +1949,148 @@ function simpanSemuaKeNotion() {
         });
     }
 }
+
+// ==========================================
+// CUSTOM SINGLE SELECT DENGAN INPUT MANUAL
+// ==========================================
+function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, placeholderText) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    container.style.position = 'relative';
+    container.style.width = '100%';
+
+    var hiddenInput = document.getElementById(hiddenInputId);
+    var selectedValue = hiddenInput.value || '';
+
+    // 1. Box Tampilan Utama
+    // 1. Box Tampilan Utama
+    var selectBox = document.createElement('div');
+    selectBox.style.cssText = 'width:100%; box-sizing:border-box; min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 8px; background:#fff; cursor:pointer; display:flex; align-items:center; position:relative; font-size:12px; font-weight:600; color:#334155;';
+
+    var displayLabel = document.createElement('span');
+    displayLabel.style.cssText = 'display:block; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+    displayLabel.textContent = selectedValue || ('-- ' + placeholderText + ' --');
+    if (!selectedValue) displayLabel.style.color = '#94a3b8';
+
+    var arrow = document.createElement('div');
+    arrow.innerHTML = '▼';
+    arrow.style.cssText = 'position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:10px; color:#6c757d;';
+
+    selectBox.appendChild(displayLabel);
+    selectBox.appendChild(arrow);
+
+    // 2. Menu Dropdown & Search Input
+    var dropdown = document.createElement('div');
+    dropdown.className = 'custom-dropdown-menu';
+    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+
+    var searchDiv = document.createElement('div');
+    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid #eee;';
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Ketik untuk cari / input manual...';
+    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:12px;';
+    searchDiv.appendChild(searchInput);
+    dropdown.appendChild(searchDiv);
+
+    var listDiv = document.createElement('div');
+    listDiv.style.cssText = 'max-height:180px; overflow-y:auto; padding:4px 0; text-align:left;';
+    dropdown.appendChild(listDiv);
+
+    container.appendChild(selectBox);
+    container.appendChild(dropdown);
+
+    // Set nilai terpilih
+    function setValue(val) {
+        selectedValue = val;
+        hiddenInput.value = val;
+        displayLabel.textContent = val || ('-- ' + placeholderText + ' --');
+        displayLabel.style.color = val ? '#334155' : '#94a3b8';
+        dropdown.style.display = 'none';
+        
+        // Triggers otomatis penyesuaian programa jika ini dropdown Acara
+        if (containerId.startsWith('acara_container_')) {
+            var index = containerId.replace('acara_container_', '');
+            if (typeof updatePrograma === 'function') updatePrograma(index, val);
+        }
+    }
+
+    // Render List Items
+    function renderList(filterText) {
+        listDiv.innerHTML = '';
+        var query = (filterText || '').toLowerCase().trim();
+        var exactMatch = false;
+
+        Object.keys(optionsGrouped).forEach(function(group) {
+            var items = optionsGrouped[group] || [];
+            var filteredItems = items.filter(function(item) {
+                if (item.toLowerCase() === query) exactMatch = true;
+                return item.toLowerCase().includes(query);
+            });
+
+            if (filteredItems.length > 0) {
+                var groupHeader = document.createElement('div');
+                groupHeader.style.cssText = 'padding:4px 8px; background:#f8fafc; font-weight:bold; font-size:11px; color:#64748b; border-bottom:1px solid #e2e8f0; border-top:1px solid #e2e8f0;';
+                groupHeader.textContent = '=== ' + group + ' ===';
+                listDiv.appendChild(groupHeader);
+
+                filteredItems.forEach(function(item) {
+                    var itemEl = document.createElement('div');
+                    itemEl.style.cssText = 'padding:6px 12px; cursor:pointer; font-size:12px; color:#334155;';
+                    itemEl.textContent = item;
+                    itemEl.onmouseover = function() { itemEl.style.background = '#e2e8f0'; };
+                    itemEl.onmouseout = function() { itemEl.style.background = 'transparent'; };
+                    itemEl.onclick = function() { setValue(item); };
+                    listDiv.appendChild(itemEl);
+                });
+            }
+        });
+
+        // OPSI INPUT MANUAL: Jika yang diketik belum ada di daftar dropdown
+        if (query !== '' && !exactMatch) {
+            var manualOpt = document.createElement('div');
+            manualOpt.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; background:#f0fdf4; color:#166534; font-weight:bold; border-top:1px solid #bbf7d0;';
+            manualOpt.innerHTML = 'Gunakan Manual: "<i>' + filterText + '</i>"';
+            manualOpt.onclick = function() { setValue(filterText); };
+            listDiv.appendChild(manualOpt);
+        } else if (listDiv.children.length === 0) {
+            var empty = document.createElement('div');
+            empty.textContent = 'Tidak ditemukan';
+            empty.style.cssText = 'padding:8px; color:#999; text-align:center; font-size:12px;';
+            listDiv.appendChild(empty);
+        }
+    }
+
+    selectBox.onclick = function(e) {
+        e.stopPropagation();
+        var isOpen = dropdown.style.display === 'block';
+        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ d.style.display = 'none'; });
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+            searchInput.value = '';
+            searchInput.focus();
+            renderList('');
+        }
+    };
+
+    searchInput.onclick = function(e) { e.stopPropagation(); };
+    searchInput.oninput = function(e) { renderList(e.target.value); };
+}
+
+document.addEventListener('click', function(e) {
+    // Tutup dropdown jika yang diklik berada di luar menu kustom dan di luar kotak pilihan
+    if (!e.target.closest('.custom-dropdown-menu') && 
+        !e.target.closest('[id$="_container_"]') &&
+        !e.target.closest('[id^="pt_"]') &&
+        !e.target.closest('[id^="pa_"]') &&
+        !e.target.closest('#teknikContainer') &&
+        !e.target.closest('#paContainer')) {
+        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ 
+            d.style.display = 'none'; 
+        });
+    }
+});
 
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
