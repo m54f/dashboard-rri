@@ -57,7 +57,30 @@ $dows = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 
 include __DIR__ . '/../includes/header.php';
 ?>
-
+<style>
+/* Tampilan Calendar Recap di layar HP:
+   - header (bulan/tahun + tombol panah) ditumpuk & center biar nggak mepet/overflow
+   - grid kalender dikecilin biar 7 kolom tetap muat tanpa scroll horizontal */
+@media (max-width: 640px) {
+  .page-head form {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cal-grid { gap: 3px !important; }
+  .cal-dow { font-size: 10px !important; padding: 4px 0 !important; }
+  .cal-cell { padding: 4px 3px !important; min-height: 56px; }
+  .cal-daynum { font-size: 11px !important; margin-bottom: 2px !important; }
+  .cal-event {
+    font-size: 8.5px !important;
+    padding: 1px 3px !important;
+    margin-bottom: 2px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+</style>
 
 <div class="page-head">
   <div>
@@ -82,7 +105,6 @@ include __DIR__ . '/../includes/header.php';
       <?php endfor; ?>
     </select>
     <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>" class="btn btn-secondary" style="padding:0.5rem 0.65rem; display:flex; align-items:center;" title="Bulan berikutnya"><i class="ri-arrow-right-s-line"></i></a>
-    <a href="?month=<?= (int)$jakartaNow->format('n') ?>&year=<?= (int)$jakartaNow->format('Y') ?>" class="btn btn-secondary" style="padding:0.5rem 0.85rem; font-size:0.85rem;">Hari Ini</a>
   </form>
 </div>
 
@@ -97,7 +119,6 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="stats-row">
   <div class="stat-card"><div class="stat-info"><h3>Total Kegiatan</h3><div class="stat-value"><?= $totalCount ?></div><div class="stat-sub">Bulan ini</div></div><div class="stat-icon blue"><i class="ri-calendar-line"></i></div></div>
-  <div class="stat-card"><div class="stat-info"><h3>Live Streaming</h3><div class="stat-value"><?= $liveCount ?></div><div class="stat-sub">Sesi tayang</div></div><div class="stat-icon red"><i class="ri-live-line"></i></div></div>
   <div class="stat-card"><div class="stat-info"><h3>Event Khusus</h3><div class="stat-value"><?= $eventCount ?></div><div class="stat-sub">Di luar jadwal rutin</div></div><div class="stat-icon orange"><i class="ri-star-line"></i></div></div>
 </div>
 
@@ -106,7 +127,6 @@ include __DIR__ . '/../includes/header.php';
     <div class="card-title"><i class="ri-calendar-2-line"></i><?= $monthNames[$month] ?> <?= $year ?></div>
     <div style="display:flex;gap:14px;font-size:11.5px;color:var(--text-secondary);">
       <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:3px;background:var(--primary);display:inline-block;"></i>Kegiatan</span>
-      <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:3px;background:var(--danger);display:inline-block;"></i>Live</span>
       <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:3px;background:var(--warning);display:inline-block;"></i>Event</span>
     </div>
   </div>

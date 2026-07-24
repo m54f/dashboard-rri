@@ -251,6 +251,21 @@ include __DIR__ . '/../includes/header.php';
           <i class="ri-send-plane-line"></i> <span id="submitBtnLabel">Simpan</span>
         </button>
       </div>
+        <label class="notion-label">Eviden</label>
+        <!-- <div class="notion-upload-box"><input type="file" name="eviden[]" multiple accept="image/*" style="width: 100%;"></div> -->
+        <div class="upload-zone" id="dropzone" style="margin-bottom: 30px;">
+            <input type="file" id="field_dokumentasi" name="dokumentasi[]" multiple accept="image/*">
+            <div class="upload-icon"><i class="ri-image-add-line"></i></div>
+            <div class="upload-text">Klik atau seret foto ke sini</div>
+            <div class="upload-hint">Maksimal 10 MB per file, bisa beberapa file sekaligus (JPG, PNG, WebP)</div>
+        </div>
+
+        <label class="notion-label">Eviden 3 (Link)</label>
+        <input type="url" class="notion-input" name="eviden_3_link" id="inputEviden3" placeholder="Your answer">
+
+        <div style="margin-top: 10px;">
+            <button type="submit" class="notion-submit" id="btnSubmit">Submit</button>
+        </div>
     </form>
   </div>
 </div>
@@ -270,6 +285,152 @@ let currentFilter = 'semua';
 let searchQuery = '';
 let selectedFiles = [];
 let existingDocs = [];
+
+// ==========================================
+// UPLOAD IMAGE PREVIEW + DRAG DROP
+// ==========================================
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('field_dokumentasi');
+
+let selectedFiles = [];
+
+fileInput.addEventListener('change', function(e) {
+    handleFiles(e.target.files);
+});
+
+dropzone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropzone.style.borderColor = '#2563eb';
+    dropzone.style.background = '#eff6ff';
+});
+
+dropzone.addEventListener('dragleave', function() {
+    dropzone.style.borderColor = '#d1d5db';
+    dropzone.style.background = '#f9fafb';
+});
+
+dropzone.addEventListener('drop', function(e) {
+    e.preventDefault();
+
+    dropzone.style.borderColor = '#d1d5db';
+    dropzone.style.background = '#f9fafb';
+
+    handleFiles(e.dataTransfer.files);
+});
+
+
+function handleFiles(files) {
+
+    for (let file of files) {
+
+        // validasi ukuran
+        if(file.size > 10 * 1024 * 1024){
+            alert(file.name + " melebihi 10MB");
+            continue;
+        }
+
+        // validasi tipe
+        if(!file.type.startsWith('image/')){
+            alert(file.name + " bukan gambar");
+            continue;
+        }
+
+        selectedFiles.push(file);
+    }
+
+    updateFileInput();
+    showPreview();
+}
+
+
+function updateFileInput(){
+
+    let dt = new DataTransfer();
+
+    selectedFiles.forEach(file=>{
+        dt.items.add(file);
+    });
+
+    fileInput.files = dt.files;
+}
+
+
+function showPreview(){
+
+    let oldPreview = document.getElementById('previewDokumentasi');
+
+    if(oldPreview){
+        oldPreview.remove();
+    }
+
+
+    let wrapper = document.createElement('div');
+    wrapper.id = 'previewDokumentasi';
+
+    wrapper.style.display = 'flex';
+    wrapper.style.flexWrap = 'wrap';
+    wrapper.style.gap = '10px';
+    wrapper.style.marginTop = '15px';
+
+
+    selectedFiles.forEach((file,index)=>{
+
+        let reader = new FileReader();
+
+        reader.onload=function(e){
+
+            let box=document.createElement('div');
+
+            box.style.position='relative';
+
+            box.innerHTML=`
+                <img src="${e.target.result}" 
+                style="
+                width:80px;
+                height:80px;
+                object-fit:cover;
+                border-radius:8px;
+                border:1px solid #ddd;
+                ">
+
+                <button type="button"
+                onclick="removeImage(${index})"
+                style="
+                position:absolute;
+                top:-8px;
+                right:-8px;
+                background:#dc2626;
+                color:white;
+                border:none;
+                width:22px;
+                height:22px;
+                border-radius:50%;
+                cursor:pointer;">
+                ×
+                </button>
+            `;
+
+            wrapper.appendChild(box);
+        }
+
+        reader.readAsDataURL(file);
+
+    });
+
+
+    dropzone.appendChild(wrapper);
+}
+
+
+function removeImage(index){
+
+    selectedFiles.splice(index,1);
+
+    updateFileInput();
+
+    showPreview();
+
+}
 
 function renderTable() {
     let temp = allEntries;
