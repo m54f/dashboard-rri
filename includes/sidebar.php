@@ -23,7 +23,7 @@ function render_menu_group($items, $base, $activeMenu) {
     foreach ($items as $key => $m) {
         [$label, $icon, $path] = $m;
         $cls = $key === $activeMenu ? 'menu-item active' : 'menu-item';
-        echo '<a class="' . $cls . '" href="' . $base . $path . '"><i class="' . $icon . '"></i><span>' . htmlspecialchars($label) . '</span></a>';
+        echo '<a class="' . $cls . '" href="' . $base . $path . '" title="' . htmlspecialchars($label) . '"><i class="' . $icon . '"></i><span>' . htmlspecialchars($label) . '</span></a>';
     }
 }
 ?>
@@ -39,7 +39,7 @@ function render_menu_group($items, $base, $activeMenu) {
   
   <nav class="sidebar-menu">
     <div class="menu-section">
-      <a class="menu-item <?= $activeMenu === 'dashboard' ? 'active' : '' ?>" href="<?= $base ?>/pages/dashboard.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+      <a class="menu-item <?= $activeMenu === 'dashboard' ? 'active' : '' ?>" href="<?= $base ?>/pages/dashboard.php" title="Dashboard"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
     </div>
     <div class="menu-section">
       <div class="menu-title">Operasional</div>

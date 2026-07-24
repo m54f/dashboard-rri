@@ -3,91 +3,139 @@ $base = '..';
 $pageTitle = 'Jurnal Kegiatan'; 
 $activeMenu = 'jurnal';
 
-// Panggil fungsi API yang baru saja dibuat
+// Panggil fungsi API
 require_once __DIR__ . '/../api/jurnal.php';
 $jurnalData = getJurnal();
 
-// Cek apakah API mereturn error (agar tidak merusak array JS)
-if (isset($jurnalData['error'])) {
-    $jurnalData = []; // Kosongkan array jika terjadi error
-    $api_error = true;
-} else {
-    $api_error = false;
+// Keamanan: Pastikan data adalah array
+if (!is_array($jurnalData) || isset($jurnalData['error'])) {
+    $errorMessage = $jurnalData['error'] ?? 'Gagal memuat data';
+    $jurnalData = [];
 }
 
-// Tangkap Notifikasi dari proses Create, Update, Delete
-if (isset($_GET['status'])) {
-    $msg = '';
-    if ($_GET['status'] == 'created') $msg = 'Jurnal berhasil ditambahkan!';
-    if ($_GET['status'] == 'updated') $msg = 'Jurnal berhasil diperbarui!';
-    if ($_GET['status'] == 'deleted') $msg = 'Jurnal berhasil dihapus!';
-    if ($_GET['status'] == 'error') $msg = 'Terjadi kesalahan pada sistem!';
-    if ($msg) echo "<script>alert('$msg'); window.history.replaceState(null, null, window.location.pathname);</script>";
-}
+$petugasList = ['Dicky','Priyo','Ludfi','Anggi','Deny','Yhanuar','Shofirin','Yudha','Dayat','Dedy','Winsa','Yayang','Syukur','Saiful','Alif','Selvy','Alfian'];
+$jenisKegiatanList = ['Acara Live / Dialog Luar','Podcast / Tapping','Troubleshooting / Maintenance','Supporting Event Kantor','Keroncong / Senandung Rindu','Zoom Meeting','Kunjungan','Programa','Editing Audio / Image / Video','Lain-Lain'];
 
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- STYLING CSS -->
+<!-- ===== STYLE MODERN MODAL & UI (DIPERBAIKI UNTUK SCROLLING) ===== -->
 <style>
-  .page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-  .table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-  .filter-tabs { display: flex; gap: 10px; }
-  .btn-filter { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; }
-  .btn-filter.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-  .search-box { position: relative; }
-  .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 16px; }
-  .search-box input { padding: 10px 14px 10px 36px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; width: 280px; transition: 0.2s; }
-  .search-box input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  
-  .table-card { background: #fff; border-radius: 12px; border: 1px solid #f3f4f6; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 30px;}
-  .table-header { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; margin-bottom: 25px; color: #111827; }
-  .table-header i { color: #3b82f6; font-size: 20px; }
-  
-  .table-responsive { overflow-x: auto; min-height: 300px; }
-  .styled-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-  .styled-table th { padding: 12px 15px; color: #6b7280; font-weight: 700; font-size: 12px; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; letter-spacing: 0.5px;}
-  .styled-table td { padding: 16px 15px; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
-  
-  /* Efek Hover Background pada Baris Tabel */
-  .styled-table tbody tr { transition: background-color 0.2s ease; }
-  .styled-table tbody tr:hover { background-color: #f1f5f9; }
-  
-  .item-title { font-weight: 700; color: #111827; max-width: 250px; line-height: 1.4; }
-  .badge-kategori { background: #f3f4f6; color: #6b7280; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
-  
-  .doc-thumbnails { display: flex; flex-wrap: wrap; gap: 4px; max-width: 90px; }
-  
-  /* Efek opacity saat dihover agar simpel */
-  .doc-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #e5e7eb; border: 1px solid #f3f4f6; cursor: pointer; transition: 0.2s; }
-  .doc-thumb:hover { opacity: 0.7; }
-  
-  .doc-more { width: 36px; height: 36px; border-radius: 6px; background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-  .doc-more:hover { background: #e5e7eb; color: #111827; }
-  
-  .action-btns { display: flex; gap: 8px; }
-  .btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; color: #9ca3af; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: 0.2s; }
-  
-  /* Pewarnaan Icon Action */
-  .btn-icon:hover { background: #f9fafb; color: #6b7280; }
-  .btn-icon.edit { color: #2563eb; } /* Biru */
-  .btn-icon.edit:hover { background: #eff6ff; border-color: #bfdbfe; }
-  .btn-icon.delete { color: #dc2626; } /* Merah */
-  .btn-icon.delete:hover { background: #fef2f2; border-color: #fecaca; }
-  
-  .pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; font-size: 14px; color: #6b7280; padding-top: 20px; border-top: 1px solid #f3f4f6; }
-  .pagination { display: flex; gap: 6px; }
-  .page-item { padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #374151; cursor: pointer; text-decoration: none; font-weight: 500; font-family: inherit; transition: 0.2s;}
-  .page-item.active { background: #2563eb; color: #fff; border-color: #2563eb; }
-  .page-item:hover:not(.active):not(:disabled) { background: #f9fafb; }
-  .page-item:disabled { opacity: 0.5; cursor: not-allowed; }
+.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+.filter-tabs { display: flex; gap: 10px; }
+.filter-tab { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+.filter-tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.search-box { position: relative; }
+.search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 16px; }
+.search-box input { padding: 10px 14px 10px 36px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; width: 280px; transition: 0.2s; }
+.search-box input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
-  /* Styling Lightbox Modal untuk Gambar (Tanpa Swipe) */
-  .image-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; background: rgba(0,0,0,0.85); flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-  .lightbox-content { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); object-fit: contain; }
-  .lightbox-close { position: absolute; top: 20px; right: 40px; font-size: 40px; color: white; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); transition: 0.2s; z-index: 100000;}
-  .lightbox-close:hover { color: #ef4444; }
-  .lightbox-actions { margin-top: 20px; display: flex; gap: 10px; z-index: 100000;}
+.table-card { background: #fff; border-radius: 12px; border: 1px solid #f3f4f6; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 30px;}
+.table-header { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; margin-bottom: 25px; color: #111827; }
+.styled-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.styled-table th { padding: 12px 15px; color: #6b7280; font-weight: 700; font-size: 12px; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; }
+.styled-table td { padding: 16px 15px; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
+.styled-table tbody tr:hover { background-color: #f8fafc; }
+
+.item-title { font-weight: 700; color: #111827; max-width: 250px; line-height: 1.4; }
+.badge-kategori { background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.doc-thumbnails { display: flex; flex-wrap: wrap; gap: 4px; }
+.doc-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #e5e7eb; border: 1px solid #f3f4f6; cursor: pointer; transition: 0.2s; }
+.doc-thumb:hover { opacity: 0.8; }
+.doc-more { width: 36px; height: 36px; border-radius: 6px; background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+.action-btns { display: flex; gap: 8px; }
+.btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; color: #9ca3af; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: 0.2s; }
+.btn-icon.edit { color: #2563eb; } .btn-icon.edit:hover { background: #eff6ff; border-color: #bfdbfe; }
+.btn-icon.delete { color: #dc2626; } .btn-icon.delete:hover { background: #fef2f2; border-color: #fecaca; }
+
+.pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; font-size: 14px; color: #6b7280; padding-top: 20px; border-top: 1px solid #f3f4f6; }
+.pagination { display: flex; gap: 6px; }
+.page-item { padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #374151; cursor: pointer; font-weight: 500; transition: 0.2s;}
+.page-item.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.page-item:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* === PERBAIKAN SCROLLING MODAL === */
+.modal-overlay { 
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); 
+  display: flex; align-items: center; justify-content: center; z-index: 9999; 
+  opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 1rem; 
+}
+.modal-overlay.active { opacity: 1; visibility: visible; }
+
+.modal-content { 
+  background: #ffffff; border-radius: 16px; width: 100%; max-width: 680px; 
+  max-height: 90vh; /* Batas tinggi maksimal 90% layar */
+  display: flex; flex-direction: column; 
+  overflow: hidden; /* Mencegah scroll di container utama */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+  transform: translateY(20px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+}
+.modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+
+/* Form mengisi ruang tersisa */
+#jurnalForm {
+  display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
+}
+
+.modal-header { 
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #ffffff; 
+  flex-shrink: 0; /* Jangan mengecil */
+}
+.modal-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; }
+.modal-close { background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 8px; font-size: 1.5rem; line-height: 1; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: #e2e8f0; color: #0f172a; }
+
+/* BAGIAN INI YANG BISA DI-SCROLL */
+.modal-body { 
+  padding: 1.5rem; 
+  flex: 1 1 auto; 
+  min-height: 0; /* WAJIB ADA agar scrollbar muncul di flexbox */
+  overflow-y: auto; /* Scroll vertikal hanya di sini */
+  background: #ffffff; 
+}
+/* Custom scrollbar tipis */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.modal-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.modal-footer { 
+  display: flex; justify-content: flex-end; gap: 0.75rem; 
+  padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; background: #ffffff; 
+  flex-shrink: 0; /* Jangan mengecil */
+}
+
+.form-group { margin-bottom: 1.25rem; }
+.form-label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+.form-input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; color: #0f172a; background: #fff; transition: all 0.2s; outline: none; font-family: inherit; box-sizing: border-box;}
+.form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+.chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip-option { cursor: pointer; user-select: none; position: relative; }
+.chip-option input[type="checkbox"] { position: absolute; opacity: 0; }
+.chip-content { display: inline-block; padding: 0.5rem 1rem; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 0.85rem; font-weight: 600; border: 1.5px solid transparent; transition: all 0.2s ease; }
+.chip-option:hover .chip-content { background: #e2e8f0; }
+.chip-option input[type="checkbox"]:checked + .chip-content { background: #2563eb; color: #fff; border-color: #1d4ed8; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+
+.upload-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.5rem; text-align: center; background: #f8fafc; transition: all 0.2s; cursor: pointer; position: relative; }
+.upload-zone:hover, .upload-zone.dragover { border-color: #2563eb; background: #eff6ff; }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.preview-item { position: relative; width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc; }
+.preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.preview-item .remove-btn { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+.btn { padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+.btn-secondary { background: #fff; color: #475569; border: 1.5px solid #cbd5e1; }
+.btn-secondary:hover { background: #f1f5f9; }
+.btn-primary { background: #2563eb; color: #fff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+
+@keyframes slideInToast { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>
 
 <div class="page-head">
@@ -95,15 +143,21 @@ include __DIR__ . '/../includes/header.php';
     <h2>Logbook Jurnal Kegiatan</h2>
     <p style="color: #6b7280; margin-top: 5px;">Dokumentasi kegiatan operasional tim TMB.</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateModal()" style="background: #2563eb; color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;"><i class="ri-add-line"></i> Tulis Jurnal</button>
+  <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Tulis Jurnal</button>
 </div>
+
+<?php if (isset($errorMessage)): ?>
+  <div style="background:#fee2e2; color:#991b1b; padding:1rem; border-radius:8px; margin-bottom:1rem;">
+    ⚠️ Gagal memuat data: <?= htmlspecialchars($errorMessage) ?>
+  </div>
+<?php endif; ?>
 
 <div class="table-controls">
     <div class="filter-tabs">
-        <button class="btn-filter active" onclick="setFilter('semua', this)">Semua</button>
-        <button class="btn-filter" onclick="setFilter('belum selesai', this)">Belum Selesai</button>
-        <button class="btn-filter" onclick="setFilter('proses', this)">Proses</button>
-        <button class="btn-filter" onclick="setFilter('selesai', this)">Selesai</button>
+        <button class="filter-tab active" onclick="setFilter('semua', this)">Semua</button>
+        <button class="filter-tab" onclick="setFilter('belum selesai', this)">Belum Selesai</button>
+        <button class="filter-tab" onclick="setFilter('proses', this)">Proses</button>
+        <button class="filter-tab" onclick="setFilter('selesai', this)">Selesai</button>
     </div>
     <div class="search-box">
         <i class="ri-search-line"></i>
@@ -112,24 +166,13 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <div class="table-card">
-  <div class="table-header">
-    <i class="ri-list-check"></i> Daftar Kegiatan
-  </div>
-  
-  <?php if($api_error): ?>
-      <div style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          Gagal menghubungi API Notion. Pastikan Token dan Database ID valid.
-      </div>
-  <?php endif; ?>
-
-  <div class="table-responsive">
+  <div class="table-header"><i class="ri-list-check" style="color:#2563eb;"></i> Daftar Kegiatan</div>
+  <div style="overflow-x: auto;">
     <table class="styled-table">
       <thead>
-        <tr><th>JUDUL KEGIATAN</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>LINK EVIDEN</th><th>TANGGAL LAPOR</th><th>AKSI</th></tr>
+        <tr><th>JUDUL</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>LINK EVIDEN</th><th>TANGGAL</th><th>AKSI</th></tr>
       </thead>
-      <tbody id="tableBody">
-          <!-- Akan diisi otomatis oleh JS -->
-      </tbody>
+      <tbody id="tableBody"></tbody>
     </table>
   </div>
   <div class="pagination-container">
@@ -138,290 +181,107 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ========================================== -->
-<!-- LIGHTBOX MODAL UNTUK GAMBAR (SINGLE) -->
-<!-- ========================================== -->
-<div id="imageLightbox" class="image-lightbox">
-    <span class="lightbox-close" onclick="closeImageLightbox()">&times;</span>
-    <img id="lightboxImg" class="lightbox-content" src="" alt="Dokumentasi">
-    <div class="lightbox-actions">
-        <a id="lightboxDownloadBtn" href="" target="_blank" class="btn btn-primary" style="background: #2563eb; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-            <i class="ri-download-2-line"></i> Buka & Download
-        </a>
-    </div>
-</div>
-
-<!-- Form Tersembunyi untuk API Delete -->
-<form id="deleteForm" action="../api/delete-jurnal.php" method="POST" style="display:none;">
-    <input type="hidden" name="page_id" id="deletePageId">
-</form>
-
-<!-- ========================================== -->
-<!-- MODAL FORM (Create & Edit) -->
-<!-- ========================================== -->
-<style>
-  .notion-modal { max-width: 650px !important; text-align: left; padding: 40px !important; border-radius: 12px; }
-  .notion-title { font-size: 28px; font-weight: 700; margin-bottom: 20px; color: #111827; }
-  .notion-subtitle { font-size: 24px; font-weight: 700; margin-bottom: 30px; color: #111827; }
-  .notion-label { font-size: 16px; font-weight: 700; margin-bottom: 5px; display: block; color: #374151; }
-  .notion-hint { font-size: 13px; color: #6b7280; margin-bottom: 12px; display: block; }
-  .notion-input { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #f9fafb; margin-bottom: 30px; }
-  .notion-input:focus { border-color: #3b82f6; outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  .notion-checkbox-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
-  .notion-checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
-  .notion-checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; color: #374151;}
-  .notion-checkbox-item input { width: 18px; height: 18px; cursor: pointer; }
-  .notion-upload-box { border: 1px dashed #d1d5db; border-radius: 8px; padding: 15px; background: #f9fafb; margin-bottom: 30px; }
-  .notion-submit { background: #111827; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
-</style>
-
+<!-- ===== MODAL FORM (Modern & Scrollable) ===== -->
 <div class="modal-overlay" id="jurnalModal">
-  <div class="modal-content notion-modal" style="max-height: 90vh; overflow-y: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <h2 class="notion-title" id="modalTitle">Formulir Jurnal Kegiatan</h2>
-        <button class="modal-close" onclick="closeModal()" style="font-size: 28px; color: #6b7280; background:none; border:none; cursor:pointer;">&times;</button>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">Formulir Jurnal Kegiatan</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     
-    <form id="jurnalForm" action="" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="page_id" id="formPageId">
-        
-        <h3 class="notion-subtitle" id="modalSubtitle">Catat Kegiatan disini</h3>
-        
-        <label class="notion-label">Nama Kegiatan</label>
-        <input type="text" class="notion-input" name="nama_kegiatan" id="inputNama" placeholder="Your answer" required>
+    <form id="jurnalForm" onsubmit="handleJurnalSubmit(event)">
+      <div class="modal-body">
+        <input type="hidden" id="field_page_id" name="page_id" value="">
 
-        <label class="notion-label">Jenis Kegiatan</label>
-        <span class="notion-hint">(Select as many as you like)</span>
-        <div class="notion-checkbox-list">
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Acara Live / Dialog Luar"> Acara Live / Dialog Luar</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Podcast / Tapping"> Podcast / Tapping</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Troubleshooting / Maintenance"> Troubleshooting / Maintenance</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Supporting Event Kantor"> Supporting Event Kantor</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Keroncong / Senandung Rindu"> Keroncong / Senandung Rindu</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Zoom Meeting"> Zoom Meeting</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Kunjungan"> Kunjungan</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Programa"> Programa</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Editing Audio / Image / Video"> Editing Audio / Image / Video</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="jenis_kegiatan[]" value="Lain-Lain"> Lain-Lain</label>
+        <div class="form-group">
+          <label class="form-label">Nama Kegiatan <span style="color:#ef4444">*</span></label>
+          <input type="text" id="field_nama" name="nama_kegiatan" class="form-input" placeholder="Contoh: Maintenance Pemancar" required>
         </div>
 
-        <label class="notion-label">Date</label>
-        <input type="datetime-local" class="notion-input" name="tanggal" id="inputTanggal" required>
-
-        <label class="notion-label">Petugas</label>
-        <span class="notion-hint">(Select as many as you like)</span>
-        <div class="notion-checkbox-grid">
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Dicky"> Dicky</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Priyo"> Priyo</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Ludfi"> Ludfi</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Anggi"> Anggi</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Deny"> Deny</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Yhanuar"> Yhanuar</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Shofirin"> Shofirin</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Yudha"> Yudha</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Dayat"> Dayat</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Dedy"> Dedy</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Winsa"> Winsa</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Yayang"> Yayang</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Syukur"> Syukur</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Saiful"> Saiful</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Alif"> Alif</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Selvy"> Selvy</label>
-            <label class="notion-checkbox-item"><input type="checkbox" name="petugas[]" value="Alfian"> Alfian</label>
+        <div class="form-group">
+          <label class="form-label">Jenis Kegiatan <span style="color:#ef4444">*</span></label>
+          <div class="chip-grid" id="field_jenis">
+            <?php foreach ($jenisKegiatanList as $jenis): ?>
+            <label class="chip-option">
+              <input type="checkbox" name="jenis_kegiatan[]" value="<?= htmlspecialchars($jenis) ?>">
+              <span class="chip-content"><?= htmlspecialchars($jenis) ?></span>
+            </label>
+            <?php endforeach; ?>
+          </div>
         </div>
 
-        <label class="notion-label">Eviden</label>
-        <!-- <div class="notion-upload-box"><input type="file" name="eviden[]" multiple accept="image/*" style="width: 100%;"></div> -->
-        <div class="upload-zone" id="dropzone" style="margin-bottom: 30px;">
-            <input type="file" id="field_dokumentasi" name="dokumentasi[]" multiple accept="image/*">
-            <div class="upload-icon"><i class="ri-image-add-line"></i></div>
-            <div class="upload-text">Klik atau seret foto ke sini</div>
-            <div class="upload-hint">Maksimal 10 MB per file, bisa beberapa file sekaligus (JPG, PNG, WebP)</div>
+        <div class="form-group">
+          <label class="form-label">Tanggal & Waktu <span style="color:#ef4444">*</span></label>
+          <input type="datetime-local" id="field_tanggal" name="tanggal" class="form-input" required>
         </div>
 
-        <label class="notion-label">Eviden 3 (Link)</label>
-        <input type="url" class="notion-input" name="eviden_3_link" id="inputEviden3" placeholder="Your answer">
-
-        <div style="margin-top: 10px;">
-            <button type="submit" class="notion-submit" id="btnSubmit">Submit</button>
+        <div class="form-group">
+          <label class="form-label">Petugas <span style="color:#ef4444">*</span></label>
+          <div class="chip-grid" id="field_petugas">
+            <?php foreach ($petugasList as $nama): ?>
+            <label class="chip-option">
+              <input type="checkbox" name="petugas[]" value="<?= htmlspecialchars($nama) ?>">
+              <span class="chip-content"><?= htmlspecialchars($nama) ?></span>
+            </label>
+            <?php endforeach; ?>
+          </div>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Dokumentasi (Foto)</label>
+          <div class="upload-zone" id="dropzone">
+            <input type="file" id="field_eviden" name="eviden[]" multiple accept="image/*">
+            <div style="font-size: 2rem; color: #64748b; margin-bottom: 0.5rem;"><i class="ri-image-add-line"></i></div>
+            <div style="font-size: 0.9rem; color: #334155; font-weight: 600;">Klik atau seret foto ke sini</div>
+            <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">Maks 10MB per file (JPG, PNG, WebP)</div>
+          </div>
+          <div class="preview-grid" id="filePreview" style="display: none;"></div>
+          <div class="preview-grid" id="existingDocs" style="display: none;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Link Eviden Tambahan (Opsional)</label>
+          <input type="url" id="field_eviden_3" name="eviden_3_link" class="form-input" placeholder="https://...">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <i class="ri-send-plane-line"></i> <span id="submitBtnLabel">Simpan</span>
+        </button>
+      </div>
     </form>
   </div>
 </div>
 
-<!-- SCRIPT LOGIKA JS UNTUK RENDER & FILTER -->
-<script>
-// Terima data langsung dari eksekusi PHP (getJurnal())
-const allEntries = <?= json_encode($jurnalData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+<!-- Lightbox -->
+<div id="imageLightbox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(5px);" onclick="this.style.display='none'">
+    <span style="position:absolute; top:20px; right:40px; font-size:40px; color:white; cursor:pointer;">&times;</span>
+    <img id="lightboxImg" src="" style="max-width:90%; max-height:80vh; border-radius:8px; object-fit:contain;">
+</div>
 
+<script>
+const allEntries = <?= json_encode($jurnalData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 let filteredEntries = [...allEntries];
 let currentPage = 1;
-const itemsPerPage = 5; 
+const itemsPerPage = 10; 
 let currentFilter = 'semua';
 let searchQuery = '';
-
-// ==========================================
-// UPLOAD IMAGE PREVIEW + DRAG DROP
-// ==========================================
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('field_dokumentasi');
-
 let selectedFiles = [];
-
-fileInput.addEventListener('change', function(e) {
-    handleFiles(e.target.files);
-});
-
-dropzone.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    dropzone.style.borderColor = '#2563eb';
-    dropzone.style.background = '#eff6ff';
-});
-
-dropzone.addEventListener('dragleave', function() {
-    dropzone.style.borderColor = '#d1d5db';
-    dropzone.style.background = '#f9fafb';
-});
-
-dropzone.addEventListener('drop', function(e) {
-    e.preventDefault();
-
-    dropzone.style.borderColor = '#d1d5db';
-    dropzone.style.background = '#f9fafb';
-
-    handleFiles(e.dataTransfer.files);
-});
-
-
-function handleFiles(files) {
-
-    for (let file of files) {
-
-        // validasi ukuran
-        if(file.size > 10 * 1024 * 1024){
-            alert(file.name + " melebihi 10MB");
-            continue;
-        }
-
-        // validasi tipe
-        if(!file.type.startsWith('image/')){
-            alert(file.name + " bukan gambar");
-            continue;
-        }
-
-        selectedFiles.push(file);
-    }
-
-    updateFileInput();
-    showPreview();
-}
-
-
-function updateFileInput(){
-
-    let dt = new DataTransfer();
-
-    selectedFiles.forEach(file=>{
-        dt.items.add(file);
-    });
-
-    fileInput.files = dt.files;
-}
-
-
-function showPreview(){
-
-    let oldPreview = document.getElementById('previewDokumentasi');
-
-    if(oldPreview){
-        oldPreview.remove();
-    }
-
-
-    let wrapper = document.createElement('div');
-    wrapper.id = 'previewDokumentasi';
-
-    wrapper.style.display = 'flex';
-    wrapper.style.flexWrap = 'wrap';
-    wrapper.style.gap = '10px';
-    wrapper.style.marginTop = '15px';
-
-
-    selectedFiles.forEach((file,index)=>{
-
-        let reader = new FileReader();
-
-        reader.onload=function(e){
-
-            let box=document.createElement('div');
-
-            box.style.position='relative';
-
-            box.innerHTML=`
-                <img src="${e.target.result}" 
-                style="
-                width:80px;
-                height:80px;
-                object-fit:cover;
-                border-radius:8px;
-                border:1px solid #ddd;
-                ">
-
-                <button type="button"
-                onclick="removeImage(${index})"
-                style="
-                position:absolute;
-                top:-8px;
-                right:-8px;
-                background:#dc2626;
-                color:white;
-                border:none;
-                width:22px;
-                height:22px;
-                border-radius:50%;
-                cursor:pointer;">
-                ×
-                </button>
-            `;
-
-            wrapper.appendChild(box);
-        }
-
-        reader.readAsDataURL(file);
-
-    });
-
-
-    dropzone.appendChild(wrapper);
-}
-
-
-function removeImage(index){
-
-    selectedFiles.splice(index,1);
-
-    updateFileInput();
-
-    showPreview();
-
-}
+let existingDocs = [];
 
 function renderTable() {
     let temp = allEntries;
-    
-    // Filter by Tabs
     if (currentFilter !== 'semua') {
         temp = temp.filter(item => item.status.toLowerCase() === currentFilter.toLowerCase());
     }
-    
-    // Filter by Search (sudah tidak mencari berdasarkan ID)
     if (searchQuery.trim() !== '') {
         let q = searchQuery.toLowerCase();
         temp = temp.filter(item => item.title.toLowerCase().includes(q) || item.op.toLowerCase().includes(q) || item.tag.toLowerCase().includes(q));
     }
     
     filteredEntries = temp;
-
     let totalItems = filteredEntries.length;
     let totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
@@ -434,27 +294,27 @@ function renderTable() {
     tbody.innerHTML = '';
 
     if (pageData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 40px; color: #6b7280; font-weight:500;">Tidak ada data ditemukan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 40px; color: #6b7280;">Tidak ada data ditemukan.</td></tr>`;
     } else {
         pageData.forEach(e => {
             let docsHtml = '';
-            let limit = 1; // Menampilkan max 2 foto highlight
-            
-            // Format URL agar langsung ke situs publik tmbrrimlg.notion.site
+            let limit = 2;
             let publicUrl = e.url.replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
             
             for(let i=0; i < Math.min(e.docs.length, limit); i++) {
-                // onClick panggil Lightbox simpel dengan URL gambar
-                docsHtml += `<img src="${e.docs[i]}" class="doc-thumb" onclick="openImageLightbox('${e.docs[i]}')" onerror="this.src='https://via.placeholder.com/36x36?text=IMG'">`;
+                docsHtml += `<img src="${e.docs[i].url}" class="doc-thumb" onclick="openLightbox('${e.docs[i].url}')" onerror="this.src='https://via.placeholder.com/36?text=IMG'">`;
             }
             if(e.docs.length > limit) {
-                // Tombol +x diarahkan ke publicUrl
-                docsHtml += `<div class="doc-more" onclick="window.open('${publicUrl}', '_blank')" title="Buka di Notion untuk melihat semua foto">+${e.docs.length - limit}</div>`;
+                docsHtml += `<div class="doc-more" onclick="window.open('${publicUrl}', '_blank')">+${e.docs.length - limit}</div>`;
             }
             if(e.docs.length === 0) docsHtml = `<span style="color:#9ca3af;font-size:12px;">-</span>`;
 
-            // Setup Link Eviden UI
             let linkHtml = e.eviden_3 ? `<a href="${e.eviden_3}" target="_blank" style="color:#2563eb; text-decoration:none; font-weight:600;"><i class="ri-link"></i> Buka</a>` : `<span style="color:#9ca3af;font-size:12px;">-</span>`;
+
+            let editPayload = encodeURIComponent(JSON.stringify({
+                page_id: e.full_id, nama: e.title, tanggal: e.date_raw, eviden_3: e.eviden_3,
+                jenis: e.tags_arr, petugas: e.ops_arr, docs: e.docs
+            }));
 
             tbody.innerHTML += `
             <tr>
@@ -467,8 +327,8 @@ function renderTable() {
                 <td>
                     <div class="action-btns">
                       <a href="${publicUrl}" target="_blank" class="btn-icon" title="Buka di Notion"><i class="ri-external-link-line"></i></a>
-                      <button class="btn-icon edit" title="Edit" onclick="openEditModal('${e.full_id}')"><i class="ri-pencil-line"></i></button>
-                      <button class="btn-icon delete" title="Hapus" onclick="deleteJurnal('${e.full_id}')"><i class="ri-delete-bin-line"></i></button>
+                      <button class="btn-icon edit" title="Edit" onclick="openEditModal(decodeURIComponent('${editPayload}'))"><i class="ri-pencil-line"></i></button>
+                      <button class="btn-icon delete" title="Hapus" onclick="deleteJurnal('${e.full_id}', '${e.title.replace(/'/g, "\\'")}')"><i class="ri-delete-bin-line"></i></button>
                     </div>
                 </td>
             </tr>`;
@@ -478,17 +338,16 @@ function renderTable() {
     let startInfo = totalItems === 0 ? 0 : startIndex + 1;
     let endInfo = Math.min(endIndex, totalItems);
     document.getElementById('pageInfo').innerText = `Menampilkan ${startInfo}-${endInfo} dari ${totalItems} Kegiatan`;
-    renderPaginationButtons(totalPages);
+    renderPagination(totalPages);
 }
 
-function renderPaginationButtons(totalPages) {
+function renderPagination(totalPages) {
     let pg = document.getElementById('paginationNav');
-    pg.innerHTML = `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+    pg.innerHTML = `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
     for (let i = 1; i <= totalPages; i++) {
-        let activeClass = i === currentPage ? 'active' : '';
-        pg.innerHTML += `<button class="page-item ${activeClass}" onclick="changePage(${i})">${i}</button>`;
+        pg.innerHTML += `<button class="page-item ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
     }
-    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Next &raquo;</button>`;
+    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>`;
 }
 
 function changePage(page) {
@@ -496,93 +355,239 @@ function changePage(page) {
     if (page >= 1 && page <= totalPages) { currentPage = page; renderTable(); }
 }
 
-function setFilter(status, btnElement) {
+function setFilter(status, btn) {
     currentFilter = status; currentPage = 1;
-    document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
-    btnElement.classList.add('active'); renderTable();
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); renderTable();
 }
 
 function handleSearch(val) { searchQuery = val; currentPage = 1; renderTable(); }
+function openLightbox(url) { document.getElementById('lightboxImg').src = url; document.getElementById('imageLightbox').style.display = 'flex'; }
 
-// ==========================================
-// FUNGSI UNTUK LIGHTBOX GAMBAR (SINGLE)
-// ==========================================
-function openImageLightbox(imgUrl) {
-    document.getElementById('lightboxImg').src = imgUrl;
-    document.getElementById('lightboxDownloadBtn').href = imgUrl;
-    document.getElementById('imageLightbox').style.display = 'flex';
-}
+function openModal(){ document.getElementById('jurnalModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+function closeModal(){ document.getElementById('jurnalModal').classList.remove('active'); document.body.style.overflow = ''; }
+document.getElementById('jurnalModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
-function closeImageLightbox() {
-    document.getElementById('imageLightbox').style.display = 'none';
-}
-
-// Tutup lightbox kalau klik area kosong di luar gambar
-document.getElementById('imageLightbox').addEventListener('click', function(e) {
-    if (e.target === this) closeImageLightbox();
-});
-
-// ==========================================
-// FUNGSI UNTUK CRUD 
-// ==========================================
-function deleteJurnal(full_id) {
-    if(confirm("Yakin ingin menghapus data ini? (Akan diarsipkan di Notion)")) {
-        document.getElementById('deletePageId').value = full_id;
-        document.getElementById('deleteForm').submit();
-    }
-}
-
-function resetModal() {
-    document.getElementById('formPageId').value = "";
-    document.getElementById('inputNama').value = "";
-    document.getElementById('inputTanggal').value = "";
-    document.getElementById('inputEviden3').value = "";
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    
-    document.getElementById('modalTitle').innerText = "Formulir Jurnal Kegiatan";
-    document.getElementById('modalSubtitle').innerText = "Catat Kegiatan disini";
-    document.getElementById('btnSubmit').innerText = "Submit";
+function resetForm() {
+    document.getElementById('jurnalForm').reset();
+    document.getElementById('field_page_id').value = '';
+    selectedFiles = []; existingDocs = [];
+    document.getElementById('filePreview').innerHTML = ''; document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('existingDocs').innerHTML = ''; document.getElementById('existingDocs').style.display = 'none';
 }
 
 function openCreateModal() {
-    resetModal();
-    document.getElementById('jurnalForm').action = "../api/create-jurnal.php";
-    document.getElementById('jurnalModal').classList.add('active');
+    resetForm();
+    document.getElementById('modalTitle').innerText = "Formulir Jurnal Kegiatan";
+    document.getElementById('submitBtnLabel').innerText = "Simpan";
+    openModal();
 }
 
-function openEditModal(full_id) {
-    resetModal();
-    let data = allEntries.find(x => x.full_id === full_id);
-    if(data) {
-        document.getElementById('modalTitle').innerText = "Edit Jurnal Kegiatan";
-        document.getElementById('modalSubtitle').innerText = "Ubah data kegiatan";
-        document.getElementById('btnSubmit').innerText = "Simpan Perubahan";
-        
-        document.getElementById('jurnalForm').action = "../api/update-jurnal.php";
-        
-        document.getElementById('formPageId').value = data.full_id;
-        document.getElementById('inputNama').value = data.title;
-        document.getElementById('inputTanggal').value = data.date_raw;
-        document.getElementById('inputEviden3').value = data.eviden_3;
-        
-        document.querySelectorAll('input[name="jenis_kegiatan[]"]').forEach(cb => {
-            if(data.tags_arr.includes(cb.value)) cb.checked = true;
+function openEditModal(payloadStr) {
+    resetForm();
+    let data = JSON.parse(payloadStr);
+    document.getElementById('modalTitle').innerText = "Edit Jurnal Kegiatan";
+    document.getElementById('submitBtnLabel').innerText = "Simpan Perubahan";
+    document.getElementById('field_page_id').value = data.page_id;
+    document.getElementById('field_nama').value = data.nama;
+    document.getElementById('field_tanggal').value = data.tanggal;
+    document.getElementById('field_eviden_3').value = data.eviden_3 || '';
+
+    (data.jenis || []).forEach(val => {
+        let cb = document.querySelector(`input[name="jenis_kegiatan[]"][value="${CSS.escape(val)}"]`);
+        if(cb) cb.checked = true;
+    });
+    (data.petugas || []).forEach(val => {
+        let cb = document.querySelector(`input[name="petugas[]"][value="${CSS.escape(val)}"]`);
+        if(cb) cb.checked = true;
+    });
+
+    existingDocs = data.docs || [];
+    renderExistingDocs(existingDocs);
+    openModal();
+}
+
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); handleFileSelect(e.dataTransfer.files); });
+document.getElementById('field_eviden').addEventListener('change', function() { handleFileSelect(this.files); });
+
+function handleFileSelect(files) {
+    for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        if (file.size > 10 * 1024 * 1024) { showToast('⚠️ ' + file.name + ' melebihi 10MB', 'error'); continue; }
+        selectedFiles.push(file);
+    }
+    renderPreviews();
+}
+
+function renderPreviews() {
+    const grid = document.getElementById('filePreview');
+    grid.innerHTML = '';
+    if (selectedFiles.length > 0) {
+        grid.style.display = 'flex';
+        selectedFiles.forEach((file, idx) => {
+            const div = document.createElement('div'); div.className = 'preview-item';
+            const img = document.createElement('img'); img.src = URL.createObjectURL(file);
+            const btn = document.createElement('button'); btn.className = 'remove-btn'; btn.innerHTML = '&times;';
+            btn.onclick = (e) => { e.stopPropagation(); selectedFiles.splice(idx, 1); renderPreviews(); };
+            div.appendChild(img); div.appendChild(btn); grid.appendChild(div);
         });
-        document.querySelectorAll('input[name="petugas[]"]').forEach(cb => {
-            if(data.ops_arr.includes(cb.value)) cb.checked = true;
+    } else { grid.style.display = 'none'; }
+}
+
+function renderExistingDocs(docs) {
+    const grid = document.getElementById('existingDocs'); grid.innerHTML = '';
+    if (docs && docs.length > 0) {
+        grid.style.display = 'flex';
+        docs.forEach((doc, idx) => {
+            const div = document.createElement('div'); div.className = 'preview-item';
+            const img = document.createElement('img'); img.src = doc.url;
+            const badge = document.createElement('span'); badge.style.cssText = 'position:absolute;bottom:2px;left:2px;background:rgba(37,99,235,0.85);color:#fff;font-size:8px;padding:1px 4px;border-radius:4px;'; badge.textContent = 'EXISTING';
+            const btn = document.createElement('button'); btn.className = 'remove-btn'; btn.innerHTML = '&times;';
+            btn.onclick = (e) => { e.stopPropagation(); existingDocs.splice(idx, 1); renderExistingDocs(existingDocs); };
+            div.appendChild(img); div.appendChild(badge); div.appendChild(btn); grid.appendChild(div);
         });
-        
-        document.getElementById('jurnalModal').classList.add('active');
+    } else { grid.style.display = 'none'; }
+}
+
+async function uploadFiles(files) {
+    if (files.length === 0) return [];
+    const formData = new FormData();
+    // Pastikan key di sini adalah 'eviden[]' agar cocok dengan PHP $_FILES['eviden']
+    files.forEach(f => formData.append('eviden[]', f)); 
+    
+    const res = await fetch('../api/upload-to-notion.php', { 
+        method: 'POST', 
+        body: formData 
+    });
+    
+    // Tambahan keamanan: cek apakah response benar-benar JSON
+    if (!res.headers.get("content-type")?.includes("application/json")) {
+        const text = await res.text();
+        console.error("Server mengembalikan HTML, bukan JSON:", text);
+        throw new Error("Gagal upload: Server error (Cek Console F12)");
+    }
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Upload ke Notion gagal');
+    return data.files;
+}
+
+// ===== SUBMIT LOGIC (DIPERBAIKI AGAR TIDAK CRASH SAAT ERROR HTML) =====
+async function handleJurnalSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnLabel = document.getElementById('submitBtnLabel');
+    const originalLabel = submitBtnLabel.innerText;
+
+    const jenisChecked = [...form.querySelectorAll('input[name="jenis_kegiatan[]"]:checked')].map(cb => cb.value);
+    const petugasChecked = [...form.querySelectorAll('input[name="petugas[]"]:checked')].map(cb => cb.value);
+    
+    if (jenisChecked.length === 0) { showToast('⚠️ Pilih minimal satu Jenis Kegiatan!', 'error'); return; }
+    if (petugasChecked.length === 0) { showToast('⚠️ Pilih minimal satu Nama Petugas!', 'error'); return; }
+
+    submitBtn.disabled = true;
+    submitBtnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses...';
+
+    const pageId = document.getElementById('field_page_id').value;
+    const isEdit = !!pageId;
+
+    try {
+        let uploadedFiles = [];
+        if (selectedFiles.length > 0) {
+            submitBtnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Upload Foto...';
+            uploadedFiles = await uploadFiles(selectedFiles);
+        }
+
+        submitBtnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyimpan...';
+
+        const payload = {
+            nama_kegiatan: form.nama_kegiatan.value.trim(),
+            tanggal: form.tanggal.value,
+            jenis_kegiatan: jenisChecked,
+            petugas: petugasChecked,
+            eviden_3_link: form.eviden_3_link.value.trim(),
+            dokumentasi_file_ids: uploadedFiles,
+            dokumentasi_keep: existingDocs
+        };
+        if (isEdit) payload.page_id = pageId;
+
+        const endpoint = isEdit ? '../api/update-jurnal.php' : '../api/create-jurnal.php';
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        // PERBAIKAN UTAMA: Cek apakah response benar-benar JSON
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            if (data.success) {
+                showToast('✅ ' + data.message, 'success');
+                closeModal();
+                setTimeout(() => location.reload(), 1200);
+            } else {
+                showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+            }
+        } else {
+            // Jika server mengembalikan HTML (misal error 404 atau 500 PHP)
+            const errorText = await res.text();
+            console.error("Server mengembalikan HTML, bukan JSON:", errorText);
+            showToast('❌ Error Server: File API tidak ditemukan atau ada error PHP. Tekan F12 untuk detail.', 'error');
+        }
+    } catch (err) {
+        console.error('Error:', err);
+        showToast('❌ ' + err.message, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtnLabel.innerText = originalLabel;
     }
 }
 
-function closeModal(){ document.getElementById('jurnalModal').classList.remove('active'); }
-document.getElementById('jurnalModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+async function deleteJurnal(pageId, title) {
+    if (!confirm(`Hapus jurnal "${title}"?\n\nData akan diarsipkan di Notion.`)) return;
+    try {
+        const res = await fetch('../api/delete-jurnal.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_id: pageId })
+        });
+        
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            if (data.success) {
+                showToast('✅ ' + data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+            }
+        } else {
+            const errorText = await res.text();
+            console.error("Delete API Error:", errorText);
+            showToast('❌ Error Server: File delete-jurnal.php bermasalah. Cek Console (F12).', 'error');
+        }
+    } catch (err) {
+        showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+    }
+}
 
-// Panggil renderTable saat halaman siap
-document.addEventListener("DOMContentLoaded", () => {
-    if(allEntries.length > 0) renderTable();
-});
+function showToast(message, type) {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification ' + type;
+    toast.textContent = message;
+    toast.style.cssText = `position: fixed; bottom: 2rem; right: 2rem; z-index: 99999; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18); animation: slideInToast 0.4s ease; ${type === 'success' ? 'background: linear-gradient(135deg, #22c55e, #16a34a);' : 'background: linear-gradient(135deg, #ef4444, #dc2626);'}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 4000);
+}
+
+document.addEventListener("DOMContentLoaded", () => { renderTable(); });
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

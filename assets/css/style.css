@@ -259,11 +259,6 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 }
 
 @media (max-width:768px){
-  .sidebar{transform:translateX(-100%);}
-  .main{margin-left:0;}
-  
-  body.sidebar-open .sidebar{transform:translateX(0);}
-  
   .sidebar-hide-btn { display: none; } 
   .search-box{display:none;}
   .grid-2{grid-template-columns:1fr;}
@@ -276,6 +271,68 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
     flex-direction: column;
     align-items: flex-start;
   }
+
+  /* ===== Sidebar di HP: DEFAULT selalu collapse jadi strip ikon 72px
+     (logo + ikon doang, hemat tempat), apapun kondisinya — tidak perlu tap
+     apa-apa dulu. Beda sama versi laptop yang defaultnya kebalik (expanded). */
+  .sidebar { width: 72px !important; }
+  .sidebar .sidebar-header {
+    justify-content: center;
+    padding: 22px 0;
+  }
+  .sidebar .sidebar-header h1,
+  .sidebar .sidebar-header > div > span,
+  .sidebar .menu-title,
+  .sidebar .menu-item span,
+  .sidebar .badge-text {
+    display: none;
+  }
+  .sidebar .menu-item {
+    justify-content: center;
+    padding: 10px 0;
+    gap: 0;
+  }
+  .sidebar .sidebar-menu { padding: 16px 8px; }
+  .sidebar .pkl-badge {
+    justify-content: center;
+    padding: 12px 0;
+    gap: 0;
+  }
+  .sidebar .sidebar-footer { padding: 16px 8px; }
+  .main { margin-left: 72px !important; }
+
+  /* ===== Saat di-tap (body.sidebar-mobile-expanded), sidebar melebar penuh
+     (264px) dan MENIMPA/OVERLAY konten di sebelahnya — .main TIDAK didorong
+     (tetap margin-left 72px), jadi bagian konten yang ketiban sidebar ya
+     ketutup, bukan bikin konten kepepet sempit. ===== */
+  body.sidebar-mobile-expanded .sidebar {
+    width: 264px !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+  }
+  body.sidebar-mobile-expanded .sidebar .sidebar-header {
+    justify-content: flex-start;
+    padding: 22px 20px;
+  }
+  body.sidebar-mobile-expanded .sidebar .sidebar-header h1,
+  body.sidebar-mobile-expanded .sidebar .sidebar-header > div > span,
+  body.sidebar-mobile-expanded .sidebar .menu-title,
+  body.sidebar-mobile-expanded .sidebar .menu-item span,
+  body.sidebar-mobile-expanded .sidebar .badge-text {
+    display: revert;
+  }
+  body.sidebar-mobile-expanded .sidebar .menu-item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+    gap: 11px;
+  }
+  body.sidebar-mobile-expanded .sidebar .sidebar-menu { padding: 16px 12px; }
+  body.sidebar-mobile-expanded .sidebar .pkl-badge {
+    justify-content: flex-start;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  body.sidebar-mobile-expanded .sidebar .sidebar-footer { padding: 20px; }
+  /* .main SENGAJA tidak diubah margin-nya di sini -> efeknya overlay/menutup */
 }
 
 
@@ -430,7 +487,10 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 
 /* ===== Sidebar Hide/Show Toggle ===== */
 .sidebar, .main {
-  transition: transform 0.3s ease, margin-left 0.3s ease;
+  transition: transform 0.3s ease, margin-left 0.3s ease, width 0.3s ease;
+}
+.sidebar {
+  overflow-x: hidden;
 }
 
 /* Tombol tutup di dalam sidebar */
@@ -480,15 +540,43 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
   background: var(--primary-dark);
 }
 
-/* Saat body memiliki class sidebar-hidden */
-body.sidebar-hidden .sidebar {
-  transform: translateX(-100%);
-}
-body.sidebar-hidden .main {
-  margin-left: 0 !important;
-}
-body.sidebar-hidden .floating-toggle {
-  display: flex;
+/* Saat body memiliki class sidebar-hidden -> sidebar COLLAPSE jadi strip ikon
+   (bukan hilang total), logo & ikon menu tetap kelihatan, teks label disembunyikan.
+   Khusus layar besar (laptop/desktop) — di HP pakai logic terpisah di bawah. */
+@media (min-width:769px){
+  body.sidebar-hidden .sidebar {
+    width: 72px;
+  }
+  body.sidebar-hidden .sidebar .sidebar-header {
+    justify-content: center;
+    padding: 22px 0;
+  }
+  body.sidebar-hidden .sidebar .sidebar-header h1,
+  body.sidebar-hidden .sidebar .sidebar-header > div > span,
+  body.sidebar-hidden .sidebar .menu-title,
+  body.sidebar-hidden .sidebar .menu-item span,
+  body.sidebar-hidden .sidebar .badge-text {
+    display: none;
+  }
+  body.sidebar-hidden .sidebar .menu-item {
+    justify-content: center;
+    padding: 10px 0;
+    gap: 0;
+  }
+  body.sidebar-hidden .sidebar .sidebar-menu {
+    padding: 16px 8px;
+  }
+  body.sidebar-hidden .sidebar .pkl-badge {
+    justify-content: center;
+    padding: 12px 0;
+    gap: 0;
+  }
+  body.sidebar-hidden .sidebar .sidebar-footer {
+    padding: 16px 8px;
+  }
+  body.sidebar-hidden .main {
+    margin-left: 72px !important;
+  }
 }
 
 /* ===== Calendar Recap ===== */
@@ -936,4 +1024,3 @@ body.sidebar-hidden .floating-toggle {
 #rssTable input[type="time"], #rssTable textarea, #rssTable select {
     padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;
 }
-
