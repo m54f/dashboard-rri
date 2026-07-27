@@ -590,6 +590,10 @@ function statusTone(status){
   if (s.includes('belum') || s.includes('menunggu')) return 'gray';
   return 'blue';
 }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
 
 // Dropdown status yang dipakai di tiap baris tabel — cuma "Belum"/"Selesai",
 // langsung bisa diganti dari tabel tanpa buka modal Edit.
@@ -649,6 +653,11 @@ async function updateStatusInline(selectEl){
     selectEl.disabled = false;
   }
 }
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> e8736967bfb3d52e7e790685f7d2858e31daffa9
+>>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str ?? '';
@@ -720,7 +729,15 @@ function addRowToTable(entry, pageId, dokumentasi){
     <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
     <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
     <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
+<<<<<<< HEAD
     <td>${renderStatusSelect(pageId, entry.status)}</td>
+=======
+<<<<<<< HEAD
+    <td>${renderStatusSelect(pageId, entry.status)}</td>
+=======
+    <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
+>>>>>>> e8736967bfb3d52e7e790685f7d2858e31daffa9
+>>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
     <td>${renderDokumenCell(dokumentasi)}</td>
     <td>
