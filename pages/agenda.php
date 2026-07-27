@@ -2,10 +2,9 @@
 $base = '..'; $pageTitle = 'Daily Agenda'; $activeMenu = 'agenda';
 
 $stats = [
-    ['labemmdl' => 'Agenda Hari Ini',   'value' => '6',  'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
+    ['label' => 'Agenda Hari Ini',   'value' => '6',  'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
     ['label' => 'Sudah Berlangsung', 'value' => '2',  'sub' => 'Selesai dijalankan','icon' => 'ri-checkbox-circle-line','tone' => 'green'],
     ['label' => 'Menunggu',         'value' => '4',  'sub' => 'Belum dimulai',  'icon' => 'ri-time-line',         'tone' => 'orange'],
-    ['label' => 'Live Streaming',   'value' => '2',  'sub' => 'Hari ini',       'icon' => 'ri-live-line',         'tone' => 'purple'],
 ];
 
 require_once __DIR__ . '/../api/agenda.php';
@@ -49,7 +48,6 @@ $stats = [
     ['label' => 'Agenda Hari Ini',   'value' => (string)$agendaCount, 'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
     ['label' => 'Sudah Berlangsung', 'value' => (string)$doneCount,  'sub' => 'Selesai dijalankan','icon' => 'ri-checkbox-circle-line','tone' => 'green'],
     ['label' => 'Menunggu',         'value' => (string)$waitingCount, 'sub' => 'Belum dimulai',  'icon' => 'ri-time-line',         'tone' => 'orange'],
-    ['label' => 'Live Streaming',   'value' => (string)$liveCount,  'sub' => 'Hari ini',       'icon' => 'ri-live-line',         'tone' => 'purple'],
 ];
 
 // Daftar kategori unik dari data yang ada — dipakai buat tab filter & saran
@@ -80,8 +78,86 @@ function agendaPageUrl($page, $filterDate)
     return '?' . http_build_query($params);
 }
 
+// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
+// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
+// tanda "…"). Tanpa ini, kalau ada 20 halaman semua nomornya kelist penuh dan
+// bikin harus scroll horizontal di HP.
+function paginationRange($current, $total, $delta = 1)
+{
+    $result = [];
+    $prev = 0;
+    for ($i = 1; $i <= $total; $i++) {
+        if ($i === 1 || $i === $total || ($i >= $current - $delta && $i <= $current + $delta)) {
+            if ($prev && $i - $prev > 1) {
+                $result[] = '...';
+            }
+            $result[] = $i;
+            $prev = $i;
+        }
+    }
+    return $result;
+}
+
 include __DIR__ . '/../includes/header.php';
 ?>
+<style>
+/* Dropdown status inline di tabel Daily Agenda — tampilannya tetap pakai
+   warna & bentuk yang sama seperti badge status-tag lama, tapi jadi <select>
+   supaya bisa langsung diganti (Belum/Selesai) tanpa buka modal Edit.
+   Ditambah border putus-putus + panah kecil supaya keliatan bisa diklik
+   (sebelumnya terlalu mirip teks/badge statis biasa). */
+.status-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 1px dashed rgba(0,0,0,0.25);
+  outline: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding-right: 20px !important;
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.status-select:hover {
+  border-color: rgba(37,99,235,0.55);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+.status-select:focus {
+  border-color: rgba(37,99,235,0.7);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.22);
+}
+.status-select:disabled { cursor: wait; opacity: 0.6; }
+.status-select-arrow {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+/* Pagination di layar HP — ditumpuk & di-tengah biar rapi, nggak mepet kanan-kiri */
+@media (max-width: 640px) {
+  .pagination-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+    text-align: center;
+  }
+  .pagination-wrap > div:first-child {
+    text-align: center;
+  }
+  .pagination-wrap > div:last-child {
+    justify-content: center !important;
+  }
+}
+</style>
 <div class="page-head">
   <div>
     <h2>Daily Agenda</h2>
@@ -146,7 +222,16 @@ include __DIR__ . '/../includes/header.php';
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
           <td><span class="tag <?= $a['tone'] ?>"><?= htmlspecialchars($a['tag']) ?></span></td>
           <td><?= strtoupper(substr($a['pic'],0,2)) ?></span> <?= htmlspecialchars($a['pic']) ?></td>
-          <td><span class="status-tag <?= $a['cls'] ?>"><?= htmlspecialchars($a['status']) ?></span></td>
+          <td>
+            <?php $curStatus = stripos($a['status'], 'selesai') !== false ? 'Selesai' : 'Belum'; ?>
+            <span class="status-select-wrap" title="Klik untuk ubah status">
+              <select class="status-select status-tag <?= $a['cls'] ?>" data-id="<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>" data-prev="<?= $curStatus ?>" onchange="updateStatusInline(this)">
+                <option value="Belum" <?= $curStatus === 'Belum' ? 'selected' : '' ?>>Belum</option>
+                <option value="Selesai" <?= $curStatus === 'Selesai' ? 'selected' : '' ?>>Selesai</option>
+              </select>
+              <i class="ri-arrow-down-s-line status-select-arrow"></i>
+            </span>
+          </td>
           <td class="cell-sub"><?= $a['notes'] ? htmlspecialchars($a['notes']) : '—' ?></td>
           <td>
             <?php if (!empty($a['dokumentasi'])):
@@ -196,10 +281,14 @@ include __DIR__ . '/../includes/header.php';
     <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
       <a href="<?= htmlspecialchars(agendaPageUrl(max(1, $currentPage - 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
-      <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-      <a href="<?= htmlspecialchars(agendaPageUrl($p, $filterDate)) ?>"
-         class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem;"><?= $p ?></a>
-      <?php endfor; ?>
+      <?php foreach (paginationRange($currentPage, $totalPages) as $p): ?>
+        <?php if ($p === '...'): ?>
+        <span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>
+        <?php else: ?>
+        <a href="<?= htmlspecialchars(agendaPageUrl($p, $filterDate)) ?>"
+           class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;"><?= $p ?></a>
+        <?php endif; ?>
+      <?php endforeach; ?>
       <a href="<?= htmlspecialchars(agendaPageUrl(min($totalPages, $currentPage + 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
     </div>
@@ -221,20 +310,14 @@ include __DIR__ . '/../includes/header.php';
         <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
       </div>
       <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Kategori</label>
-          <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
-          <datalist id="kategoriList">
-            <?php foreach ($categories as $cat): ?>
-            <option value="<?= htmlspecialchars($cat) ?>"></option>
-            <?php endforeach; ?>
-          </datalist>
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select name="status"><option>Belum</option><option>Selesai</option><option>Cancel</option></select>
-        </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
+        <datalist id="kategoriList">
+          <?php foreach ($categories as $cat): ?>
+          <option value="<?= htmlspecialchars($cat) ?>"></option>
+          <?php endforeach; ?>
+        </datalist>
       </div>
       <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
       <div class="form-group">
@@ -251,6 +334,7 @@ include __DIR__ . '/../includes/header.php';
       <input type="hidden" name="page_id" value="">
       <input type="hidden" name="action" value="create">
       <input type="hidden" name="remove_existing_files" value="0">
+      <input type="hidden" name="status" value="Belum">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>
@@ -506,6 +590,13 @@ function statusTone(status){
   if (s.includes('belum') || s.includes('menunggu')) return 'gray';
   return 'blue';
 }
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
+=======
+>>>>>>> 4efae5a16af4135c957cbfe516c899e659b95e19
 
 // Dropdown status yang dipakai di tiap baris tabel — cuma "Belum"/"Selesai",
 // langsung bisa diganti dari tabel tanpa buka modal Edit.
@@ -565,6 +656,14 @@ async function updateStatusInline(selectEl){
     selectEl.disabled = false;
   }
 }
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> e8736967bfb3d52e7e790685f7d2858e31daffa9
+>>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
+=======
+>>>>>>> 4efae5a16af4135c957cbfe516c899e659b95e19
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str ?? '';
@@ -639,8 +738,12 @@ function addRowToTable(entry, pageId, dokumentasi){
 <<<<<<< HEAD
     <td>${renderStatusSelect(pageId, entry.status)}</td>
 =======
+<<<<<<< HEAD
+    <td>${renderStatusSelect(pageId, entry.status)}</td>
+=======
     <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
 >>>>>>> e8736967bfb3d52e7e790685f7d2858e31daffa9
+>>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
     <td>${renderDokumenCell(dokumentasi)}</td>
     <td>
