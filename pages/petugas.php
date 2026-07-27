@@ -344,13 +344,14 @@ include __DIR__ . '/../includes/header.php';
             <th>Tanggal</th>
             <th>Kategori</th>
             <th>Deskripsi Aktivitas</th>
+            <th style="text-align:center;">Foto</th>
             <th>Durasi</th>
             <th>Status</th>
             <th style="text-align:center;">Aksi</th>
           </tr>
         </thead>
         <tbody id="reportTableBody">
-          <tr><td colspan="6" style="text-align:center; padding: 3rem; color: var(--text-muted);">
+          <tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">
             <i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br>
             <span style="margin-top:0.5rem; display:block; font-weight:500;">Memuat data laporan...</span>
           </td></tr>
@@ -405,6 +406,8 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<!-- ExcelJS: dipakai untuk menyusun file .xlsx asli (bukan trik HTML-as-.xls) supaya foto benar-benar ter-embed di dalam cell -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
 let currentReportData = null;
 let currentFilter = 'Semua';
@@ -434,7 +437,7 @@ function loadLaporan(nama) {
   document.getElementById('reportNama').textContent = nama;
   
   const tbody = document.getElementById('reportTableBody');
-  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem; color: var(--text-muted);"><i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br><span style="margin-top:0.5rem; display:block; font-weight:500;">Mengumpulkan data dari seluruh logbook...</span></td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);"><i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br><span style="margin-top:0.5rem; display:block; font-weight:500;">Mengumpulkan data dari seluruh logbook...</span></td></tr>`;
   
   fetch(`../api/laporan-individu.php?nama=${encodeURIComponent(nama)}`)
     .then(res => res.json())
@@ -529,17 +532,22 @@ function renderReportTable() {
   tbody.innerHTML = '';
   
   if (filteredData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 3rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada filter ini.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada filter ini.</td></tr>';
     return;
   }
 
   filteredData.forEach(r => {
     let statusColor = r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316';
+    
+    // Cek apakah ada foto, jika ada tampilkan thumbnail
+    let fotoHtml = r.foto ? `<img src="${r.foto}" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
+    
     tbody.innerHTML += `
       <tr>
         <td style="font-weight: 600; white-space: nowrap;">${r.tanggal}</td>
         <td><span style="padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569;">${r.kategori}</span></td>
         <td style="max-width: 300px; line-height: 1.4;">${r.deskripsi}</td>
+        <td style="text-align: center;">${fotoHtml}</td>
         <td style="white-space: nowrap; font-weight: 600; color: var(--primary);">${r.durasi}</td>
         <td style="font-size: 0.85rem; color: ${statusColor}; font-weight: 600;">${r.status}</td>
         <td style="text-align:center;"><a href="${r.url}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>
@@ -620,41 +628,137 @@ async function deletePetugas(pageId, name) {
   }
 }
 
-function exportToExcel() {
+/**
+ * Export laporan ke .xlsx ASLI memakai ExcelJS (bukan trik "HTML disimpan sebagai .xls").
+ * Foto diunduh lewat image-proxy.php, lalu di-embed sebagai gambar sungguhan yang
+ * ditempel (anchor) tepat di dalam cell kolom "Foto" -- bukan cuma link/base64 di src <img>.
+ */
+async function exportToExcel() {
   let dataToExport = getFilteredData();
   if (dataToExport.length === 0) { showToast("⚠️ Tidak ada data pada filter ini!", "error"); return; }
 
-  const nama = currentReportData.nama;
-  const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
-  let filterDesc = [];
-  if (currentFilter !== 'Semua') filterDesc.push(currentFilter);
-  if (currentTahun !== 'Semua') filterDesc.push("Tahun " + currentTahun);
-  if (currentTriwulan !== 'Semua') filterDesc.push("TW " + currentTriwulan);
-  let filterText = filterDesc.length > 0 ? filterDesc.join(' - ') : 'Semua Data';
+  const btnExport = document.getElementById('btnExport');
+  const originalText = btnExport.innerHTML;
+  btnExport.disabled = true;
+  btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses 0%...';
 
-  let html = `<meta charset="UTF-8">
-    <h2 style="font-family: Arial, sans-serif;">Laporan Kinerja Petugas</h2>
-    <p style="font-family: Arial, sans-serif;"><strong>Nama:</strong> ${nama} | <strong>Tanggal:</strong> ${tanggalCetak}</p>
-    <p style="font-family: Arial, sans-serif;"><strong>Filter:</strong> ${filterText} | <strong>Total:</strong> ${dataToExport.length} tugas</p><br>
-    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; width: 100%;">
-        <thead style="background: #4f46e5; color: #ffffff; text-align: center;">
-            <tr><th>No</th><th>Tanggal</th><th>Kategori</th><th>Deskripsi</th><th>Durasi</th><th>Status</th></tr>
-        </thead><tbody>`;
+  try {
+    // 1. Ambil foto sebagai binary (bukan base64 string) lewat proxy, supaya bisa ditempel sebagai gambar Excel
+    const toImageBuffer = async (url) => {
+      try {
+        const proxyUrl = '../api/image-proxy.php?url=' + encodeURIComponent(url);
+        const res = await fetch(proxyUrl);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        const buffer = await blob.arrayBuffer();
+        const extension = blob.type.includes('png') ? 'png' : 'jpeg';
+        return { buffer, extension };
+      } catch (e) { return null; }
+    };
 
-  dataToExport.forEach((r, index) => {
-      html += `<tr><td style="text-align: center;">${index + 1}</td><td>${r.tanggal}</td><td>${r.kategori}</td><td>${r.deskripsi}</td><td style="text-align: center;">${r.durasi}</td><td style="text-align: center;">${r.status}</td></tr>`;
-  });
-  html += `</tbody></table>`;
+    // 2. Unduh semua foto secara paralel, sambil update progress di tombol
+    const photoBuffers = new Array(dataToExport.length).fill(null);
+    const indexWithPhoto = [];
+    dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
 
-  const uri = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
-  const link = document.createElement("a");
-  link.href = uri; link.style = "visibility:hidden";
-  let fileName = `Laporan_${nama.replace(/\s+/g, '_')}`;
-  if (currentTahun !== 'Semua') fileName += `_${currentTahun}`;
-  if (currentTriwulan !== 'Semua') fileName += `_TW${currentTriwulan}`;
-  if (currentFilter !== 'Semua') fileName += `_${currentFilter.replace(/\s+/g, '_')}`;
-  link.download = fileName + ".xls";
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    let completed = 0;
+    await Promise.all(indexWithPhoto.map(async (idx) => {
+      const img = await toImageBuffer(dataToExport[idx].foto);
+      if (img) photoBuffers[idx] = img;
+      completed++;
+      const progress = indexWithPhoto.length ? Math.round((completed / indexWithPhoto.length) * 100) : 100;
+      btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
+    }));
+
+    btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+
+    // 3. Susun workbook
+    const nama = currentReportData.nama;
+    const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    let filterDesc = [];
+    if (currentFilter !== 'Semua') filterDesc.push(currentFilter);
+    if (currentTahun !== 'Semua') filterDesc.push("Tahun " + currentTahun);
+    if (currentTriwulan !== 'Semua') filterDesc.push("TW " + currentTriwulan);
+    let filterText = filterDesc.length > 0 ? filterDesc.join(' - ') : 'Semua Data';
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Logbook RRI';
+    const sheet = workbook.addWorksheet('Laporan');
+
+    sheet.columns = [
+      { width: 5 },   // No
+      { width: 14 },  // Tanggal
+      { width: 16 },  // Kategori
+      { width: 45 },  // Deskripsi
+      { width: 13 },  // Foto
+      { width: 10 },  // Durasi
+      { width: 14 },  // Status
+    ];
+
+    sheet.mergeCells('A1:G1');
+    sheet.getCell('A1').value = 'Laporan Kinerja Petugas';
+    sheet.getCell('A1').font = { size: 14, bold: true };
+
+    sheet.mergeCells('A2:G2');
+    sheet.getCell('A2').value = `Nama: ${nama}   |   Tanggal: ${tanggalCetak}`;
+    sheet.getCell('A2').font = { size: 10, color: { argb: 'FF64748B' } };
+
+    sheet.mergeCells('A3:G3');
+    sheet.getCell('A3').value = `Filter: ${filterText}   |   Total: ${dataToExport.length} tugas`;
+    sheet.getCell('A3').font = { size: 10, color: { argb: 'FF64748B' } };
+
+    sheet.addRow([]);
+
+    const headerRow = sheet.addRow(['No', 'Tanggal', 'Kategori', 'Deskripsi', 'Foto', 'Durasi', 'Status']);
+    headerRow.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    // 4. Isi baris data + tempel gambar di kolom Foto (kolom ke-5 / index 4)
+    dataToExport.forEach((r, idx) => {
+      const img = photoBuffers[idx];
+      const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, img ? '' : '-', r.durasi, r.status]);
+      row.height = 58; // cukup tinggi untuk gambar 62x62
+      row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
+      row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+
+      if (img) {
+        const imageId = workbook.addImage({ buffer: img.buffer, extension: img.extension });
+        sheet.addImage(imageId, {
+          tl: { col: 4.15, row: row.number - 1 + 0.1 },
+          ext: { width: 62, height: 62 },
+          editAs: 'oneCell'
+        });
+      }
+    });
+
+    // 5. Tulis & unduh file .xlsx sungguhan
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    let fileName = `Laporan_${nama.replace(/\s+/g, '_')}`;
+    if (currentTahun !== 'Semua') fileName += `_${currentTahun}`;
+    if (currentTriwulan !== 'Semua') fileName += `_TW${currentTriwulan}`;
+    if (currentFilter !== 'Semua') fileName += `_${currentFilter.replace(/\s+/g, '_')}`;
+    link.download = fileName + '.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('✅ Excel berhasil diekspor!', 'success');
+  } catch (err) {
+    showToast('❌ Gagal export: ' + err.message, 'error');
+  } finally {
+    btnExport.disabled = false;
+    btnExport.innerHTML = originalText;
+  }
 }
 
 document.getElementById('filterTahun').addEventListener('change', function() {
