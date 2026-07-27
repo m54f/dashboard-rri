@@ -13,7 +13,7 @@ button{font-family:inherit;}
 .layout{display:flex;min-height:100vh;}
 
 /* ===== Sidebar ===== */
-.sidebar{width:264px;background:var(--sidebar-bg);color:#fff;position:fixed;height:100vh;overflow-y:auto;display:flex;flex-direction:column;z-index:1000;}
+.sidebar{width:264px;background:var(--sidebar-bg);color:#fff;position:fixed;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;z-index:1000;}
 .sidebar-header{padding:22px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);}
 .sidebar-header .logo-mark{width:38px;height:38px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .sidebar-header .logo-mark img{width:26px;}
@@ -221,6 +221,7 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 .pagination-buttons {
   display: flex;
   gap: 0.35rem;
+  flex-wrap: wrap;
 }
 .btn-page {
   padding: 0.4rem 0.85rem;
@@ -272,67 +273,18 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
     align-items: flex-start;
   }
 
-  /* ===== Sidebar di HP: DEFAULT selalu collapse jadi strip ikon 72px
-     (logo + ikon doang, hemat tempat), apapun kondisinya — tidak perlu tap
-     apa-apa dulu. Beda sama versi laptop yang defaultnya kebalik (expanded). */
-  .sidebar { width: 72px !important; }
-  .sidebar .sidebar-header {
-    justify-content: center;
-    padding: 22px 0;
-  }
-  .sidebar .sidebar-header h1,
-  .sidebar .sidebar-header > div > span,
-  .sidebar .menu-title,
-  .sidebar .menu-item span,
-  .sidebar .badge-text {
-    display: none;
-  }
-  .sidebar .menu-item {
-    justify-content: center;
-    padding: 10px 0;
-    gap: 0;
-  }
-  .sidebar .sidebar-menu { padding: 16px 8px; }
-  .sidebar .pkl-badge {
-    justify-content: center;
-    padding: 12px 0;
-    gap: 0;
-  }
-  .sidebar .sidebar-footer { padding: 16px 8px; }
-  .main { margin-left: 72px !important; }
+  /* ===== Sidebar di HP: DEFAULT hilang total (tidak makan tempat sama sekali) —
+     yang tampil cuma konten dashboard/halaman aktif, lebar penuh. ===== */
+  .sidebar { transform: translateX(-100%); }
+  .main { margin-left: 0 !important; }
 
-  /* ===== Saat di-tap (body.sidebar-mobile-expanded), sidebar melebar penuh
-     (264px) dan MENIMPA/OVERLAY konten di sebelahnya — .main TIDAK didorong
-     (tetap margin-left 72px), jadi bagian konten yang ketiban sidebar ya
-     ketutup, bukan bikin konten kepepet sempit. ===== */
+  /* ===== Saat di-tap (body.sidebar-mobile-expanded), sidebar slide-in sebagai
+     OVERLAY penuh (264px) menimpa konten — .main TETAP margin-left:0, jadi
+     efeknya sidebar "mengambang" di atas konten, bukan mendorongnya. ===== */
   body.sidebar-mobile-expanded .sidebar {
-    width: 264px !important;
+    transform: translateX(0);
     box-shadow: 4px 0 24px rgba(0,0,0,0.25);
   }
-  body.sidebar-mobile-expanded .sidebar .sidebar-header {
-    justify-content: flex-start;
-    padding: 22px 20px;
-  }
-  body.sidebar-mobile-expanded .sidebar .sidebar-header h1,
-  body.sidebar-mobile-expanded .sidebar .sidebar-header > div > span,
-  body.sidebar-mobile-expanded .sidebar .menu-title,
-  body.sidebar-mobile-expanded .sidebar .menu-item span,
-  body.sidebar-mobile-expanded .sidebar .badge-text {
-    display: revert;
-  }
-  body.sidebar-mobile-expanded .sidebar .menu-item {
-    justify-content: flex-start;
-    padding: 10px 12px;
-    gap: 11px;
-  }
-  body.sidebar-mobile-expanded .sidebar .sidebar-menu { padding: 16px 12px; }
-  body.sidebar-mobile-expanded .sidebar .pkl-badge {
-    justify-content: flex-start;
-    padding: 12px 14px;
-    gap: 12px;
-  }
-  body.sidebar-mobile-expanded .sidebar .sidebar-footer { padding: 20px; }
-  /* .main SENGAJA tidak diubah margin-nya di sini -> efeknya overlay/menutup */
 }
 
 
@@ -542,7 +494,8 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 
 /* Saat body memiliki class sidebar-hidden -> sidebar COLLAPSE jadi strip ikon
    (bukan hilang total), logo & ikon menu tetap kelihatan, teks label disembunyikan.
-   Khusus layar besar (laptop/desktop) — di HP pakai logic terpisah di bawah. */
+   Khusus layar besar (laptop/desktop) — di HP sidebar-nya default hilang total
+   dan cuma tampil sebagai overlay penuh saat di-tap (lihat media query mobile). */
 @media (min-width:769px){
   body.sidebar-hidden .sidebar {
     width: 72px;
@@ -893,6 +846,7 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 .sidebar-footer {
   margin-top: auto; /* Mendorong ke paling bawah secara otomatis */
   padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(15, 23, 42, 0.5); /* Sedikit lebih gelap dari sidebar */
 }
@@ -1023,4 +977,44 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 #rssTable input[type="text"], #rssTable input[type="url"], #rssTable input[type="date"],
 #rssTable input[type="time"], #rssTable textarea, #rssTable select {
     padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;
+}
+
+/* ===== Form Edit Video (gallery.php) =====
+   Disalin persis dari aturan #addVideoView / #rssTable di atas, karena
+   form Edit Video sekarang pakai layout tabel yang sama tapi berada
+   di div id="editVideoView" / table id="editVideoTable" yang berbeda. */
+#editVideoView .row-group { display:flex; flex-direction:column; gap:8px; }
+#editVideoView .tabel-label {
+    font-size:11px; font-weight:600; color:#64748b; margin-bottom:-2px;
+    display:block; text-transform:uppercase; letter-spacing:0.3px;
+}
+#editVideoView .dropzone-mini {
+    border:2px dashed #cbd5e1; padding:10px; text-align:center; border-radius:4px;
+    cursor:pointer; background:#f8fafc; font-size:12px; color:#64748b;
+}
+#editVideoView .dropzone-mini.dragover { background:#e2e8f0; border-color:#94a3b8; }
+#editVideoView .remove-flyer-btn {
+    position:absolute; top:4px; right:4px; background:rgba(239, 68, 68, 0.9); color:white;
+    border:none; border-radius:50%; width:20px; height:20px; font-size:12px; font-weight:bold;
+    cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center;
+}
+#editVideoView .remove-flyer-btn:hover { background:#dc2626; }
+#editVideoTable { min-width:1050px; }
+#editVideoTable input[type="text"], #editVideoTable input[type="url"], #editVideoTable input[type="date"],
+#editVideoTable input[type="time"], #editVideoTable textarea, #editVideoTable select {
+    padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;
+}
+
+/* Mobile: kolom tabel Edit Video ditumpuk menurun, tidak lagi horizontal-scroll */
+@media (max-width:768px) {
+    #editVideoTable { min-width:0; width:100%; }
+    #editVideoTable thead { display:none; }
+    #editVideoTable, #editVideoTable tbody, #editVideoTable tr, #editVideoTable td {
+        display:block; width:100%;
+    }
+    #editVideoTable td {
+        border-bottom:1px solid var(--border-color);
+        padding:14px 12px;
+    }
+    #editVideoTable tr:last-child td:last-child { border-bottom:none; }
 }
