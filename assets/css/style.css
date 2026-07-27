@@ -1024,3 +1024,43 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 #rssTable input[type="time"], #rssTable textarea, #rssTable select {
     padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;
 }
+
+/* ===== Form Edit Video (gallery.php) =====
+   Disalin persis dari aturan #addVideoView / #rssTable di atas, karena
+   form Edit Video sekarang pakai layout tabel yang sama tapi berada
+   di div id="editVideoView" / table id="editVideoTable" yang berbeda. */
+#editVideoView .row-group { display:flex; flex-direction:column; gap:8px; }
+#editVideoView .tabel-label {
+    font-size:11px; font-weight:600; color:#64748b; margin-bottom:-2px;
+    display:block; text-transform:uppercase; letter-spacing:0.3px;
+}
+#editVideoView .dropzone-mini {
+    border:2px dashed #cbd5e1; padding:10px; text-align:center; border-radius:4px;
+    cursor:pointer; background:#f8fafc; font-size:12px; color:#64748b;
+}
+#editVideoView .dropzone-mini.dragover { background:#e2e8f0; border-color:#94a3b8; }
+#editVideoView .remove-flyer-btn {
+    position:absolute; top:4px; right:4px; background:rgba(239, 68, 68, 0.9); color:white;
+    border:none; border-radius:50%; width:20px; height:20px; font-size:12px; font-weight:bold;
+    cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center;
+}
+#editVideoView .remove-flyer-btn:hover { background:#dc2626; }
+#editVideoTable { min-width:1050px; }
+#editVideoTable input[type="text"], #editVideoTable input[type="url"], #editVideoTable input[type="date"],
+#editVideoTable input[type="time"], #editVideoTable textarea, #editVideoTable select {
+    padding:8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;
+}
+
+/* Mobile: kolom tabel Edit Video ditumpuk menurun, tidak lagi horizontal-scroll */
+@media (max-width:768px) {
+    #editVideoTable { min-width:0; width:100%; }
+    #editVideoTable thead { display:none; }
+    #editVideoTable, #editVideoTable tbody, #editVideoTable tr, #editVideoTable td {
+        display:block; width:100%;
+    }
+    #editVideoTable td {
+        border-bottom:1px solid var(--border-color);
+        padding:14px 12px;
+    }
+    #editVideoTable tr:last-child td:last-child { border-bottom:none; }
+}
