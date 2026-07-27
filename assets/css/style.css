@@ -221,6 +221,7 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 .pagination-buttons {
   display: flex;
   gap: 0.35rem;
+  flex-wrap: wrap;
 }
 .btn-page {
   padding: 0.4rem 0.85rem;
