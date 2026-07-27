@@ -138,7 +138,14 @@ include __DIR__ . '/../includes/header.php';
 
   /* Main Layout (Atas: Agenda & Troubleshoot) */
   .main-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-  @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+  
+  /* Layout Khusus Bagian Bawah */
+  .bottom-grid { display: grid; grid-template-columns: 1.6fr 0.8fr; gap: 1.5rem; align-items: start; margin-bottom: 1.5rem; }
+
+  @media (max-width: 1024px) { 
+    .main-grid { grid-template-columns: 1fr; } 
+    .bottom-grid { grid-template-columns: 1fr; } /* <-- MEMBUATNYA KE BAWAH DI HP/TABLET */
+  }
 
   /* Cards General */
   .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.3s ease; }
@@ -239,22 +246,32 @@ include __DIR__ . '/../includes/header.php';
   .btn-action i { font-size: 1.35rem; transition: transform 0.2s ease; }
   .btn-action:hover i { transform: scale(1.1); }
 
-  /* ===== YOUTUBE EXPANDED (DIPERBESAR) ===== */
+  /* ===== YOUTUBE SECTION ===== */
   .yt-slider { 
-    display: flex; gap: 1.25rem; overflow-x: auto; scroll-snap-type: x mandatory; 
-    padding-bottom: 1rem; scrollbar-width: thin; margin: 0 -1.5rem; padding: 0 1.5rem 1rem 1.5rem; 
+    display: flex; 
+    gap: 1.25rem; 
+    overflow-x: auto; 
+    scroll-snap-type: x mandatory; 
+    padding-bottom: 1rem; 
+    scrollbar-width: thin; 
+    margin: 0 -1.5rem; 
+    padding: 0 1.5rem 1rem 1.5rem; 
   }
   .yt-slider::-webkit-scrollbar { height: 6px; }
   .yt-slider::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
   
   .yt-card { 
-    flex: 0 0 300px; /* Diperbesar dari 260px */
-    scroll-snap-align: start; background: var(--card-bg); border: 1px solid var(--border); 
-    border-radius: 14px; overflow: hidden; transition: all 0.3s ease;
+    flex: 0 0 300px; 
+    scroll-snap-align: start; 
+    background: var(--card-bg); 
+    border: 1px solid var(--border); 
+    border-radius: 14px; 
+    overflow: hidden; 
+    transition: all 0.3s ease;
   }
   .yt-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: transparent; }
   
-  .yt-thumb { height: 160px; /* Diperbesar dari 140px */ background: #e2e8f0; position: relative; overflow: hidden; }
+  .yt-thumb { height: 160px; background: #e2e8f0; position: relative; overflow: hidden; }
   .yt-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
   .yt-card:hover .yt-thumb img { transform: scale(1.05); }
   .yt-thumb::after {
@@ -266,18 +283,36 @@ include __DIR__ . '/../includes/header.php';
   
   .yt-info { padding: 1rem 1.25rem; }
   .yt-title { 
-    font-size: 0.95rem; 
-    font-weight: 600; 
-    line-height: 1.4; 
-    margin-bottom: 0.5rem; 
-    color: var(--text-primary); 
-    display: -webkit-box; 
-    -webkit-line-clamp: 2; 
-    line-clamp: 2; /* <-- TAMBAHKAN BARIS INI */
-    -webkit-box-orient: vertical; 
-    overflow: hidden; 
+    font-size: 0.95rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.5rem; color: var(--text-primary); 
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; 
   }
   .yt-meta { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem; }
+
+  /* Media Query khusus HP (Maksimal Lebar 768px): Vertikal & Hanya 5 Video */
+  @media (max-width: 768px) {
+    .yt-slider {
+      display: flex;
+      flex-direction: column;
+      overflow-x: visible;
+      margin: 0;
+      padding: 0;
+      scroll-snap-type: none;
+      gap: 1rem;
+    }
+    .yt-card {
+      flex: unset;
+      width: 100%;
+      max-height: 240px;
+      scroll-snap-align: unset;
+    }
+    /* Menyembunyikan video ke-6 dan seterusnya khusus di tampilan HP */
+    .yt-card:nth-child(n+6) {
+      display: none;
+    }
+    .yt-thumb {
+      height: 130px; 
+    }
+  }
 
   /* Empty State */
   .empty-state { text-align: center; padding: 3rem 1.5rem; color: var(--text-secondary); }
@@ -408,10 +443,9 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <!-- 3. BOTTOM SECTION: Checklist Detail & YouTube Recap -->
-<!-- PERUBAHAN: Grid ratio diubah menjadi 0.8fr : 1.6fr agar Checklist kecil dan YouTube besar -->
-<div class="main-grid" style="grid-template-columns: 1.6fr 0.8fr; align-items: start;">
+<div class="bottom-grid">
   
-  <!-- YouTube Recap (DIPERBESAR) - SEKARANG DI KIRI -->
+  <!-- YouTube Recap - DI KIRI (Desktop) / ATAS (Mobile) -->
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-youtube-line" style="color: #ef4444;"></i> Live 7 Hari Terakhir</div>
@@ -425,13 +459,15 @@ include __DIR__ . '/../includes/header.php';
         </div>
       <?php else: ?>
         <div class="yt-slider">
-          <?php foreach (array_slice($gallery, 0, 5) as $g): ?>
-            <?php
+          <?php 
+            // Menampilkan seluruh video galeri yang ada tanpa batasan angka di laptop,
+            // sementara di HP dibatasi lewat CSS (.yt-card:nth-child(n+6) { display: none; })
+            foreach ($gallery as $g): 
               $title = $g['title'] ?? 'Tanpa Judul';
               $programa = $g['programa'] ?? 'Umum';
               $date = $g['date'] ?? 'TBA';
               $flyer = $g['flyer'] ?? '';
-            ?>
+          ?>
             <div class="yt-card">
               <div class="yt-thumb">
                 <?php if ($flyer): ?>
@@ -456,7 +492,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- Checklist Detail (DIPERKECIL / COMPACT) - SEKARANG DI KANAN -->
+  <!-- Checklist Detail - DI KANAN (Desktop) / BAWAH (Mobile) -->
   <div class="card checklist-compact">
     <div class="card-header">
       <div class="card-title"><i class="ri-equipment-line"></i> Status Perangkat</div>
