@@ -434,8 +434,13 @@ include __DIR__ . '/../includes/header.php';
       <button class="btn btn-secondary" onclick="handleBackFromAddView()"><i class="ri-arrow-left-line"></i> Kembali</button>
     </div>
   </div>
-  <h2 style="margin-bottom:4px;">Tambah Video</h2>
-  <p style="color:var(--text-secondary); margin-bottom:24px; font-size: 0.95rem;">Tarik video dari RSS feed channel Youtube, cocokkan detailnya per baris, lalu simpan ke rekap.<br>Baris kosong bisa ditambah manual untuk video yang tidak muncul di RSS.</p>
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:24px;">
+    <div>
+      <h2 style="margin-bottom:4px;">Tambah Video</h2>
+      <p style="color:var(--text-secondary); font-size: 0.95rem;">Tarik video dari RSS feed channel Youtube, cocokkan detailnya per baris, lalu simpan ke rekap.<br>Baris kosong bisa ditambah manual untuk video yang tidak muncul di RSS.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" style="flex-shrink:0;" onclick="openImagePopup('../assets/images/shift/PT.jpeg')"><i class="ri-calendar-2-line"></i> Lihat Jadwal</button>
+  </div>
 
   <div class="card" style="margin-bottom:20px;">
     <div class="card-header" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
@@ -520,7 +525,7 @@ include __DIR__ . '/../includes/header.php';
               </td>
               <td>
                 <div class="row-group">
-                  <label class="tabel-label">Programa</label>
+                  <label class="tabel-label">Live Dimana (Programa)</label>
                   <select id="live" name="live" onchange="handleLiveChange();" required>
                     <option value="94,6 FM Pro 1 RRI Malang dan Youtube RRI Malang Official">Pro 1 FM 94.6 Mhz</option>
                     <option value="87.9 FM Pro 2 RRI Malang dan Youtube RRI Malang Official">Pro 2 FM 87.9 Mhz</option>
