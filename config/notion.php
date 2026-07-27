@@ -11,6 +11,7 @@ define('DATABASE_ID_PIJAT', '3a01ca6157e180f5825ac169bd7f0f32');
 
 
 define('NOTION_VERSION', '2022-06-28');
+// File Upload API membutuhkan versi minimal 2022-06-28 (endpoint /v1/file_uploads)
 
 define('DATABASE_ID_PEMINJAMAN', '3a01ca6157e180f5825ac169bd7f0f32');//isi disini untuk id table peminjaman alat jika sudah ada
 define('DATABASE_ID_INVENTARIS','3a01ca6157e1808cabbccd89c39a32f5');//isi disini untuk id table master inventaris jika sudah ada

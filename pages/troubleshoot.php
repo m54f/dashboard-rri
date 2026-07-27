@@ -539,7 +539,7 @@ async function uploadFiles(files) {
   const res = await fetch('../api/upload-to-notion.php', { method: 'POST', body: formData });
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Upload ke Notion gagal');
-  return data.files.map(f => ({ id: f.id, name: f.original }));
+  return data.files.map(f => ({ id: f.id, name: f.name }));
 }
 
 // ===== Lightbox =====
