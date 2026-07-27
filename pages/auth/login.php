@@ -3,7 +3,7 @@ session_start();
 
 // Jika admin sudah login, langsung arahkan ke dashboard
 if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true) {
-    header('Location: ../admin/dashboard.php');
+    header('Location: ../dashboard.php');
     exit;
 }
 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin_name'] = $username;
         
         // Redirect ke dashboard admin
-        header('Location: ../admin/dashboard.php');
+        header('Location: ../dashboard.php');
         exit;
     } else {
         $error = 'Username atau password yang Anda masukkan tidak valid.';
@@ -68,7 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         /* --- LEFT PANEL: BRANDING & VISUAL --- */
         .brand-panel {
             flex: 1;
-            background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+            /* Background foto dengan overlay gradient gelap agar teks tetap mudah dibaca */
+            /* GANTI URL di bawah dengan foto asli RRI Malang Anda, contoh: url('../assets/img/rri-malang.jpg') */
+            background: linear-gradient(160deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.90) 100%), 
+                        url('https://rricoid-assets.obs.ap-southeast-4.myhuaweicloud.com/berita/Malang/o/1755923254787-IMG_6458/04zyr9j3l5v0l9o.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: #fff;
             display: flex;
             flex-direction: column;
@@ -78,14 +84,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow: hidden;
         }
 
-        /* Subtle background pattern agar tidak polos */
+        /* Subtle background pattern agar foto tidak terlihat polos dan lebih premium */
         .brand-panel::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
             background-size: 24px 24px;
             opacity: 0.6;
+            pointer-events: none;
         }
 
         .brand-content {
@@ -119,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .brand-content p {
             font-size: 1.1rem;
-            color: #94a3b8;
+            color: #cbd5e1; /* Sedikit lebih terang agar kontras dengan background foto */
             line-height: 1.6;
         }
 

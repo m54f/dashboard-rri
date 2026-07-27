@@ -54,10 +54,23 @@ function isPetugasIni($targetName, $dataArray) {
     return false;
 }
 
+// Fungsi bantu untuk ekstrak URL foto dari array Notion files
+function extractFotoUrl($dataArray, $keysToCheck) {
+    foreach ($keysToCheck as $key) {
+        if (isset($dataArray[$key]) && is_array($dataArray[$key]) && !empty($dataArray[$key])) {
+            $file = $dataArray[$key][0];
+            if (isset($file['url'])) return $file['url']; // Jika formatnya langsung array berisi url
+            if (isset($file['file']['url'])) return $file['file']['url']; // Jika upload ke Notion
+            if (isset($file['external']['url'])) return $file['external']['url']; // Jika link eksternal
+        }
+    }
+    return ''; // Kosong jika tidak ada foto
+}
+
  $riwayat = [];
  $totalDurasiMenit = 0;
  $statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0];
- $debugLog = []; // Untuk melihat jika ada API yang error
+ $debugLog = [];
 
 // ==========================================
 // 1. DARI LOGBOOK PEMADAMAN
@@ -80,13 +93,18 @@ if (function_exists('getPemadaman')) {
                             $durasiText = $diff->h . 'j ' . $diff->i . 'm';
                         } catch (Exception $e) {}
                     }
+                    
+                    // Ambil URL foto (sesuaikan 'foto', 'docs', atau 'eviden' dengan nama kolom di Notion Anda)
+                    $fotoUrl = extractFotoUrl($p, ['foto', 'docs', 'eviden', 'dokumentasi']);
+                    
                     $riwayat[] = [
                         'tanggal' => $p['tanggal'] ?? '-',
                         'kategori' => 'Pemadaman Listrik',
                         'deskripsi' => $p['pemancar'] ?? '-',
                         'status' => 'Selesai',
                         'durasi' => $durasiText,
-                        'url' => $p['url'] ?? '#'
+                        'url' => $p['url'] ?? '#',
+                        'foto' => $fotoUrl
                     ];
                 }
             }
@@ -108,13 +126,23 @@ if (function_exists('getTroubleshoot')) {
             foreach ($troubleshoot as $t) {
                 if (isPetugasIni($namaInput, $t['petugas_arr'] ?? []) || isPetugasIni($namaInput, $t['petugas'] ?? '') || isPetugasIni($namaInput, $t['pic'] ?? '')) {
                     $statistik['Troubleshoot']++;
+                    
+                    // Ambil URL foto dari array dokumentasi troubleshoot
+                    $fotoUrl = '';
+                    if (!empty($t['dokumentasi'][0]['url'])) {
+                        $fotoUrl = $t['dokumentasi'][0]['url'];
+                    } else {
+                        $fotoUrl = extractFotoUrl($t, ['foto', 'docs', 'eviden']);
+                    }
+                    
                     $riwayat[] = [
                         'tanggal' => $t['date'] ?? '-',
                         'kategori' => 'Troubleshoot',
                         'deskripsi' => $t['title'] ?? '-',
                         'status' => $t['status'] ?? '-',
                         'durasi' => '-',
-                        'url' => $t['url'] ?? '#'
+                        'url' => $t['url'] ?? '#',
+                        'foto' => $fotoUrl
                     ];
                 }
             }
@@ -136,13 +164,17 @@ if (function_exists('getChecklist')) {
             foreach ($checklist as $c) {
                 if (isPetugasIni($namaInput, $c['petugas_arr'] ?? []) || isPetugasIni($namaInput, $c['petugas'] ?? '')) {
                     $statistik['Checklist']++;
+                    
+                    $fotoUrl = extractFotoUrl($c, ['foto', 'docs', 'eviden', 'dokumentasi']);
+                    
                     $riwayat[] = [
                         'tanggal' => $c['tanggal'] ?? '-',
                         'kategori' => 'Checklist',
                         'deskripsi' => 'Cek ' . ($c['done_items'] ?? 0) . '/5 Perangkat',
                         'status' => ($c['is_complete'] ?? false) ? 'Lengkap' : 'Belum Lengkap',
                         'durasi' => '-',
-                        'url' => $c['url'] ?? '#'
+                        'url' => $c['url'] ?? '#',
+                        'foto' => $fotoUrl
                     ];
                 }
             }
@@ -164,13 +196,23 @@ if (function_exists('getJurnal')) {
             foreach ($jurnal as $j) {
                 if (isPetugasIni($namaInput, $j['ops_arr'] ?? []) || isPetugasIni($namaInput, $j['op'] ?? '')) {
                     $statistik['Jurnal Kegiatan']++;
+                    
+                    // Ambil URL foto dari array docs jurnal
+                    $fotoUrl = '';
+                    if (!empty($j['docs'][0]['url'])) {
+                        $fotoUrl = $j['docs'][0]['url'];
+                    } else {
+                        $fotoUrl = extractFotoUrl($j, ['foto', 'eviden', 'dokumentasi']);
+                    }
+                    
                     $riwayat[] = [
                         'tanggal' => $j['date'] ?? '-',
                         'kategori' => 'Jurnal Kegiatan',
                         'deskripsi' => $j['title'] ?? '-',
                         'status' => $j['status'] ?? '-',
                         'durasi' => '-',
-                        'url' => $j['url'] ?? '#'
+                        'url' => $j['url'] ?? '#',
+                        'foto' => $fotoUrl
                     ];
                 }
             }
