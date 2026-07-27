@@ -506,7 +506,6 @@ function statusTone(status){
   if (s.includes('belum') || s.includes('menunggu')) return 'gray';
   return 'blue';
 }
-<<<<<<< HEAD
 
 // Dropdown status yang dipakai di tiap baris tabel — cuma "Belum"/"Selesai",
 // langsung bisa diganti dari tabel tanpa buka modal Edit.
@@ -566,8 +565,6 @@ async function updateStatusInline(selectEl){
     selectEl.disabled = false;
   }
 }
-=======
->>>>>>> e8736967bfb3d52e7e790685f7d2858e31daffa9
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str ?? '';
