@@ -35,11 +35,11 @@ if (!isset($activeMenu)) $activeMenu = 'dashboard';
   // Script untuk toggle sidebar
   function toggleSidebar() {
     if (window.innerWidth <= 768) {
-      // Di HP: sidebar defaultnya sudah collapse (strip ikon) lewat CSS.
-      // Tap tombol ini buka-tutup mode overlay (sidebar melebar nutupin konten).
+      // Di HP: sidebar defaultnya hilang total (lihat CSS). Tap tombol ini
+      // buka-tutup mode overlay (sidebar slide-in menimpa konten).
       document.body.classList.toggle('sidebar-mobile-expanded');
     } else {
-      // Di laptop/desktop: toggle collapse <-> expanded biasa.
+      // Di laptop/desktop: toggle collapse (strip ikon) <-> expanded biasa.
       document.body.classList.toggle('sidebar-hidden');
     }
   }

@@ -6,7 +6,6 @@ $activeMenu = 'aplikasi';
 
 include __DIR__ . '/../includes/header.php';
 
-
 // =====================================
 // LINK APLIKASI
 // Nama harus sama dengan nama gambar
@@ -14,6 +13,15 @@ include __DIR__ . '/../includes/header.php';
 // =====================================
 
 $panelLinks = [
+
+    'RRI Portal' =>
+    'https://rri.co.id/',
+
+    'RRI Digital' =>
+    'https://digital.rri.co.id/',
+
+    'RRI Streaming' =>
+    'https://rri.co.id/stream/radio',
 
     'Srikandi' =>
     'https://srikandi.arsip.go.id/',
@@ -24,15 +32,15 @@ $panelLinks = [
     'Logger' =>
     'https://logger.rri.co.id/',
 
-    'Audio Analyzer' =>
-    'https://huggingface.co/spaces/dezikrie/rri-analyzer-audio',
-
     'Intranet' =>
     'https://intranet-v2.rri.go.id/auth/login',
 
     'CMS' =>
-    'https://intranet-v2.rri.go.id/auth/login'
-   
+    'https://intranet-v2.rri.go.id/auth/login',
+
+    'Audio Analyzer' =>
+    'https://huggingface.co/spaces/dezikrie/rri-analyzer-audio'
+
 ];
 
 $panelDesc = [
@@ -43,10 +51,11 @@ $panelDesc = [
     'Audio Analyzer' => 'Analisis Kualitas Sinyal',
     'Intranet' => 'Seluruh aplikasi RRI',
     'CMS' => 'Aplikasi Membuat Berita RRI',
-    
+    'RRI Digital' => 'Aplikasi RRI Digital',
+    'RRI Streaming' => 'Aplikasi Radio Streaming RRI',
+    'RRI Portal' => 'Beranda Website rri.co.id'
+
 ];
-
-
 
 // =====================================
 // BACA GAMBAR FOLDER
@@ -54,111 +63,52 @@ $panelDesc = [
 
 $apps = [];
 
-
 $folderPath = __DIR__ . '/../assets/images/aplikasi/';
-
 $imagePath = $base . '/assets/images/aplikasi/';
 
-
+$appImages = [];
 
 if (is_dir($folderPath)) {
 
-
     $files = scandir($folderPath);
-
-
 
     foreach ($files as $file) {
 
+        if ($file == '.' || $file == '..') continue;
 
-        if ($file == '.' || $file == '..') {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+        if (!in_array($ext, ['png', 'jpg', 'jpeg', 'webp'])) continue;
+
+        $filename = pathinfo($file, PATHINFO_FILENAME);
+
+        $name = preg_replace('/^[0-9]+[-_ ]*/', '', $filename);
+        $name = ucwords(str_replace(['-', '_'], ' ', $name));
+
+        $appImages[$name] = $file;
+    }
+
+    // Susun sesuai urutan panelLinks
+    foreach ($panelLinks as $name => $url) {
+
+        if (!isset($appImages[$name])) {
             continue;
         }
-
-
-
-        $ext = strtolower(
-            pathinfo($file, PATHINFO_EXTENSION)
-        );
-
-
-
-        if (!in_array($ext, ['png', 'jpg', 'jpeg', 'webp'])) {
-            continue;
-        }
-
-
-
-        $filename = pathinfo(
-            $file,
-            PATHINFO_FILENAME
-        );
-
-
-
-        // hapus nomor depan
-        // 01-Srikandi
-        // menjadi Srikandi
-
-        $name = preg_replace(
-            '/^[0-9]+[-_ ]*/',
-            '',
-            $filename
-        );
-
-
-
-        $name = ucwords(
-            str_replace(
-                ['-', '_'],
-                ' ',
-                $name
-            )
-        );
-
-
 
         $apps[] = [
-
-            'name' => $name,
-
-            'desc' => $panelDesc[$name],
-
-            'image' => $file,
-
-
-            'url' =>
-            $panelLinks[$name]
-                ??
-                ($imagePath . $file)
-
+            'name'  => $name,
+            'desc'  => $panelDesc[$name] ?? '',
+            'image' => $appImages[$name],
+            'url'   => $url
         ];
     }
 }
-
-
-
-// urut sesuai nomor file
-
-usort($apps, function ($a, $b) {
-
-    return strcmp(
-        $a['image'],
-        $b['image']
-    );
-});
-
-
-
 
 // 3 card setiap slide
 
 $appSlides = array_chunk($apps, 3);
 
-
 ?>
-
-
 
 <style>
     .panel-header {
@@ -198,9 +148,6 @@ $appSlides = array_chunk($apps, 3);
 
     }
 
-
-
-
     .panel-card {
 
         background: white;
@@ -222,8 +169,6 @@ $appSlides = array_chunk($apps, 3);
 
     }
 
-
-
     .panel-card:hover {
 
         transform: translateY(-5px);
@@ -232,9 +177,6 @@ $appSlides = array_chunk($apps, 3);
             0 10px 20px rgba(0, 0, 0, .1);
 
     }
-
-
-
 
     .panel-image {
 
@@ -252,9 +194,6 @@ $appSlides = array_chunk($apps, 3);
 
     }
 
-
-
-
     .panel-image img {
 
         max-width: 60%;
@@ -264,9 +203,6 @@ $appSlides = array_chunk($apps, 3);
         object-fit: contain;
 
     }
-
-
-
 
     .panel-content {
 
@@ -278,15 +214,11 @@ $appSlides = array_chunk($apps, 3);
 
     }
 
-
-
     .panel-content h5 {
 
         font-weight: 700;
 
     }
-
-
 
     .panel-content p {
 
@@ -297,7 +229,6 @@ $appSlides = array_chunk($apps, 3);
     }
 
 
-
     .panel-footer {
 
         text-align: center;
@@ -305,9 +236,6 @@ $appSlides = array_chunk($apps, 3);
         padding-bottom: 20px;
 
     }
-
-
-
 
     .btn-panel {
 
@@ -369,9 +297,6 @@ $appSlides = array_chunk($apps, 3);
     }
 </style>
 
-
-
-
 <div class="panel-header">
 
     <h2>
@@ -384,12 +309,7 @@ $appSlides = array_chunk($apps, 3);
 
 </div>
 
-
-
-
-
 <?php if (empty($apps)): ?>
-
 
     <div class="empty-state">
 
@@ -409,121 +329,53 @@ $appSlides = array_chunk($apps, 3);
 
     </div>
 
-
-
 <?php else: ?>
-
-
 
     <div id="appCarousel"
         class="carousel slide"
         data-bs-ride="carousel">
 
-
         <div class="carousel-inner">
 
-
-
             <?php foreach ($appSlides as $i => $slide): ?>
-
-
 
                 <div class="carousel-item 
 <?= $i == 0 ? 'active' : '' ?>">
 
-
-
                     <div class="panel-grid">
-
-
-
                         <?php foreach ($slide as $app): ?>
-
-
-
                             <div class="panel-card">
-
-
-
                                 <div class="panel-image">
-
-
                                     <img src="<?= $imagePath . htmlspecialchars($app['image']) ?>">
-
-
                                 </div>
-
-
-
-
                                 <div class="panel-content">
-
-
                                     <h5>
                                         <?= htmlspecialchars($app['name']) ?>
                                     </h5>
-
-
                                     <p>
                                         <?= htmlspecialchars($app['desc']) ?>
                                     </p>
-
-
                                 </div>
-
-
-
-
                                 <div class="panel-footer">
-
-
                                     <a href="<?= htmlspecialchars($app['url']) ?>"
                                         target="_blank"
                                         class="btn-panel">
-
-
                                         <i class="ri-external-link-line"></i>
-
                                         Lihat Detail
-
-
                                     </a>
-
-
                                 </div>
-
-
-
                             </div>
-
-
-
                         <?php endforeach; ?>
-
-
-
                     </div>
-
-
                 </div>
-
-
-
             <?php endforeach; ?>
-
-
-
         </div>
-
-
 
         <button class="carousel-control-prev"
             type="button"
             data-bs-target="#appCarousel"
             data-bs-slide="prev">
-
             <span class="carousel-control-prev-icon"></span>
-
         </button>
 
 
@@ -531,19 +383,9 @@ $appSlides = array_chunk($apps, 3);
             type="button"
             data-bs-target="#appCarousel"
             data-bs-slide="next">
-
             <span class="carousel-control-next-icon"></span>
-
         </button>
-
-
-
     </div>
 
-
-
 <?php endif; ?>
-
-
-
 <?php include __DIR__ . '/../includes/footer.php'; ?>
