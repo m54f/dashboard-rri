@@ -30,10 +30,10 @@ if (is_array($fetchedAgenda) && !isset($fetchedAgenda['error'])) {
 }
 
 // --- 2. AMBIL DATA CHECKLIST DARI NOTION ---
- $checklist = [];
- $checklistReady = 0;
- $checklistTotal = 0;
- $checklistError = null;
+$checklist = [];
+$checklistReady = 0;
+$checklistTotal = 0;
+$checklistError = null;
 
 if (file_exists(__DIR__ . '/../api/checklist.php')) {
     require_once __DIR__ . '/../api/checklist.php';
@@ -43,16 +43,29 @@ if (file_exists(__DIR__ . '/../api/checklist.php')) {
     }
 
     if (is_array($rawChecklist) && !isset($rawChecklist['error'])) {
+        $displayLimit = 5; // Batasi tampilan di dashboard agar tidak terlalu panjang
+        $count = 0;
+
         foreach ($rawChecklist as $c) {
-            $status = $c['status'] ?? '-';
-            $isOk = (strtolower($status) === 'baik');
-            if ($isOk) $checklistReady++;
+            // 1. Hitung statistik dari SEMUA data yang diambil untuk persentase yang akurat
+            $isComplete = $c['is_complete'] ?? false;
+            if ($isComplete) {
+                $checklistReady++;
+            }
             $checklistTotal++;
-            $checklist[] = [
-                'name' => $c['name'] ?? $c['title'] ?? 'Perangkat',
-                'status' => $status,
-                'ok' => $isOk
-            ];
+
+            // 2. Ambil data untuk ditampilkan di UI (hanya yang terbaru sesuai limit)
+            if ($count < $displayLimit) {
+                $name = $c['checklist_type'] ?? 'Perangkat';
+                $status = $isComplete ? 'Baik' : 'Belum Lengkap';
+                
+                $checklist[] = [
+                    'name' => $name,
+                    'status' => $status,
+                    'ok' => $isComplete
+                ];
+                $count++;
+            }
         }
     } else {
         $checklistError = is_array($rawChecklist) ? ($rawChecklist['error'] ?? 'Gagal memuat') : 'Gagal memuat';
@@ -60,7 +73,9 @@ if (file_exists(__DIR__ . '/../api/checklist.php')) {
 } else {
     $checklistError = "File API Checklist tidak ditemukan.";
 }
- $checklistPct = $checklistTotal > 0 ? round($checklistReady / $checklistTotal * 100) : 0;
+
+// Hitung persentase kesiapan
+$checklistPct = $checklistTotal > 0 ? round($checklistReady / $checklistTotal * 100) : 0;
 
 // --- 3. AMBIL DATA TROUBLESHOOT DARI NOTION ---
  $troubleshootActive = [];
