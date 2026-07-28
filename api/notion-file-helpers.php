@@ -16,10 +16,13 @@
  */
 function notionUploadSingleFile(string $tmpPath, string $originalName, string $mimeType): string
 {
+    // Gunakan versi khusus File Upload API (berbeda dari versi umum)
+    $fileUploadVersion = defined('NOTION_VERSION_FILE_UPLOAD') ? NOTION_VERSION_FILE_UPLOAD : '2026-03-11';
+
     // ===== Tahap 1: Buat File Upload object =====
     $createHeaders = [
         "Authorization: Bearer " . NOTION_TOKEN,
-        "Notion-Version: " . NOTION_VERSION,
+        "Notion-Version: " . $fileUploadVersion,
         "Content-Type: application/json",
     ];
 
@@ -47,7 +50,7 @@ function notionUploadSingleFile(string $tmpPath, string $originalName, string $m
     $createData = json_decode($createResp, true);
     if ($createCode !== 200 || empty($createData['id'])) {
         $msg = $createData['message'] ?? $createResp;
-        throw new Exception("Notion menolak membuat file upload (HTTP {$createCode}): {$msg}. Cek NOTION_VERSION di config/notion.php, minimal '2025-09-03'.");
+        throw new Exception("Notion menolak membuat file upload (HTTP {$createCode}): {$msg}. Cek NOTION_VERSION_FILE_UPLOAD di config/notion.php, minimal '2026-03-11'.");
     }
 
     $fileUploadId = $createData['id'];
@@ -56,7 +59,7 @@ function notionUploadSingleFile(string $tmpPath, string $originalName, string $m
     // ===== Tahap 2: Kirim isi file (multipart/form-data) =====
     $sendHeaders = [
         "Authorization: Bearer " . NOTION_TOKEN,
-        "Notion-Version: " . NOTION_VERSION,
+        "Notion-Version: " . $fileUploadVersion,
         // Jangan set Content-Type manual — biarkan cURL generate boundary multipart otomatis
     ];
 
