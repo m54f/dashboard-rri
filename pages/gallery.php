@@ -501,7 +501,7 @@ include __DIR__ . '/../includes/header.php';
     <div class="card" style="margin-bottom:20px;">
       <div class="table-wrap">
         <table class="data-table" id="editVideoTable">
-          <thead>
+          <!-- <thead>
             <tr>
               <th style="width:19%;">Acara &amp; Tema</th>
               <th style="width:15%;">Programa &amp; Jadwal</th>
@@ -510,7 +510,7 @@ include __DIR__ . '/../includes/header.php';
               <th style="width:18%;">Media (URL &amp; Flyer)</th>
               <th style="width:8%;">Aksi</th>
             </tr>
-          </thead>
+          </thead> -->
           <tbody>
             <tr>
               <td>
@@ -569,7 +569,7 @@ include __DIR__ . '/../includes/header.php';
                   <input type="url" name="link" placeholder="https://youtube.com/...">
 
                   <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
-                  <div id="dropzone" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:80px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('field_flyer').click()">
+                  <div id="dropzone" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:120px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('field_flyer').click()">
                     <input type="file" id="field_flyer" name="flyer" accept="image/*" style="display:none;" onchange="handleFileSelectEdit(this.files)">
                     <span style="padding:10px;">Pilih / Tarik Flyer</span>
                   </div>
@@ -1519,7 +1519,7 @@ function renderTabelRss(videos) {
                     <label class="tabel-label">Link YouTube</label>
                     <input type="url" value="${vid.url || ''}" placeholder="URL YouTube">
                     <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
-                    <div id="dropzone_${index}" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:80px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('flyer_input_${index}').click()">
+                    <div id="dropzone_${index}" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:120px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('flyer_input_${index}').click()">
                         <input type="file" id="flyer_input_${index}" accept="image/*" style="display:none;" onchange="handleFlyerSelect(this, '${index}')">
                         ${vid.flyer
                             ? `<img src="${vid.flyer}" style="width:100%; height:100%; object-fit:cover; position:absolute;" alt="Flyer" onclick="event.stopPropagation(); openImagePopup(this.src)"><button type="button" class="remove-flyer-btn" onclick="hapusFlyer('${index}', event)">&times;</button>`
@@ -1798,7 +1798,7 @@ function tambahBarisKosong() {
                 <label class="tabel-label">Link YouTube</label>
                 <input type="url" placeholder="URL YouTube">
                 <label class="tabel-label" style="margin-top:6px;">Flyer / Thumbnail</label>
-                <div id="dropzone_${uniqueId}" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:80px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('flyer_input_${uniqueId}').click()">
+                <div id="dropzone_${uniqueId}" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:120px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('flyer_input_${uniqueId}').click()">
                     <input type="file" id="flyer_input_${uniqueId}" accept="image/*" style="display:none;" onchange="handleFlyerSelect(this, '${uniqueId}')">
                     <span style="padding:10px;">Pilih / Tarik Flyer</span>
                 </div>
