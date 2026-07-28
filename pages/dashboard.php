@@ -1,60 +1,108 @@
 <?php
-$base = '..'; 
-$pageTitle = 'Dashboard'; 
-$activeMenu = 'dashboard';
+ $base = '..'; 
+ $pageTitle = 'Dashboard'; 
+ $activeMenu = 'dashboard';
 
 require_once __DIR__ . '/../api/agenda.php';
 
-$today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
-$hour  = (int) $today->format('H');
-$greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
+ $today = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+ $hour  = (int) $today->format('H');
+ $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
 
-// --- AMBIL DATA AGENDA DARI NOTION (Dengan Fallback Dummy) ---
-$todayDateStr = $today->format('Y-m-d');
-$fetchedAgenda = getAgenda($todayDateStr, 'asc');
+// --- 1. AMBIL DATA AGENDA DARI NOTION ---
+ $todayDateStr = $today->format('Y-m-d');
+ $fetchedAgenda = getAgenda($todayDateStr, 'asc');
 
-$agenda = [];
+ $agenda = [];
+ $agendaError = null;
 if (is_array($fetchedAgenda) && !isset($fetchedAgenda['error'])) {
     foreach ($fetchedAgenda as $a) {
         $agenda[] = [
-            'time' => substr($a['time'], 0, 5),
-            'title' => $a['title'],
+            'time' => substr($a['time'] ?? '00:00', 0, 5),
+            'title' => $a['title'] ?? 'Tanpa Judul',
             'tag' => $a['tag'] ?? 'Umum',
             'tone' => $a['tone'] ?? 'gray',
             'pic' => $a['pic'] ?? '-'
         ];
     }
 } else {
-    $agenda = [
-        ['time' => '09.00', 'title' => 'Podcast Luar Studio',        'tag' => 'PODCAST',  'tone'=>'purple', 'pic' => 'Alfan'],
-        ['time' => '11.00', 'title' => 'Persiapan Senam Sore RRI',   'tag' => 'EVENT',    'tone'=>'orange', 'pic' => 'Yanuar'],
-        ['time' => '15.30', 'title' => 'Live Youtube: Sore Ceria',   'tag' => 'LIVE',     'tone'=>'red',    'pic' => 'Alif'],
-        ['time' => '19.00', 'title' => 'Produksi Ruatan Malam',      'tag' => 'PRODUKSI', 'tone'=>'blue',   'pic' => 'Yayang'],
-    ];
+    $agendaError = is_array($fetchedAgenda) ? ($fetchedAgenda['error'] ?? 'Gagal memuat') : 'Gagal memuat';
 }
 
-// --- DATA DUMMY METRICS ---
-$checklistReady = 18; $checklistTotal = 22;
-$checklistPct = $checklistTotal > 0 ? round($checklistReady / $checklistTotal * 100) : 0;
+// --- 2. AMBIL DATA CHECKLIST DARI NOTION ---
+ $checklist = [];
+ $checklistReady = 0;
+ $checklistTotal = 0;
+ $checklistError = null;
 
-$checklist = [
-    ['name' => 'Mixer Audio',    'status' => 'Baik', 'ok' => true],
-    ['name' => 'Microphone',     'status' => 'Baik', 'ok' => true],
-    ['name' => 'PC Streaming',   'status' => 'Baik', 'ok' => true],
-    ['name' => 'Encoder',        'status' => 'Perlu Dicek', 'ok' => false],
-];
+if (file_exists(__DIR__ . '/../api/checklist.php')) {
+    require_once __DIR__ . '/../api/checklist.php';
+    $rawChecklist = [];
+    if (function_exists('getChecklist')) {
+        $rawChecklist = getChecklist();
+    }
 
-$troubleshootActive = [
-    ['title' => 'Internet Telkom (IP 60) tidak tersambung', 'status' => 'Belum Selesai', 'cls'=>'belum', 'date' => '8 Jul, 08.45'],
-    ['title' => 'Output Radio Kepsta Putus Nyambung',       'status' => 'Proses',        'cls'=>'proses','date' => '7 Jul, 14.20'],
-];
-$activeTroubleCount = count($troubleshootActive);
+    if (is_array($rawChecklist) && !isset($rawChecklist['error'])) {
+        foreach ($rawChecklist as $c) {
+            $status = $c['status'] ?? '-';
+            $isOk = (strtolower($status) === 'baik');
+            if ($isOk) $checklistReady++;
+            $checklistTotal++;
+            $checklist[] = [
+                'name' => $c['name'] ?? $c['title'] ?? 'Perangkat',
+                'status' => $status,
+                'ok' => $isOk
+            ];
+        }
+    } else {
+        $checklistError = is_array($rawChecklist) ? ($rawChecklist['error'] ?? 'Gagal memuat') : 'Gagal memuat';
+    }
+} else {
+    $checklistError = "File API Checklist tidak ditemukan.";
+}
+ $checklistPct = $checklistTotal > 0 ? round($checklistReady / $checklistTotal * 100) : 0;
 
-// --- DATA YOUTUBE GALLERY ---
+// --- 3. AMBIL DATA TROUBLESHOOT DARI NOTION ---
+ $troubleshootActive = [];
+ $troubleError = null;
+
+if (file_exists(__DIR__ . '/../api/troubleshoot.php')) {
+    require_once __DIR__ . '/../api/troubleshoot.php';
+    $rawTrouble = [];
+    if (function_exists('getTroubleshoot')) {
+        $rawTrouble = getTroubleshoot();
+    }
+
+    if (is_array($rawTrouble) && !isset($rawTrouble['error'])) {
+        foreach ($rawTrouble as $t) {
+            $status = $t['status'] ?? '';
+            $statusLower = strtolower($status);
+            
+            // Filter: hanya ambil yang belum selesai atau proses
+            if (strpos($statusLower, 'belum') !== false || strpos($statusLower, 'proses') !== false) {
+                $cls = strpos($statusLower, 'proses') !== false ? 'proses' : 'belum';
+                $troubleshootActive[] = [
+                    'title' => $t['title'] ?? 'Tanpa Judul',
+                    'status' => $status,
+                    'cls' => $cls,
+                    'date' => $t['date'] ?? '-'
+                ];
+            }
+        }
+    } else {
+        $troubleError = is_array($rawTrouble) ? ($rawTrouble['error'] ?? 'Gagal memuat') : 'Gagal memuat';
+    }
+} else {
+    $troubleError = "File API Troubleshoot tidak ditemukan.";
+}
+ $activeTroubleCount = count($troubleshootActive);
+
+// --- 4. DATA YOUTUBE GALLERY ---
 require_once __DIR__ . '/../api/youtube.php';
-$fetchedVideos = getYoutubeVideos();
+ $fetchedVideos = getYoutubeVideos();
 
-$gallery = [];
+ $gallery = [];
+ $youtubeError = null;
 if (is_array($fetchedVideos) && !isset($fetchedVideos['error'])) {
     $sekarang = new DateTime('today', new DateTimeZone('Asia/Jakarta'));
     $semingguLalu = clone $sekarang;
@@ -62,7 +110,7 @@ if (is_array($fetchedVideos) && !isset($fetchedVideos['error'])) {
     $sekarang->modify('+1 day');
     
     foreach ($fetchedVideos as $v) {
-        $vDate = DateTime::createFromFormat('j M Y', $v['date'], new DateTimeZone('Asia/Jakarta'));
+        $vDate = DateTime::createFromFormat('j M Y', $v['date'] ?? '', new DateTimeZone('Asia/Jakarta'));
         if ($vDate) {
             $vDate->setTime(0, 0, 0);
             if ($vDate >= $semingguLalu && $vDate <= $sekarang) {
@@ -70,6 +118,8 @@ if (is_array($fetchedVideos) && !isset($fetchedVideos['error'])) {
             }
         }
     }
+} else {
+    $youtubeError = is_array($fetchedVideos) ? ($fetchedVideos['error'] ?? 'Gagal memuat') : 'Gagal memuat';
 }
 
 include __DIR__ . '/../includes/header.php';
@@ -100,7 +150,6 @@ include __DIR__ . '/../includes/header.php';
 
   body { background: var(--bg); color: var(--text-primary); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   
-  /* Header */
   .dash-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
   .dash-header h2 { font-size: 1.75rem; font-weight: 800; margin: 0; color: var(--text-primary); letter-spacing: -0.025em; }
   .dash-header p { color: var(--text-secondary); margin: 0.35rem 0 0; font-size: 1rem; }
@@ -112,7 +161,6 @@ include __DIR__ . '/../includes/header.php';
   .date-badge:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .date-badge i { color: var(--primary); font-size: 1.1rem; }
 
-  /* Key Metrics */
   .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
   .metric-card { 
     background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; 
@@ -136,18 +184,14 @@ include __DIR__ . '/../includes/header.php';
   .metric-info .value { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: 0.35rem; color: var(--text-primary); letter-spacing: -0.025em; }
   .metric-info .sub { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
 
-  /* Main Layout (Atas: Agenda & Troubleshoot) */
   .main-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-  
-  /* Layout Khusus Bagian Bawah */
   .bottom-grid { display: grid; grid-template-columns: 1.6fr 0.8fr; gap: 1.5rem; align-items: start; margin-bottom: 1.5rem; }
 
   @media (max-width: 1024px) { 
     .main-grid { grid-template-columns: 1fr; } 
-    .bottom-grid { grid-template-columns: 1fr; } /* <-- MEMBUATNYA KE BAWAH DI HP/TABLET */
+    .bottom-grid { grid-template-columns: 1fr; }
   }
 
-  /* Cards General */
   .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.3s ease; }
   .card:hover { box-shadow: var(--shadow-md); }
   .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(248, 250, 252, 0.5); }
@@ -157,15 +201,11 @@ include __DIR__ . '/../includes/header.php';
   .link-btn { font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: gap 0.2s ease; }
   .link-btn:hover { gap: 8px; }
 
-  /* Agenda Timeline */
   .timeline-list { position: relative; padding-left: 1.5rem; }
   .timeline-list::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 2px; background: var(--border); border-radius: 2px; }
   .timeline-item { position: relative; padding: 0 0 1.5rem 1.5rem; }
   .timeline-item:last-child { padding-bottom: 0; }
-  .timeline-item::before {
-    content: ''; position: absolute; left: -1.5rem; top: 6px; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--card-bg); border: 3px solid var(--primary); z-index: 1; transition: all 0.2s ease;
-  }
+  .timeline-item::before { content: ''; position: absolute; left: -1.5rem; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--card-bg); border: 3px solid var(--primary); z-index: 1; transition: all 0.2s ease; }
   .timeline-item:hover::before { background: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
   .timeline-time { font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
   .timeline-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary); line-height: 1.4; }
@@ -182,12 +222,7 @@ include __DIR__ . '/../includes/header.php';
   .pic-badge { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
   .pic-badge i { color: var(--text-secondary); }
 
-  /* Troubleshoot List */
-  .trouble-item { 
-    display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem; 
-    background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.75rem;
-    transition: all 0.2s ease; border-left: 4px solid transparent;
-  }
+  .trouble-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.75rem; transition: all 0.2s ease; border-left: 4px solid transparent; }
   .trouble-item:hover { transform: translateX(4px); box-shadow: var(--shadow-sm); }
   .trouble-item.belum { border-left-color: var(--danger); }
   .trouble-item.proses { border-left-color: var(--warning); }
@@ -202,119 +237,57 @@ include __DIR__ . '/../includes/header.php';
   .status-tag.belum { background: var(--danger-light); color: var(--danger); }
   .status-tag.proses { background: var(--warning-light); color: var(--warning); }
 
-  /* ===== CHECKLIST COMPACT (DIPERKECIL) ===== */
   .checklist-compact .card-body { padding: 1rem 1.25rem; }
   .checklist-compact .progress-wrap { margin-bottom: 0.75rem; }
   .checklist-compact .progress-header { font-size: 0.8rem; margin-bottom: 0.3rem; }
   .checklist-compact .progress-bar { height: 6px; }
   .checklist-compact .checklist-mini { gap: 0.4rem; }
-  .checklist-compact .check-mini-item { 
-    padding: 0.5rem 0.75rem; font-size: 0.8rem; border-radius: 8px; 
-  }
+  .checklist-compact .check-mini-item { padding: 0.5rem 0.75rem; font-size: 0.8rem; border-radius: 8px; }
   .checklist-compact .check-mini-item i { font-size: 1rem; margin-right: 4px; }
 
-  /* Progress Bar Animation */
-  .progress-fill { 
-    height: 100%; background: linear-gradient(90deg, var(--success), #34d399); border-radius: 99px; 
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
-  }
-  .progress-fill::after {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: shimmer 2s infinite;
-  }
+  .progress-wrap { margin-bottom: 1.25rem; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); }
+  .progress-bar { height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), #34d399); border-radius: 99px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+  .progress-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2s infinite; }
   @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-  .check-mini-item { 
-    display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding: 0.75rem 1rem; 
-    background: #f8fafc; border-radius: 10px; border: 1px solid transparent; transition: all 0.2s ease;
-  }
+  .checklist-mini { display: grid; gap: 0.5rem; }
+  .check-mini-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid transparent; transition: all 0.2s ease; }
   .check-mini-item:hover { background: #fff; border-color: var(--border); }
   .check-mini-item.ok { color: var(--success); font-weight: 600; }
   .check-mini-item.not-ok { color: var(--danger); font-weight: 600; background: var(--danger-light); border-color: rgba(239, 68, 68, 0.2); }
   .check-mini-item i { margin-right: 6px; font-size: 1.1rem; }
 
-  /* Quick Actions */
   .quick-actions { display: grid; gap: 0.75rem; }
-  .btn-action { 
-    display: flex; align-items: center; gap: 0.85rem; width: 100%; padding: 1rem 1.25rem; 
-    border: 1px solid var(--border); background: var(--card-bg); border-radius: 12px; 
-    font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; 
-    text-align: left; text-decoration: none; color: var(--text-primary);
-  }
+  .btn-action { display: flex; align-items: center; gap: 0.85rem; width: 100%; padding: 1rem 1.25rem; border: 1px solid var(--border); background: var(--card-bg); border-radius: 12px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; text-align: left; text-decoration: none; color: var(--text-primary); }
   .btn-action:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
   .btn-action i { font-size: 1.35rem; transition: transform 0.2s ease; }
   .btn-action:hover i { transform: scale(1.1); }
 
-  /* ===== YOUTUBE SECTION ===== */
-  .yt-slider { 
-    display: flex; 
-    gap: 1.25rem; 
-    overflow-x: auto; 
-    scroll-snap-type: x mandatory; 
-    padding-bottom: 1rem; 
-    scrollbar-width: thin; 
-    margin: 0 -1.5rem; 
-    padding: 0 1.5rem 1rem 1.5rem; 
-  }
+  .yt-slider { display: flex; gap: 1.25rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 1rem; scrollbar-width: thin; margin: 0 -1.5rem; padding: 0 1.5rem 1rem 1.5rem; }
   .yt-slider::-webkit-scrollbar { height: 6px; }
   .yt-slider::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
   
-  .yt-card { 
-    flex: 0 0 300px; 
-    scroll-snap-align: start; 
-    background: var(--card-bg); 
-    border: 1px solid var(--border); 
-    border-radius: 14px; 
-    overflow: hidden; 
-    transition: all 0.3s ease;
-  }
+  .yt-card { flex: 0 0 300px; scroll-snap-align: start; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: all 0.3s ease; }
   .yt-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: transparent; }
-  
   .yt-thumb { height: 160px; background: #e2e8f0; position: relative; overflow: hidden; }
   .yt-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
   .yt-card:hover .yt-thumb img { transform: scale(1.05); }
-  .yt-thumb::after {
-    content: '\f16a'; font-family: 'remixicon'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 3rem; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s ease;
-  }
+  .yt-thumb::after { content: '\f16a'; font-family: 'remixicon'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s ease; }
   .yt-card:hover .yt-thumb::after { opacity: 1; }
   .yt-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; z-index: 2; }
-  
   .yt-info { padding: 1rem 1.25rem; }
-  .yt-title { 
-    font-size: 0.95rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.5rem; color: var(--text-primary); 
-    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; 
-  }
+  .yt-title { font-size: 0.95rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.5rem; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .yt-meta { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem; }
 
-  /* Media Query khusus HP (Maksimal Lebar 768px): Vertikal & Hanya 5 Video */
   @media (max-width: 768px) {
-    .yt-slider {
-      display: flex;
-      flex-direction: column;
-      overflow-x: visible;
-      margin: 0;
-      padding: 0;
-      scroll-snap-type: none;
-      gap: 1rem;
-    }
-    .yt-card {
-      flex: unset;
-      width: 100%;
-      max-height: 240px;
-      scroll-snap-align: unset;
-    }
-    /* Menyembunyikan video ke-6 dan seterusnya khusus di tampilan HP */
-    .yt-card:nth-child(n+6) {
-      display: none;
-    }
-    .yt-thumb {
-      height: 130px; 
-    }
+    .yt-slider { display: flex; flex-direction: column; overflow-x: visible; margin: 0; padding: 0; scroll-snap-type: none; gap: 1rem; }
+    .yt-card { flex: unset; width: 100%; max-height: 240px; scroll-snap-align: unset; }
+    .yt-card:nth-child(n+6) { display: none; }
+    .yt-thumb { height: 130px; }
   }
 
-  /* Empty State */
   .empty-state { text-align: center; padding: 3rem 1.5rem; color: var(--text-secondary); }
   .empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; color: #cbd5e1; }
   .empty-state p { font-size: 0.95rem; font-weight: 500; }
@@ -366,14 +339,18 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- 2. MAIN CONTENT: Agenda & Troubleshoot -->
 <div class="main-grid">
-  <!-- Left Column: Agenda -->
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-time-line"></i> Jadwal Hari Ini</div>
       <a class="link-btn" href="<?= $base ?>/pages/agenda.php">Lihat Semua <i class="ri-arrow-right-line"></i></a>
     </div>
     <div class="card-body">
-      <?php if (empty($agenda)): ?>
+      <?php if ($agendaError): ?>
+        <div class="empty-state" style="color: var(--danger);">
+          <i class="ri-error-warning-line"></i>
+          <p>Gagal memuat data dari Notion.</p>
+        </div>
+      <?php elseif (empty($agenda)): ?>
         <div class="empty-state">
           <i class="ri-calendar-schedule-line"></i>
           <p>Tidak ada agenda terjadwal untuk hari ini.</p>
@@ -397,15 +374,18 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- Right Column: Active Issues & Quick Actions -->
   <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-    <!-- Active Troubleshoot -->
     <div class="card">
       <div class="card-header">
         <div class="card-title"><i class="ri-alert-line" style="color: var(--danger);"></i> Perlu Perhatian</div>
       </div>
       <div class="card-body">
-        <?php if (empty($troubleshootActive)): ?>
+        <?php if ($troubleError): ?>
+          <div class="empty-state" style="padding: 2rem 1rem; color: var(--danger);">
+            <i class="ri-error-warning-line"></i>
+            <p>Gagal memuat data gangguan.</p>
+          </div>
+        <?php elseif (empty($troubleshootActive)): ?>
           <div class="empty-state" style="padding: 2rem 1rem;">
             <i class="ri-checkbox-circle-line" style="color: var(--success);"></i>
             <p style="color: var(--success); font-weight: 600;">Semua sistem beroperasi normal</p>
@@ -424,7 +404,6 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </div>
 
-    <!-- Quick Actions -->
     <div class="card">
       <div class="card-body">
         <div class="quick-actions">
@@ -442,31 +421,32 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- 3. BOTTOM SECTION: Checklist Detail & YouTube Recap -->
+<!-- 3. BOTTOM SECTION: YouTube Recap & Checklist Detail -->
 <div class="bottom-grid">
   
-  <!-- YouTube Recap - DI KIRI (Desktop) / ATAS (Mobile) -->
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="ri-youtube-line" style="color: #ef4444;"></i> Live 7 Hari Terakhir</div>
       <a class="link-btn" href="<?= $base ?>/pages/gallery.php">Lihat Arsip <i class="ri-arrow-right-line"></i></a>
     </div>
     <div class="card-body">
-      <?php if (empty($gallery)): ?>
+      <?php if ($youtubeError): ?>
+        <div class="empty-state" style="color: var(--danger);">
+          <i class="ri-error-warning-line"></i>
+          <p>Gagal memuat video YouTube.</p>
+        </div>
+      <?php elseif (empty($gallery)): ?>
         <div class="empty-state">
           <i class="ri-video-off-line"></i>
           <p>Belum ada data live streaming minggu ini.</p>
         </div>
       <?php else: ?>
         <div class="yt-slider">
-          <?php 
-            // Menampilkan seluruh video galeri yang ada tanpa batasan angka di laptop,
-            // sementara di HP dibatasi lewat CSS (.yt-card:nth-child(n+6) { display: none; })
-            foreach ($gallery as $g): 
-              $title = $g['title'] ?? 'Tanpa Judul';
-              $programa = $g['programa'] ?? 'Umum';
-              $date = $g['date'] ?? 'TBA';
-              $flyer = $g['flyer'] ?? '';
+          <?php foreach ($gallery as $g): 
+            $title = $g['title'] ?? 'Tanpa Judul';
+            $programa = $g['programa'] ?? 'Umum';
+            $date = $g['date'] ?? 'TBA';
+            $flyer = $g['flyer'] ?? '';
           ?>
             <div class="yt-card">
               <div class="yt-thumb">
@@ -492,34 +472,44 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
 
-  <!-- Checklist Detail - DI KANAN (Desktop) / BAWAH (Mobile) -->
   <div class="card checklist-compact">
     <div class="card-header">
       <div class="card-title"><i class="ri-equipment-line"></i> Status Perangkat</div>
       <a class="link-btn" href="<?= $base ?>/pages/checklist.php">Detail <i class="ri-arrow-right-line"></i></a>
     </div>
     <div class="card-body">
-      <div class="progress-wrap">
-        <div class="progress-header">
-          <span>Tingkat Kesiapan</span>
-          <span style="color: var(--success); font-weight: 700;"><?= $checklistPct ?>%</span>
+      <?php if ($checklistError): ?>
+        <div class="empty-state" style="padding: 1.5rem 1rem; color: var(--danger);">
+          <i class="ri-error-warning-line"></i>
+          <p>Gagal memuat data checklist.</p>
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: <?= $checklistPct ?>%;"></div>
+      <?php elseif ($checklistTotal === 0): ?>
+        <div class="empty-state" style="padding: 1.5rem 1rem;">
+          <i class="ri-equipment-line"></i>
+          <p>Belum ada perangkat dicek hari ini.</p>
         </div>
-      </div>
-      <div class="checklist-mini">
-        <?php foreach ($checklist as $c): ?>
-        <div class="check-mini-item <?= $c['ok'] ? 'ok' : 'not-ok' ?>">
-          <span><i class="<?= $c['ok'] ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill' ?>"></i> <?= htmlspecialchars($c['name']) ?></span>
-          <span><?= htmlspecialchars($c['status']) ?></span>
+      <?php else: ?>
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span>Tingkat Kesiapan</span>
+            <span style="color: var(--success); font-weight: 700;"><?= $checklistPct ?>%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: <?= $checklistPct ?>%;"></div>
+          </div>
         </div>
-        <?php endforeach; ?>
-      </div>
+        <div class="checklist-mini">
+          <?php foreach ($checklist as $c): ?>
+          <div class="check-mini-item <?= $c['ok'] ? 'ok' : 'not-ok' ?>">
+            <span><i class="<?= $c['ok'] ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill' ?>"></i> <?= htmlspecialchars($c['name']) ?></span>
+            <span><?= htmlspecialchars($c['status']) ?></span>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </div>
   </div>
 
 </div>
-
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

@@ -126,6 +126,26 @@ sort($categories);
  $showingFrom = $totalItems === 0 ? 0 : $offset + 1;
  $showingTo = min($offset + $perPage, $totalItems);
 
+// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
+// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
+// tanda "…"). Tanpa ini, kalau ada banyak halaman semua nomornya kelist penuh
+// dan bikin harus scroll horizontal di HP (Prev/Next jadi ketutup/kegeser).
+function paginationRange($current, $total, $delta = 1)
+{
+    $result = [];
+    $prev = 0;
+    for ($i = 1; $i <= $total; $i++) {
+        if ($i === 1 || $i === $total || ($i >= $current - $delta && $i <= $current + $delta)) {
+            if ($prev && $i - $prev > 1) {
+                $result[] = '...';
+            }
+            $result[] = $i;
+            $prev = $i;
+        }
+    }
+    return $result;
+}
+
 function invPageUrl($page, $search) {
     $params = ['page' => $page];
     if ($search !== '') $params['search'] = $search;
@@ -213,11 +233,15 @@ include __DIR__ . '/../includes/header.php';
       Menampilkan <?= $showingFrom ?>-<?= $showingTo ?> dari <?= $totalItems ?> alat
     </div>
     <?php if ($totalPages > 1): ?>
-    <div style="display:flex; gap:0.4rem;">
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
       <a href="<?= htmlspecialchars(invPageUrl(max(1, $currentPage - 1), $search)) ?>" class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
-      <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-      <a href="<?= htmlspecialchars(invPageUrl($p, $search)) ?>" class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem;"><?= $p ?></a>
-      <?php endfor; ?>
+      <?php foreach (paginationRange($currentPage, $totalPages) as $p): ?>
+        <?php if ($p === '...'): ?>
+        <span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>
+        <?php else: ?>
+        <a href="<?= htmlspecialchars(invPageUrl($p, $search)) ?>" class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;"><?= $p ?></a>
+        <?php endif; ?>
+      <?php endforeach; ?>
       <a href="<?= htmlspecialchars(invPageUrl(min($totalPages, $currentPage + 1), $search)) ?>" class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
     </div>
     <?php endif; ?>
