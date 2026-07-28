@@ -1,7 +1,7 @@
 <?php
-$base = '..'; $pageTitle = 'Daily Agenda'; $activeMenu = 'agenda';
+ $base = '..'; $pageTitle = 'Daily Agenda'; $activeMenu = 'agenda';
 
-$stats = [
+ $stats = [
     ['label' => 'Agenda Hari Ini',   'value' => '6',  'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
     ['label' => 'Sudah Berlangsung', 'value' => '2',  'sub' => 'Selesai dijalankan','icon' => 'ri-checkbox-circle-line','tone' => 'green'],
     ['label' => 'Menunggu',         'value' => '4',  'sub' => 'Belum dimulai',  'icon' => 'ri-time-line',         'tone' => 'orange'],
@@ -9,23 +9,23 @@ $stats = [
 
 require_once __DIR__ . '/../api/agenda.php';
 
-$filterDate = $_GET['date'] ?? ''; // '' atau format 'Y-m-d' (dari input type="date")
-$selectedSort = 'desc'; // fitur pilih Urutan dihapus — tabel selalu tampilkan yang PALING BARU dulu
+ $filterDate = $_GET['date'] ?? ''; // '' atau format 'Y-m-d' (dari input type="date")
+ $selectedSort = 'desc'; // fitur pilih Urutan dihapus — tabel selalu tampilkan yang PALING BARU dulu
 
 // Ambil SEMUA data sekali jalan, lalu filter di PHP berdasarkan tanggal yang
 // dipilih di satu field input type="date". Widget bawaan browser ini sudah
 // punya navigasi bulan & tahun (klik header kalender) plus tombol Clear/Today
 // sendiri, jadi user gampang cari tanggal yang diinginkan dari satu field aja.
-$allAgenda = getAgenda(null, $selectedSort);
-$errorMessage = null;
-$errorRaw = null;
+ $allAgenda = getAgenda(null, $selectedSort);
+ $errorMessage = null;
+ $errorRaw = null;
 if (!is_array($allAgenda) || isset($allAgenda['error'])) {
     $errorMessage = $allAgenda['error'] ?? 'Gagal memuat data agenda dari Notion';
     $errorRaw = $allAgenda['raw'] ?? null;
     $allAgenda = [];
 }
 
-$agenda = $allAgenda;
+ $agenda = $allAgenda;
 if ($filterDate !== '') {
     $agenda = array_values(array_filter($agenda, fn($a) => $a['date'] === $filterDate));
 }
@@ -34,17 +34,17 @@ if ($filterDate !== '') {
 // tabel di bawah) — supaya tetap relevan berapa pun tanggal yang lagi
 // difilter user, dan otomatis ganti tiap hari karena date('Y-m-d') selalu
 // pakai tanggal server saat ini.
-$todayStr = date('Y-m-d');
-$todayAgenda = getAgenda($todayStr, 'asc');
+ $todayStr = date('Y-m-d');
+ $todayAgenda = getAgenda($todayStr, 'asc');
 if (!is_array($todayAgenda) || isset($todayAgenda['error'])) {
     $todayAgenda = [];
 }
-$agendaCount  = count($todayAgenda);
-$doneCount    = count(array_filter($todayAgenda, fn($a) => stripos($a['status'], 'selesai') !== false));
-$waitingCount = count(array_filter($todayAgenda, fn($a) => preg_match('/\b(belum|menunggu)\b/i', $a['status'])));
-$liveCount    = count(array_filter($todayAgenda, fn($a) => stripos($a['tag'], 'live') !== false));
+ $agendaCount  = count($todayAgenda);
+ $doneCount    = count(array_filter($todayAgenda, fn($a) => stripos($a['status'], 'selesai') !== false));
+ $waitingCount = count(array_filter($todayAgenda, fn($a) => preg_match('/\b(belum|menunggu)\b/i', $a['status'])));
+ $liveCount    = count(array_filter($todayAgenda, fn($a) => stripos($a['tag'], 'live') !== false));
 
-$stats = [
+ $stats = [
     ['label' => 'Agenda Hari Ini',   'value' => (string)$agendaCount, 'sub' => 'Terjadwal',      'icon' => 'ri-calendar-line',     'tone' => 'blue'],
     ['label' => 'Sudah Berlangsung', 'value' => (string)$doneCount,  'sub' => 'Selesai dijalankan','icon' => 'ri-checkbox-circle-line','tone' => 'green'],
     ['label' => 'Menunggu',         'value' => (string)$waitingCount, 'sub' => 'Belum dimulai',  'icon' => 'ri-time-line',         'tone' => 'orange'],
@@ -52,7 +52,7 @@ $stats = [
 
 // Daftar kategori unik dari data yang ada — dipakai buat tab filter & saran
 // input Kategori di form.
-$categories = [];
+ $categories = [];
 foreach ($agenda as $a) {
     if ($a['tag'] !== '' && !in_array($a['tag'], $categories, true)) {
         $categories[] = $a['tag'];
@@ -61,14 +61,14 @@ foreach ($agenda as $a) {
 sort($categories);
 
 // Pagination — 8 per halaman, sama seperti di Checklist Perangkat
-$perPage = 8;
-$totalItems = count($agenda);
-$totalPages = max(1, (int)ceil($totalItems / $perPage));
-$currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
-$offset = ($currentPage - 1) * $perPage;
-$agendaPage = array_slice($agenda, $offset, $perPage);
-$showingFrom = $totalItems === 0 ? 0 : $offset + 1;
-$showingTo = min($offset + $perPage, $totalItems);
+ $perPage = 8;
+ $totalItems = count($agenda);
+ $totalPages = max(1, (int)ceil($totalItems / $perPage));
+ $currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
+ $offset = ($currentPage - 1) * $perPage;
+ $agendaPage = array_slice($agenda, $offset, $perPage);
+ $showingFrom = $totalItems === 0 ? 0 : $offset + 1;
+ $showingTo = min($offset + $perPage, $totalItems);
 
 function agendaPageUrl($page, $filterDate)
 {
@@ -221,7 +221,7 @@ include __DIR__ . '/../includes/header.php';
           <td style="font-weight:700;"><?= htmlspecialchars($a['time']) ?></td>
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
           <td><span class="tag <?= $a['tone'] ?>"><?= htmlspecialchars($a['tag']) ?></span></td>
-          <td><?= strtoupper(substr($a['pic'],0,2)) ?></span> <?= htmlspecialchars($a['pic']) ?></td>
+          <td><span class="avatar-sm"><?= strtoupper(substr($a['pic'],0,2)) ?></span> <?= htmlspecialchars($a['pic']) ?></td>
           <td>
             <?php $curStatus = stripos($a['status'], 'selesai') !== false ? 'Selesai' : 'Belum'; ?>
             <span class="status-select-wrap" title="Klik untuk ubah status">
@@ -720,15 +720,7 @@ function addRowToTable(entry, pageId, dokumentasi){
     <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
     <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
     <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
-<<<<<<< HEAD
     <td>${renderStatusSelect(pageId, entry.status)}</td>
-=======
-<<<<<<< HEAD
-    <td>${renderStatusSelect(pageId, entry.status)}</td>
-=======
-    <td><span class="status-tag ${statusTone(entry.status)}">${escapeHtml(entry.status)}</span></td>
->>>>>>> e8736967bfb3d52e7e790685f7d2858e31daffa9
->>>>>>> 99b04356676fc43f8f7c9a74ba694692f09b6f07
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
     <td>${renderDokumenCell(dokumentasi)}</td>
     <td>
