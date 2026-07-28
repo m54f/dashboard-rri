@@ -45,8 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $url = (string)$entry->link['href'];
         $description = (string)$media->group->description;
 
+        // Ekstrak video ID dari URL, lalu bangun thumbnail resolusi tinggi
         $thumbnailUrl = '';
-        if (isset($media->group->thumbnail)) {
+        if (preg_match('/[?&]v=([^&]+)/', $url, $match)) {
+            $videoId = $match[1];
+            // maxresdefault = 1280x720 (jika tersedia), fallback ke hqdefault di client jika 404
+            $thumbnailUrl = "https://i.ytimg.com/vi/{$videoId}/maxresdefault.jpg";
+        } elseif (isset($media->group->thumbnail)) {
+            // Fallback ke thumbnail dari RSS jika parsing URL gagal
             $attrs = $media->group->thumbnail->attributes();
             $thumbnailUrl = (string)$attrs['url'];
         }
@@ -589,6 +595,49 @@ include __DIR__ . '/../includes/header.php';
 <div id="descToast" style="display:none; position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:10px 16px; border-radius:4px; font-size:14px; z-index:1000;">Teks berhasil disalin ke clipboard!</div>
 
 <script>
+
+// ===== Data video yang sudah tersimpan di Notion (diinjek dari PHP) =====
+// Dipakai untuk mendeteksi duplikat saat tarik RSS: cek berdasarkan URL YouTube & tanggal+namaAcara
+const notionSavedVideos = <?php
+    $savedIndex = [];
+    if (is_array($videos)) {
+        foreach ($videos as $v) {
+            $url  = isset($v['url'])  ? trim($v['url'])  : '';
+            $nama = isset($v['namaAcara']) ? trim($v['namaAcara']) : '';
+            // Konversi tanggal "j M Y" kembali ke ISO "YYYY-MM-DD" untuk dibandingkan dengan RSS
+            $dateISO = '';
+            if (!empty($v['date']) && $v['date'] !== 'TBA') {
+                try {
+                    $d = new DateTime($v['date']);
+                    $dateISO = $d->format('Y-m-d');
+                } catch (Exception $e) {}
+            }
+            if ($url && $url !== '#') {
+                $savedIndex[] = ['url' => $url, 'date' => $dateISO, 'namaAcara' => $nama];
+            } elseif ($dateISO && $nama) {
+                $savedIndex[] = ['url' => '', 'date' => $dateISO, 'namaAcara' => $nama];
+            }
+        }
+    }
+    echo json_encode($savedIndex);
+?>;
+
+// Cek apakah sebuah video dari RSS sudah ada di Notion.
+// Prioritas 1: URL YouTube cocok persis.
+// Prioritas 2: tanggal (ISO) + namaAcara cocok (fallback jika URL belum ada saat RSS ditarik).
+function isAlreadySaved(vidUrl, vidDateISO, vidNamaAcara) {
+    if (!vidUrl && !vidDateISO) return false;
+    return notionSavedVideos.some(function(saved) {
+        if (vidUrl && saved.url && saved.url !== '#') {
+            return saved.url === vidUrl;
+        }
+        // fallback tanggal+namaAcara
+        if (vidDateISO && vidNamaAcara && saved.date && saved.namaAcara) {
+            return saved.date === vidDateISO && saved.namaAcara.toLowerCase() === vidNamaAcara.toLowerCase();
+        }
+        return false;
+    });
+}
 
 // ===== Tambahkan State untuk file uploads (Kloning dari troubleshoot.php) =====
 let selectedFiles = []; 
@@ -1429,6 +1478,13 @@ function renderTabelRss(videos) {
         var hidPT = 'hidden_pt_' + index;
         var hidPA = 'hidden_pa_' + index;
 
+        // ── CEK DUPLIKAT: bandingkan dengan data Notion yang sudah ada di halaman ──
+        var vidUrl = vid.url || '';
+        var vidDateISO = vid.tanggal || '';
+        var vidNamaAcara = vid.title_asli ? vid.title_asli.split('-')[0].trim() : '';
+        var alreadySaved = isAlreadySaved(vidUrl, vidDateISO, vidNamaAcara);
+
+        // Catatan: baris tetap dirender lengkap, hanya flag alreadySaved yang berbeda
         var extractedTitle = (vid.title_asli || '').split('-')[0].trim();
         var normalizedTitle = normalizeTextRss(extractedTitle);
         var optionsAcara = '<option value="">-- Pilih Acara --</option>';
@@ -1465,7 +1521,83 @@ function renderTabelRss(videos) {
             optionsAcara += '</optgroup>';
         });
 
+        var cellStyle = 'vertical-align:top; padding:10px 8px; font-size:12px; color:#334155;';
+        var labelStyle = 'font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:3px;';
+        var valueStyle = 'font-size:12px; color:#334155; line-height:1.5;';
+
         var tr = document.createElement('tr');
+        if (alreadySaved) {
+            tr.style.background = '#f8fafc';
+            tr.style.opacity = '0.82';
+
+            // Narasumber sebagai teks baris
+            var narasumberText = vid.narasumber
+                ? vid.narasumber.split('\n').filter(function(s){ return s.trim(); }).map(function(s){ return '<div>' + s + '</div>'; }).join('')
+                : '—';
+
+            // Pemandu: gunakan string mentah dari vid.penyiar
+            var pemanduText = vid.penyiar || '—';
+
+            // PT Setting & PT Produksi
+            var ptText  = (vid.pt  && vid.pt.length)  ? vid.pt.join(', ')  : '—';
+            var paText  = (vid.pa  && vid.pa.length)  ? vid.pa.join(', ')  : '—';
+
+            // Programa singkat
+            var progLabel = (vid.programa || '').includes('Pro 1') ? 'Pro 1'
+                          : (vid.programa || '').includes('Pro 2') ? 'Pro 2'
+                          : (vid.programa || '').includes('Pro 4') ? 'Pro 4' : (vid.programa || '—');
+
+            tr.innerHTML = `
+                <td style="${cellStyle} text-align:center; padding-top:12px;">
+                    <span style="font-weight:700; font-size:14px;">${index + 1}</span><br>
+                    <span style="font-size:10px; background:#e2e8f0; color:#64748b; padding:1px 6px; border-radius:3px; font-weight:500; margin-top:4px; display:inline-block;">tersimpan</span>
+                </td>
+                <td style="${cellStyle}">
+                    <span style="${labelStyle}">Nama Acara</span>
+                    <span style="${valueStyle}">${vid.title_asli ? vid.title_asli.split('-')[0].trim() : '—'}</span>
+                    <span style="${labelStyle} margin-top:8px;">Tema</span>
+                    <span style="${valueStyle}">${vid.tema || '—'}</span>
+                </td>
+                <td style="${cellStyle}">
+                    <span style="${labelStyle}">Programa</span>
+                    <span style="${valueStyle}">${progLabel}</span>
+                    <span style="${labelStyle} margin-top:8px;">Tanggal</span>
+                    <span style="${valueStyle}">${vid.tanggal || '—'}</span>
+                    <span style="${labelStyle} margin-top:8px;">Jam Mulai</span>
+                    <span style="${valueStyle}">${vid.jamMulai || '—'}</span>
+                </td>
+                <td style="${cellStyle}">
+                    <span style="${labelStyle}">Pemandu / Host / Penyiar</span>
+                    <span style="${valueStyle}">${pemanduText}</span>
+                    <span style="${labelStyle} margin-top:8px;">Narasumber</span>
+                    <div style="${valueStyle}">${narasumberText}</div>
+                </td>
+                <td style="${cellStyle}">
+                    <span style="${labelStyle}">Petugas PT Setting</span>
+                    <span style="${valueStyle}">${ptText}</span>
+                    <span style="${labelStyle} margin-top:8px;">Petugas PT Produksi</span>
+                    <span style="${valueStyle}">${paText}</span>
+                </td>
+                <td style="${cellStyle}">
+                    <span style="${labelStyle}">Link YouTube</span>
+                    ${vid.url && vid.url !== ''
+                        ? `<a href="${vid.url}" target="_blank" rel="noopener" style="font-size:12px; color:#2563eb; word-break:break-all;">${vid.url}</a>`
+                        : '<span style="' + valueStyle + '">—</span>'
+                    }
+                    <span style="${labelStyle} margin-top:8px;">Flyer</span>
+                    ${vid.flyer
+                        ? `<img src="${vid.flyer}" style="width:100%; max-width:120px; height:70px; object-fit:cover; border-radius:4px; cursor:zoom-in; display:block;" onclick="openImagePopup('${vid.flyer}')" alt="Flyer">`
+                        : '<span style="' + valueStyle + '">—</span>'
+                    }
+                </td>
+                <td style="vertical-align:top; text-align:center; padding-top:12px;">
+                    <button class="btn" disabled style="background:#94a3b8; color:#fff; border:none; border-radius:4px; padding:9px 12px; font-weight:600; cursor:not-allowed; font-size:12px;">Sudah Tersimpan</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            return; // baris tersimpan selesai — skip pembuatan form & widget JS
+        }
+
         tr.innerHTML = `
             <td style="text-align:center; font-weight:bold; font-size:14px; vertical-align:top; padding-top:14px;">${index + 1}</td>
             <td>
@@ -2069,8 +2201,12 @@ async function simpanKeNotion(btn, id) {
             btn.textContent = 'Tersimpan';
             btn.style.background = '#475569';
             btn.disabled = true;
+            btn.style.cursor = 'not-allowed';
 
-            // Menghilangkan tombol Hapus pada baris ini setelah berhasil tersimpan
+            // Daftarkan ke notionSavedVideos agar tarik RSS berikutnya di sesi ini ikut terdeteksi
+            if (link) notionSavedVideos.push({ url: link, date: tanggal, namaAcara: namaAcara });
+
+            // Sembunyikan tombol Hapus
             var deleteBtn = row.querySelector('button.btn[style*="background:#ef4444"]') || row.querySelector('button.btn-danger');
             if (deleteBtn) {
                 deleteBtn.style.display = 'none';
