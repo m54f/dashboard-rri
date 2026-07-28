@@ -51,7 +51,7 @@ include __DIR__ . '/../includes/header.php';
 .btn-icon.delete { color: #dc2626; } .btn-icon.delete:hover { background: #fef2f2; border-color: #fecaca; }
 
 .pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; font-size: 14px; color: #6b7280; padding-top: 20px; border-top: 1px solid #f3f4f6; }
-.pagination { display: flex; gap: 6px; }
+.pagination { display: flex; gap: 6px; flex-wrap: wrap; }
 .page-item { padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #374151; cursor: pointer; font-weight: 500; transition: 0.2s;}
 .page-item.active { background: #2563eb; color: #fff; border-color: #2563eb; }
 .page-item:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -341,13 +341,34 @@ function renderTable() {
     renderPagination(totalPages);
 }
 
+// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
+// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
+// tanda "…"). Tanpa ini, kalau halaman banyak, semua nomor kelist penuh dan
+// bikin harus scroll horizontal (Prev/Next jadi ketutup/kegeser ke luar layar).
+function getPaginationRange(current, total, delta = 1) {
+  const result = [];
+  let prev = 0;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      if (prev && i - prev > 1) result.push('...');
+      result.push(i);
+      prev = i;
+    }
+  }
+  return result;
+}
+
 function renderPagination(totalPages) {
     let pg = document.getElementById('paginationNav');
-    pg.innerHTML = `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
-    for (let i = 1; i <= totalPages; i++) {
-        pg.innerHTML += `<button class="page-item ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-    }
-    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>`;
+    pg.innerHTML = `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+    getPaginationRange(currentPage, totalPages).forEach(p => {
+      if (p === '...') {
+        pg.innerHTML += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
+      } else {
+        pg.innerHTML += `<button class="page-item ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
+      }
+    });
+    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
 }
 
 function changePage(page) {
