@@ -16,10 +16,11 @@ if (!is_array($jurnalData) || isset($jurnalData['error'])) {
 $petugasList = ['Dicky','Priyo','Ludfi','Anggi','Deny','Yhanuar','Shofirin','Yudha','Dayat','Dedy','Winsa','Yayang','Syukur','Saiful','Alif','Selvy','Alfian'];
 $jenisKegiatanList = ['Acara Live / Dialog Luar','Podcast / Tapping','Troubleshooting / Maintenance','Supporting Event Kantor','Keroncong / Senandung Rindu','Zoom Meeting','Kunjungan','Programa','Editing Audio / Image / Video','Lain-Lain'];
 
+// WAJIB MEMANGGIL HEADER AGAR SIDEBAR & TOPBAR AKTIF
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- ===== STYLE MODERN MODAL & UI (DIPERBAIKI UNTUK SCROLLING) ===== -->
+<!-- ===== STYLE MODERN MODAL & UI ===== -->
 <style>
 .page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
@@ -50,13 +51,41 @@ include __DIR__ . '/../includes/header.php';
 .btn-icon.edit { color: #2563eb; } .btn-icon.edit:hover { background: #eff6ff; border-color: #bfdbfe; }
 .btn-icon.delete { color: #dc2626; } .btn-icon.delete:hover { background: #fef2f2; border-color: #fecaca; }
 
-.pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; font-size: 14px; color: #6b7280; padding-top: 20px; border-top: 1px solid #f3f4f6; }
+<<<<<<< HEAD
+/* Container Utama Pagination */
+.pagination-container { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-top: 25px; 
+  font-size: 14px; 
+  color: #6b7280; 
+  padding-top: 20px; 
+  border-top: 1px solid #f3f4f6; 
+  gap: 15px; 
+}
+
+/* KHUSUS UNTUK MOBILE (Di bawah 768px), susun jadi atas bawah */
+@media screen and (max-width: 768px) {
+  .pagination-container {
+    flex-direction: column; /* Mengubah susunan menjadi atas bawah */
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 .pagination { display: flex; gap: 6px; }
+.page-item { padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #374151; cursor: pointer; font-weight: 500; transition: 0.2s; font-size: 0.9rem;}
+.page-item.active { background: #2563eb; color: #fff; border-color: #2563eb; cursor: default; }
+=======
+.pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; font-size: 14px; color: #6b7280; padding-top: 20px; border-top: 1px solid #f3f4f6; }
+.pagination { display: flex; gap: 6px; flex-wrap: wrap; }
 .page-item { padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #374151; cursor: pointer; font-weight: 500; transition: 0.2s;}
 .page-item.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+>>>>>>> 015251ab8671e134b935745fb143c50d21cdf1d2
 .page-item:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* === PERBAIKAN SCROLLING MODAL === */
+/* === MODAL STYLE === */
 .modal-overlay { 
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); 
   display: flex; align-items: center; justify-content: center; z-index: 9999; 
@@ -66,76 +95,51 @@ include __DIR__ . '/../includes/header.php';
 
 .modal-content { 
   background: #ffffff; border-radius: 16px; width: 100%; max-width: 680px; 
-  max-height: 90vh; /* Batas tinggi maksimal 90% layar */
-  display: flex; flex-direction: column; 
-  overflow: hidden; /* Mencegah scroll di container utama */
+  max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; 
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
   transform: translateY(20px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
 }
 .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
-/* Form mengisi ruang tersisa */
-#jurnalForm {
-  display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
-}
+#jurnalForm { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 
 .modal-header { 
   display: flex; justify-content: space-between; align-items: center; 
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #ffffff; 
-  flex-shrink: 0; /* Jangan mengecil */
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #ffffff; flex-shrink: 0; 
 }
 .modal-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; }
 .modal-close { background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 8px; font-size: 1.5rem; line-height: 1; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .modal-close:hover { background: #e2e8f0; color: #0f172a; }
 
-/* BAGIAN INI YANG BISA DI-SCROLL */
-.modal-body { 
-  padding: 1.5rem; 
-  flex: 1 1 auto; 
-  min-height: 0; /* WAJIB ADA agar scrollbar muncul di flexbox */
-  overflow-y: auto; /* Scroll vertikal hanya di sini */
-  background: #ffffff; 
-}
-/* Custom scrollbar tipis */
+.modal-body { padding: 1.5rem; flex: 1 1 auto; min-height: 0; overflow-y: auto; background: #ffffff; }
 .modal-body::-webkit-scrollbar { width: 6px; }
-.modal-body::-webkit-scrollbar-track { background: transparent; }
 .modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-.modal-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 .modal-footer { 
   display: flex; justify-content: flex-end; gap: 0.75rem; 
-  padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; background: #ffffff; 
-  flex-shrink: 0; /* Jangan mengecil */
+  padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; background: #ffffff; flex-shrink: 0; 
 }
 
 .form-group { margin-bottom: 1.25rem; }
 .form-label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
-.form-input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; color: #0f172a; background: #fff; transition: all 0.2s; outline: none; font-family: inherit; box-sizing: border-box;}
+.form-input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; color: #0f172a; background: #fff; outline: none; font-family: inherit; box-sizing: border-box;}
 .form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
 .chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .chip-option { cursor: pointer; user-select: none; position: relative; }
 .chip-option input[type="checkbox"] { position: absolute; opacity: 0; }
 .chip-content { display: inline-block; padding: 0.5rem 1rem; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 0.85rem; font-weight: 600; border: 1.5px solid transparent; transition: all 0.2s ease; }
-.chip-option:hover .chip-content { background: #e2e8f0; }
-.chip-option input[type="checkbox"]:checked + .chip-content { background: #2563eb; color: #fff; border-color: #1d4ed8; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+.chip-option input[type="checkbox"]:checked + .chip-content { background: #2563eb; color: #fff; border-color: #1d4ed8; }
 
-.upload-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.5rem; text-align: center; background: #f8fafc; transition: all 0.2s; cursor: pointer; position: relative; }
-.upload-zone:hover, .upload-zone.dragover { border-color: #2563eb; background: #eff6ff; }
-.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.5rem; text-align: center; background: #f8fafc; cursor: pointer; position: relative; }
 .preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .preview-item { position: relative; width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc; }
 .preview-item img { width: 100%; height: 100%; object-fit: cover; }
 .preview-item .remove-btn { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-.btn { padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+.btn { padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 0.5rem; }
 .btn-secondary { background: #fff; color: #475569; border: 1.5px solid #cbd5e1; }
-.btn-secondary:hover { background: #f1f5f9; }
-.btn-primary { background: #2563eb; color: #fff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
-.btn-primary:hover { background: #1d4ed8; }
-.btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
-
-@keyframes slideInToast { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.btn-primary { background: #2563eb; color: #fff; }
 </style>
 
 <div class="page-head">
@@ -175,13 +179,15 @@ include __DIR__ . '/../includes/header.php';
       <tbody id="tableBody"></tbody>
     </table>
   </div>
+  
+  <!-- PAGINASI RINGKAS (Maksimal 1 Nomor Aktif di Tengah) -->
   <div class="pagination-container">
     <div id="pageInfo">Menampilkan 0-0 dari 0 Kegiatan</div>
     <div class="pagination" id="paginationNav"></div>
   </div>
 </div>
 
-<!-- ===== MODAL FORM (Modern & Scrollable) ===== -->
+<!-- ===== MODAL FORM ===== -->
 <div class="modal-overlay" id="jurnalModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -233,7 +239,6 @@ include __DIR__ . '/../includes/header.php';
             <input type="file" id="field_eviden" name="eviden[]" multiple accept="image/*">
             <div style="font-size: 2rem; color: #64748b; margin-bottom: 0.5rem;"><i class="ri-image-add-line"></i></div>
             <div style="font-size: 0.9rem; color: #334155; font-weight: 600;">Klik atau seret foto ke sini</div>
-            <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">Maks 10MB per file (JPG, PNG, WebP)</div>
           </div>
           <div class="preview-grid" id="filePreview" style="display: none;"></div>
           <div class="preview-grid" id="existingDocs" style="display: none;"></div>
@@ -298,7 +303,7 @@ function renderTable() {
     } else {
         pageData.forEach(e => {
             let docsHtml = '';
-            let limit = 2;
+            let limit = 1;
             let publicUrl = e.url.replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
             
             for(let i=0; i < Math.min(e.docs.length, limit); i++) {
@@ -341,13 +346,90 @@ function renderTable() {
     renderPagination(totalPages);
 }
 
+<<<<<<< HEAD
+// FUNGSI PAGINATION TINGKAT LANJUT (Desain Input Minimalis)
+// FUNGSI PAGINATION TINGKAT LANJUT
 function renderPagination(totalPages) {
     let pg = document.getElementById('paginationNav');
-    pg.innerHTML = `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
-    for (let i = 1; i <= totalPages; i++) {
-        pg.innerHTML += `<button class="page-item ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+    pg.innerHTML = '';
+
+    // Pastikan tombol-tombol pagination tetap berjejer ke samping
+    pg.style.display = 'flex';
+    pg.style.alignItems = 'center';
+    pg.style.justifyContent = 'center';
+    pg.style.gap = '8px';
+
+    // 1. Tombol Prev
+    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+
+    // 2. Kotak Input
+    pg.innerHTML += `
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="number" 
+                   class="page-item" 
+                   style="width: 55px; padding: 6px; text-align: center; margin: 0; outline: none; box-sizing: border-box;" 
+                   value="${currentPage}" 
+                   min="1" max="${totalPages}"
+                   onchange="jumpToPage(this.value, ${totalPages})"
+                   onkeyup="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})">
+            <span style="font-size: 13px; color: #6b7280; font-weight: 500;">dari ${totalPages}</span>
+        </div>
+    `;
+
+    // 3. Tombol Next
+    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>Next &raquo;</button>`;
+}
+
+// Fungsi tambahan agar ketikan nomor halaman divalidasi dengan aman
+function jumpToPage(val, totalPages) {
+    let page = parseInt(val);
+    
+    // Jika input bukan angka, hentikan
+    if (isNaN(page)) {
+        renderPagination(totalPages); 
+        return;
     }
-    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>`;
+    
+    // Cegah angka di luar batas halaman
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    
+    // Pindah halaman jika nilainya valid
+    if (page !== currentPage) {
+        changePage(page);
+    } else {
+        renderPagination(totalPages); // Kembalikan tampilan semula jika angkanya sama
+    }
+=======
+// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
+// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
+// tanda "…"). Tanpa ini, kalau halaman banyak, semua nomor kelist penuh dan
+// bikin harus scroll horizontal (Prev/Next jadi ketutup/kegeser ke luar layar).
+function getPaginationRange(current, total, delta = 1) {
+  const result = [];
+  let prev = 0;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      if (prev && i - prev > 1) result.push('...');
+      result.push(i);
+      prev = i;
+    }
+  }
+  return result;
+}
+
+function renderPagination(totalPages) {
+    let pg = document.getElementById('paginationNav');
+    pg.innerHTML = `<button class="page-item" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+    getPaginationRange(currentPage, totalPages).forEach(p => {
+      if (p === '...') {
+        pg.innerHTML += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
+      } else {
+        pg.innerHTML += `<button class="page-item ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
+      }
+    });
+    pg.innerHTML += `<button class="page-item" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+>>>>>>> 015251ab8671e134b935745fb143c50d21cdf1d2
 }
 
 function changePage(page) {
@@ -455,27 +537,17 @@ function renderExistingDocs(docs) {
 async function uploadFiles(files) {
     if (files.length === 0) return [];
     const formData = new FormData();
-    // Pastikan key di sini adalah 'eviden[]' agar cocok dengan PHP $_FILES['eviden']
     files.forEach(f => formData.append('eviden[]', f)); 
     
-    const res = await fetch('../api/upload-to-notion.php', { 
-        method: 'POST', 
-        body: formData 
-    });
-    
-    // Tambahan keamanan: cek apakah response benar-benar JSON
+    const res = await fetch('../api/upload-to-notion.php', { method: 'POST', body: formData });
     if (!res.headers.get("content-type")?.includes("application/json")) {
-        const text = await res.text();
-        console.error("Server mengembalikan HTML, bukan JSON:", text);
         throw new Error("Gagal upload: Server error (Cek Console F12)");
     }
-
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Upload ke Notion gagal');
     return data.files;
 }
 
-// ===== SUBMIT LOGIC (DIPERBAIKI AGAR TIDAK CRASH SAAT ERROR HTML) =====
 async function handleJurnalSubmit(event) {
     event.preventDefault();
     const form = event.target;
@@ -522,7 +594,6 @@ async function handleJurnalSubmit(event) {
             body: JSON.stringify(payload)
         });
 
-        // PERBAIKAN UTAMA: Cek apakah response benar-benar JSON
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
             const data = await res.json();
@@ -534,10 +605,9 @@ async function handleJurnalSubmit(event) {
                 showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
             }
         } else {
-            // Jika server mengembalikan HTML (misal error 404 atau 500 PHP)
             const errorText = await res.text();
-            console.error("Server mengembalikan HTML, bukan JSON:", errorText);
-            showToast('❌ Error Server: File API tidak ditemukan atau ada error PHP. Tekan F12 untuk detail.', 'error');
+            console.error("Server error:", errorText);
+            showToast('❌ Error Server: Cek Console (F12).', 'error');
         }
     } catch (err) {
         console.error('Error:', err);
@@ -567,9 +637,7 @@ async function deleteJurnal(pageId, title) {
                 showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
             }
         } else {
-            const errorText = await res.text();
-            console.error("Delete API Error:", errorText);
-            showToast('❌ Error Server: File delete-jurnal.php bermasalah. Cek Console (F12).', 'error');
+            showToast('❌ Error Server: Cek Console (F12).', 'error');
         }
     } catch (err) {
         showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
@@ -582,9 +650,9 @@ function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = 'toast-notification ' + type;
     toast.textContent = message;
-    toast.style.cssText = `position: fixed; bottom: 2rem; right: 2rem; z-index: 99999; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18); animation: slideInToast 0.4s ease; ${type === 'success' ? 'background: linear-gradient(135deg, #22c55e, #16a34a);' : 'background: linear-gradient(135deg, #ef4444, #dc2626);'}`;
+    toast.style.cssText = `position: fixed; bottom: 2rem; right: 2rem; z-index: 99999; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18); ${type === 'success' ? 'background: #22c55e;' : 'background: #ef4444;'}`;
     document.body.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 4000);
+    setTimeout(() => { toast.remove(); }, 4000);
 }
 
 document.addEventListener("DOMContentLoaded", () => { renderTable(); });

@@ -619,6 +619,23 @@ function filterTicket(status, el){
   updateTablePagination();
 }
 
+// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
+// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
+// tanda "…"). Tanpa ini, kalau halaman banyak, semua nomor kelist penuh dan
+// bikin harus scroll horizontal (Prev/Next jadi ketutup/kegeser ke luar layar).
+function getPaginationRange(current, total, delta = 1) {
+  const result = [];
+  let prev = 0;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      if (prev && i - prev > 1) result.push('...');
+      result.push(i);
+      prev = i;
+    }
+  }
+  return result;
+}
+
 function changePage(page) {
   currentPage = page;
   updateTablePagination();
@@ -663,9 +680,13 @@ function updateTablePagination() {
 
     let buttonsHTML = '';
     buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
-    for (let p = 1; p <= totalPages; p++) {
-      buttonsHTML += `<button type="button" class="btn-page ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
-    }
+    getPaginationRange(currentPage, totalPages).forEach(p => {
+      if (p === '...') {
+        buttonsHTML += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
+      } else {
+        buttonsHTML += `<button type="button" class="btn-page ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
+      }
+    });
     buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
     paginationButtons.innerHTML = buttonsHTML;
   }
