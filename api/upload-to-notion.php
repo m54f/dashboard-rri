@@ -26,6 +26,53 @@ if (!empty($_FILES['eviden'])) {
 }
 
 if (empty($filesKey)) {
+    // === FALLBACK: Cek apakah ada URL eksternal yang perlu di-fetch & upload ===
+    $externalUrl = trim($_POST['flyer_url'] ?? '');
+    if (!empty($externalUrl) && filter_var($externalUrl, FILTER_VALIDATE_URL)) {
+        try {
+            // Download file dari URL eksternal (misal thumbnail YouTube)
+            $ch = curl_init($externalUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $binary = curl_exec($ch);
+            $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: 'image/jpeg';
+            $curlErr = curl_error($ch);
+            curl_close($ch);
+
+            if (empty($binary) || !empty($curlErr)) {
+                throw new Exception("Gagal mengambil gambar dari URL: " . ($curlErr ?: 'Respon kosong'));
+            }
+
+            // Tulis ke file sementara
+            $tmpPath = tempnam(sys_get_temp_dir(), 'rss_flyer_');
+            file_put_contents($tmpPath, $binary);
+
+            // Bersihkan content-type dari parameter ekstra (misal "image/jpeg; charset=...")
+            $mimeType = explode(';', $contentType)[0];
+            $mimeType = trim($mimeType) ?: 'image/jpeg';
+
+            // Tentukan ekstensi dari MIME type
+            $extMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+            $ext = $extMap[$mimeType] ?? 'jpg';
+            $safeName = 'flyer_rss.' . $ext;
+
+            $fileUploadId = notionUploadSingleFile($tmpPath, $safeName, $mimeType);
+            @unlink($tmpPath);
+
+            echo json_encode([
+                'success' => true,
+                'files'   => [['id' => $fileUploadId, 'name' => $safeName]],
+                'error'   => ''
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'files' => [], 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     echo json_encode(['success' => false, 'error' => 'Tidak ada file diterima server.']);
     exit;
 }

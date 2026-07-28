@@ -1561,20 +1561,35 @@ function renderTabelRss(videos) {
             });
         });
 
-        var matchedPemanduName = "";
-        Object.keys(penyiarGrouped).forEach(function(prog) {
-            (penyiarGrouped[prog] || []).forEach(function(p) {
-                var norm = normalizeTextRss(p);
-                if (normalizedPenyiarTitle && norm && (normalizedPenyiarTitle.includes(norm) || norm.includes(normalizedPenyiarTitle))) {
-                    matchedPemanduName = p;
-                }
+        var matchedPemanduNames = [];
+        // Pecah string penyiar dari RSS berdasarkan separator umum (& , / dan)
+        var rawPemanduParts = extractedPenyiar
+            ? extractedPenyiar.split(/[,&\/]|\bdan\b/i).map(function(s){ return s.trim(); }).filter(Boolean)
+            : [];
+
+        rawPemanduParts.forEach(function(part) {
+            var normPart = normalizeTextRss(part);
+            var matched = '';
+            Object.keys(penyiarGrouped).forEach(function(prog) {
+                (penyiarGrouped[prog] || []).forEach(function(p) {
+                    var norm = normalizeTextRss(p);
+                    if (normPart && norm && (normPart.includes(norm) || norm.includes(normPart))) {
+                        matched = p;
+                    }
+                });
             });
+            // Jika tidak cocok di master, pakai nama asli dari RSS
+            matchedPemanduNames.push(matched || part);
         });
-        if (!matchedPemanduName && extractedPenyiar) matchedPemanduName = extractedPenyiar;
+
+        // Fallback: jika tidak ada satu pun nama terpecah, gunakan string mentah
+        if (matchedPemanduNames.length === 0 && extractedPenyiar) {
+            matchedPemanduNames = [extractedPenyiar];
+        }
 
         // Masukkan nilai ke hidden input
         document.getElementById('hidden_acara_' + index).value = matchedAcaraName;
-        document.getElementById('hidden_pemandu_' + index).value = matchedPemanduName;
+        document.getElementById('hidden_pemandu_' + index).value = matchedPemanduNames.join(', ');
 
         // Render komponen select kustom
         createRssSingleSelect('acara_container_' + index, 'hidden_acara_' + index, acaraGrouped, 'Pilih Acara');
@@ -2005,10 +2020,12 @@ async function simpanKeNotion(btn, id) {
         };
 
         var fileInput = document.getElementById('flyer_input_' + id);
+        var hiddenFlyerEl = document.getElementById('hidden_flyer_' + id);
         var uploadedFilesPayload = [];
 
         if (fileInput && fileInput.files.length > 0) {
-            btn.textContent = 'Menyimpan Data...';
+            // Jalur 1: User memilih file baru secara manual
+            btn.textContent = 'Upload Flyer...';
             var uploadFormData = new FormData();
             uploadFormData.append('dokumentasi[]', fileInput.files[0]);
 
@@ -2016,9 +2033,25 @@ async function simpanKeNotion(btn, id) {
             var uploadData = await uploadRes.json();
 
             if (!uploadData.success) {
-                throw new Error(uploadData.error || 'Gagal mengupload flyer ke S3');
+                throw new Error(uploadData.error || 'Gagal mengupload flyer ke Notion');
             }
-            uploadedFilesPayload = uploadData.files.map(function(f){ return { id: f.id, name: f.original }; });
+            uploadedFilesPayload = uploadData.files.map(function(f){ return { id: f.id, name: f.name || f.original }; });
+
+        } else if (hiddenFlyerEl && hiddenFlyerEl.value && hiddenFlyerEl.value.startsWith('http')) {
+            // Jalur 2: Flyer dari RSS (thumbnail YouTube) — kirim URL ke server untuk di-fetch & upload
+            btn.textContent = 'Upload Thumbnail...';
+            var urlFormData = new FormData();
+            urlFormData.append('flyer_url', hiddenFlyerEl.value);
+
+            var urlUploadRes = await fetch('../api/upload-to-notion.php', { method: 'POST', body: urlFormData });
+            var urlUploadData = await urlUploadRes.json();
+
+            if (!urlUploadData.success) {
+                // Jika gagal upload thumbnail RSS, lanjutkan simpan tanpa flyer (tidak fatal)
+                console.warn('Gagal upload thumbnail RSS ke Notion:', urlUploadData.error);
+            } else {
+                uploadedFilesPayload = urlUploadData.files.map(function(f){ return { id: f.id, name: f.name || f.original }; });
+            }
         }
 
         plainObject['flyer_urls'] = uploadedFilesPayload;
