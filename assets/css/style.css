@@ -904,7 +904,6 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
   font-weight: 700;
   margin-top: 2px;
   background: linear-gradient(90deg, #e2e8f0, #ffffff);
-  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1067,3 +1066,190 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
     padding: 8px;
   }
 }
+
+
+/* =========================================
+   TOPBAR PROFESSIONAL STYLING
+   ========================================= */
+   .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    padding: 0 24px;
+    background: rgba(255, 255, 255, 0.85); /* Efek glassmorphism ringan */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    transition: all 0.3s ease;
+  }
+  
+  /* --- Left Section --- */
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  /* --- Right Section --- */
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  /* --- Topbar Buttons (Toggle, Login, Logout) --- */
+  .topbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary, #64748b);
+    font-size: 1.25rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .topbar-btn i {
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+  }
+  
+  .topbar-btn .btn-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: none; /* Sembunyikan teks di layar kecil, tampilkan di desktop */
+  }
+  
+  @media (min-width: 768px) {
+    .topbar-btn .btn-text {
+      display: inline-block;
+    }
+    .topbar-btn {
+      padding: 0 16px;
+    }
+  }
+  
+  /* Hover Effects untuk Tombol */
+  .topbar-btn:hover {
+    background: var(--bg-hover, #f1f5f9);
+    color: var(--text-primary, #0f172a);
+  }
+  
+  .topbar-btn:hover i {
+    transform: scale(1.1);
+  }
+  
+  /* Khusus Tombol Logout (Warna Merah saat hover) */
+  .btn-logout:hover {
+    background: #fef2f2;
+    color: #ef4444;
+  }
+  
+  /* Khusus Tombol Login (Warna Primary saat hover) */
+  .btn-login:hover {
+    background: #eff6ff;
+    color: var(--primary, #3b82f6);
+  }
+  
+  /* --- Role Badge --- */
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px; /* Pill shape */
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+  }
+  
+  .role-badge i {
+    font-size: 1rem;
+  }
+  
+  /* Badge Admin (Elegan: Biru Indigo atau Emas) */
+  .badge-admin {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+  }
+  .badge-admin:hover {
+    background: #dbeafe;
+  }
+  
+  /* Badge Guest/Open (Netral: Abu-abu/Slate) */
+  .badge-guest {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+  .badge-guest:hover {
+    background: #f1f5f9;
+  }
+  
+  /* --- Divider Vertikal --- */
+  .topbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color, #e2e8f0);
+    margin: 0 4px;
+  }
+  
+  /* --- Search Box (Modern) --- */
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-color, #f8fafc);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    padding: 8px 16px;
+    width: 280px;
+    transition: all 0.2s ease;
+  }
+  
+  .search-box:focus-within {
+    border-color: var(--primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: #ffffff;
+  }
+  
+  .search-box i {
+    color: var(--text-secondary, #94a3b8);
+    font-size: 1.1rem;
+  }
+  
+  .search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 0.9rem;
+    color: var(--text-primary, #0f172a);
+  }
+  
+  .search-box input::placeholder {
+    color: #94a3b8;
+  }
+  
+  .search-box kbd {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    color: #64748b;
+    font-family: monospace;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
