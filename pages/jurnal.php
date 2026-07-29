@@ -267,6 +267,7 @@ include __DIR__ . '/../includes/header.php';
 
 <script>
 const allEntries = <?= json_encode($jurnalData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+const userRole = '<?= getRole() ?>'; // Get current user role
 let filteredEntries = [...allEntries];
 let currentPage = 1;
 const itemsPerPage = 10; 
@@ -320,6 +321,16 @@ function renderTable() {
                 jenis: e.tags_arr, petugas: e.ops_arr, docs: e.docs
             }));
 
+            let actionButtons = `<a href="${publicUrl}" target="_blank" class="btn-icon" title="Buka di Notion"><i class="ri-external-link-line"></i></a>`;
+            
+            // Only show edit/delete buttons for admin role
+            if (userRole === 'admin') {
+                actionButtons += `
+                    <button class="btn-icon edit" title="Edit" onclick="openEditModal(decodeURIComponent('${editPayload}'))"><i class="ri-pencil-line"></i></button>
+                    <button class="btn-icon delete" title="Hapus" onclick="deleteJurnal('${e.full_id}', '${e.title.replace(/'/g, "\\'")}')"><i class="ri-delete-bin-line"></i></button>
+                `;
+            }
+
             tbody.innerHTML += `
             <tr>
                 <td class="item-title">${e.title}</td>
@@ -329,11 +340,7 @@ function renderTable() {
                 <td>${linkHtml}</td>
                 <td>${e.date}</td>
                 <td>
-                    <div class="action-btns">
-                      <a href="${publicUrl}" target="_blank" class="btn-icon" title="Buka di Notion"><i class="ri-external-link-line"></i></a>
-                      <button class="btn-icon edit" title="Edit" onclick="openEditModal(decodeURIComponent('${editPayload}'))"><i class="ri-pencil-line"></i></button>
-                      <button class="btn-icon delete" title="Hapus" onclick="deleteJurnal('${e.full_id}', '${e.title.replace(/'/g, "\\'")}')"><i class="ri-delete-bin-line"></i></button>
-                    </div>
+                    <div class="action-btns">${actionButtons}</div>
                 </td>
             </tr>`;
         });

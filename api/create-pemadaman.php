@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json');
+
 require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/../includes/api-auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -29,6 +31,9 @@ if (empty($input['pemancar']) || empty($input['tanggal']) || empty($input['start
 if (!is_array($petugasInput)) $petugasInput = [];
  $petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
 
+// Get admin name for tracking
+ $createdBy = getApiAdminName() ?? 'Open Mode';
+
  $body = [
     'parent' => ['database_id' => $databaseId],
     'properties' => [
@@ -42,6 +47,9 @@ if (!is_array($petugasInput)) $petugasInput = [];
         'Petugas' => ['multi_select' => $petugasSelect]
     ]
 ];
+
+// Add Created By tracking (optional - uncomment after adding property to Notion)
+// $body['properties']['Created By'] = ['rich_text' => [['text' => ['content' => $createdBy]]]];
 
  $url = "https://api.notion.com/v1/pages";
  $headers = [

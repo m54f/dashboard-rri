@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/../includes/api-auth.php';
 
 // Baca JSON body dari request
 $input = json_decode(file_get_contents('php://input'), true);
@@ -87,6 +88,9 @@ $headers = [
 // Bangun multi_select array untuk Nama Petugas
 $petugasPayload = array_map(fn($nama) => ["name" => $nama], $petugas);
 
+// Get admin name for tracking
+$createdBy = getApiAdminName() ?? 'Open Mode';
+
 // Bangun properties sesuai schema database Notion
 $properties = [
     // Kendala (Title)
@@ -110,6 +114,10 @@ $properties = [
         "multi_select" => $petugasPayload
     ]
 ];
+
+// Add Created By tracking (optional - uncomment after adding property to Notion)
+// Uncomment line below after you add "Created By" property (Text/Rich Text) to Notion database
+// $properties["Created By"] = ["rich_text" => [["text" => ["content" => $createdBy]]]];
 
 // Deskripsi Aktivitas Identifikasi (Rich Text) — hanya jika diisi
 if (!empty($deskripsi)) {

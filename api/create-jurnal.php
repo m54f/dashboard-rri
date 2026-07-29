@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/../includes/api-auth.php';
 require_once __DIR__ . '/notion-file-helpers.php'; // Pastikan file ini ada!
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -22,10 +24,16 @@ $petugas = $input['petugas'] ?? [];
 $eviden_3 = $input['eviden_3_link'] ?? '';
 $fileIds = $input['dokumentasi_file_ids'] ?? [];
 
+// Get admin name for tracking
+$createdBy = getApiAdminName() ?? 'Open Mode';
+
 $properties = [
     'Nama Kegiatan' => ['title' => [['text' => ['content' => $nama]]]],
     'Date' => ['date' => ['start' => date('c', strtotime($tanggal))]]
 ];
+
+// Add Created By tracking (optional - uncomment after adding property to Notion)
+// $properties['Created By'] = ['rich_text' => [['text' => ['content' => $createdBy]]]];
 
 if (!empty($jenis)) {
     $properties['Jenis Kegiatan'] = ['multi_select' => array_map(fn($i) => ['name' => $i], $jenis)];

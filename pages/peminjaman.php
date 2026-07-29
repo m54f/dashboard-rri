@@ -103,12 +103,14 @@ include __DIR__ . '/../includes/header.php';
           <td><span class="status-tag <?= $it['cls'] ?>"><?= htmlspecialchars($it['status']) ?></span></td>
           <td class="cell-actions">
             <a href="<?= htmlspecialchars($it['url']) ?>" target="_blank" class="icon-action view" title="Buka di Notion"><i class="ri-external-link-line"></i></a>
+            <?php if (getRole() === 'admin'): ?>
             <?php if ($it['status'] === 'Dipinjam' || $it['status'] === 'Terlambat'): ?>
             <button type="button" class="icon-action return" title="Tandai Dikembalikan" onclick="markReturned('<?= htmlspecialchars($it['page_id']) ?>', '<?= htmlspecialchars(addslashes($it['kegiatan'])) ?>')"><i class="ri-checkbox-circle-line"></i></button>
             <?php endif; ?>
             <!-- TOMBOL EDIT DIARAHKAN KE HALAMAN FORM DENGAN PARAMETER ID -->
             <a href="peminjaman_form.php?id=<?= htmlspecialchars($it['page_id']) ?>" class="icon-action edit" title="Edit"><i class="ri-pencil-line"></i></a>
             <button type="button" class="icon-action delete" title="Hapus" onclick="deleteItem('<?= htmlspecialchars($it['page_id']) ?>', '<?= htmlspecialchars(addslashes($it['kegiatan'])) ?>')"><i class="ri-delete-bin-line"></i></button>
+            <?php endif; ?>
           </td>
         </tr>
         <?php endforeach; endif; ?>

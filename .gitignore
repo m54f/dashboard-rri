@@ -8,3 +8,7 @@ setup/6-seed-peminjaman-full.php
 setup/7-seed-inventaris-full.php
 setup/8-clear-inventaris.php
 setup/setup_database_petugas.php
+
+# Credential files - DO NOT COMMIT
+config/auth.php
+config/notion.php

@@ -1,5 +1,9 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/../includes/api-auth.php';
+requireAdmin();
+
 require_once __DIR__ . '/../config/notion.php';
 
 if (!defined('NOTION_TOKEN') || !defined('DATABASE_ID_PEMINJAMAN') || !defined('DATABASE_ID_INVENTARIS')) {

@@ -167,7 +167,9 @@ include __DIR__ . '/../includes/header.php';
     <label for="dateFilter" style="margin:0; font-weight:600;">Filter Tanggal:</label>
     <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
   </form>
+  <?php if (getRole() === 'admin'): ?>
   <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
+  <?php endif; ?>
 </div>
 
 <div class="stats-row">
@@ -264,8 +266,10 @@ include __DIR__ . '/../includes/header.php';
           </td>
           <td>
             <a class="icon-action" title="Buka di Notion" href="<?= htmlspecialchars($a['url']) ?>" target="_blank" rel="noopener"><i class="ri-external-link-line"></i></a>
+            <?php if (getRole() === 'admin'): ?>
             <button class="icon-action edit" title="Edit" onclick="openEditModal('<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>')"><i class="ri-pencil-line"></i></button>
             <button class="icon-action delete" title="Hapus" onclick="deleteAgendaRow('<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>', this)"><i class="ri-delete-bin-line"></i></button>
+            <?php endif; ?>
           </td>
         </tr>
         <?php endforeach; ?>
@@ -346,6 +350,7 @@ include __DIR__ . '/../includes/header.php';
 <script>
 const BASE = '<?= $base ?>';
 const CURRENT_SORT = 'desc'; // fitur pilih Urutan sudah dihapus, tabel selalu tampilkan yang paling baru dulu
+const USER_ROLE = '<?= getRole() ?>'; // Pass role to JavaScript
 
 // Data agenda yang lagi tampil di halaman ini (buat isi form Edit)
 const AGENDA_DATA = <?= json_encode(array_map(function ($a) {
@@ -714,6 +719,16 @@ function addRowToTable(entry, pageId, dokumentasi){
   tr.dataset.date = entry.tanggal;
   tr.dataset.time = entry.waktu;
   const notionUrl = pageId ? `https://www.notion.so/${pageId.replace(/-/g, '')}` : '#';
+  
+  // Conditional buttons based on role
+  let actionButtons = `<a class="icon-action" title="Buka di Notion" href="${notionUrl}" target="_blank" rel="noopener"><i class="ri-external-link-line"></i></a>`;
+  if (USER_ROLE === 'admin') {
+    actionButtons += `
+      <button class="icon-action edit" title="Edit" onclick="openEditModal('${pageId}')"><i class="ri-pencil-line"></i></button>
+      <button class="icon-action delete" title="Hapus" onclick="deleteAgendaRow('${pageId}', this)"><i class="ri-delete-bin-line"></i></button>
+    `;
+  }
+  
   tr.innerHTML = `
     <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal))}</td>
     <td style="font-weight:700;">${escapeHtml(entry.waktu)}</td>
@@ -723,11 +738,7 @@ function addRowToTable(entry, pageId, dokumentasi){
     <td>${renderStatusSelect(pageId, entry.status)}</td>
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
     <td>${renderDokumenCell(dokumentasi)}</td>
-    <td>
-      <a class="icon-action" title="Buka di Notion" href="${notionUrl}" target="_blank" rel="noopener"><i class="ri-external-link-line"></i></a>
-      <button class="icon-action edit" title="Edit" onclick="openEditModal('${pageId}')"><i class="ri-pencil-line"></i></button>
-      <button class="icon-action delete" title="Hapus" onclick="deleteAgendaRow('${pageId}', this)"><i class="ri-delete-bin-line"></i></button>
-    </td>
+    <td>${actionButtons}</td>
   `;
   insertRowSorted(tr);
 }

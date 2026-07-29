@@ -19,6 +19,9 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
+require_once __DIR__ . '/../includes/api-auth.php';
+requireAdmin();
+
 // Hanya terima POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -128,6 +131,9 @@ function jamKeFormatTitik($raw)
 // Kalau jam selesai kosong, simpan jam mulai saja (tanpa tanda "-").
 $jamMulaiFormatted   = jamKeFormatTitik($jamMulai);
 
+// Get admin name for tracking
+$createdBy = getApiAdminName() ?? 'Open Mode';
+
 // ===== Bangun Properties Sesuai Schema Database Notion =====
 $properties = [
     'Tema Acara' => [
@@ -146,6 +152,9 @@ $properties = [
         'select' => ['name' => $namaAcaraDisplay]
     ]
 ];
+
+// Add Created By tracking (optional - uncomment after adding property to Notion)
+// $properties['Created By'] = ['rich_text' => richTextPayload($createdBy)];
 
 if (!empty($link)) {
     $properties['Link Youtube'] = ['url' => $link];

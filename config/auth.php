@@ -12,7 +12,7 @@
 define('ADMIN_CREDENTIALS', [
     'admin' => [
         'username' => 'admin',
-        'password_hash' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // admin123
+        'password_hash' => '$2y$10$4oEiONVbtmnSguMLWegc0.zEXxYaoSbNLhIZ04JxH3zOdykyMDKgu', // masalfianganteng
         'name' => 'Administrator',
         'role' => 'admin'
     ]
