@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/../includes/api-auth.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {
@@ -64,6 +65,9 @@ $headers = [
 
 $petugasPayload = array_map(fn($n) => ["name" => $n], $petugas);
 
+// Get admin name for tracking
+$createdBy = getApiAdminName() ?? 'Open Mode';
+
 $properties = [
    // "Question 1" benar bertipe title
    "Question 1" => [
@@ -81,6 +85,10 @@ $properties = [
    "MCR Depan"   => ["checkbox" => $mcr],
    "Petugas DP"  => ["multi_select" => $petugasPayload],
 ];
+
+// Add Created By only if you've added this property to Notion database
+// To enable: uncomment the lines below after adding "Created By" property in Notion
+// $properties["Created By"] = ["rich_text" => [["text" => ["content" => $createdBy]]]];
 
 if (!empty($keterangan)) {
    $properties["Keterangan Checklist"] = [

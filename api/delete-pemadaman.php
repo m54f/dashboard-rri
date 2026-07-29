@@ -1,5 +1,9 @@
 <?php
 header('Content-Type: application/json');
+
+require_once __DIR__ . '/../includes/api-auth.php';
+requireAdmin();
+
 require_once __DIR__ . '/../config/notion.php'; // <-- WAJIB ADA
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

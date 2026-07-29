@@ -166,7 +166,9 @@ include __DIR__ . '/../includes/header.php';
     <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode alat..." style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db; width:200px;">
     <button type="submit" class="btn btn-secondary"><i class="ri-search-line"></i></button>
   </form>
+  <?php if (getRole() === 'admin'): ?>
   <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
+  <?php endif; ?>
 </div>
 
 <div class="stats-row">
@@ -218,8 +220,12 @@ include __DIR__ . '/../includes/header.php';
           <td><span class="status-tag <?= $i['cls'] ?>"><?= htmlspecialchars($i['status']) ?></span></td>
           <td class="cell-sub"><?= $i['notes'] ? htmlspecialchars($i['notes']) : '—' ?></td>
           <td>
+            <?php if (getRole() === 'admin'): ?>
             <button class="icon-action edit" title="Edit" onclick="openEditModal('<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>')"><i class="ri-pencil-line"></i></button>
             <button class="icon-action delete" title="Hapus" onclick="deleteInvRow('<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>', this)"><i class="ri-delete-bin-line"></i></button>
+            <?php else: ?>
+            <span style="color: #9ca3af; font-size: 0.85rem;">—</span>
+            <?php endif; ?>
           </td>
         </tr>
         <?php endforeach; ?>

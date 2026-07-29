@@ -9,6 +9,9 @@
 if (!isset($base)) $base = '.';
 if (!isset($pageTitle)) $pageTitle = 'Dashboard';
 if (!isset($activeMenu)) $activeMenu = 'dashboard';
+
+// Load auth helper for role management
+require_once __DIR__ . '/auth.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">

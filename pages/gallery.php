@@ -406,12 +406,14 @@ include __DIR__ . '/../includes/header.php';
                   <i class="ri-external-link-line"></i>
                 </a>
                 <?php endif; ?>
+                <?php if (getRole() === 'admin'): ?>
                 <button type="button" class="icon-action edit" title="Edit" onclick="event.stopPropagation(); openEditView(JSON.parse(this.closest('tr').dataset.video));">
                   <i class="ri-edit-line"></i>
                 </button>
                 <button type="button" class="icon-action delete" title="Hapus" onclick="event.stopPropagation(); deleteVideoRow('<?= htmlspecialchars($video['id'], ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars(addslashes($title)) ?>');">
                   <i class="ri-delete-bin-line"></i>
                 </button>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

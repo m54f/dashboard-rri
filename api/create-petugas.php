@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json');
+
 require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/../includes/api-auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -17,6 +19,9 @@ if (empty($input['name']) || empty($input['role']) || empty($input['posisi'])) {
     exit;
 }
 
+// Get admin name for tracking
+ $createdBy = getApiAdminName() ?? 'Open Mode';
+
  $body = [
     'parent' => ['database_id' => $databaseId],
     'properties' => [
@@ -27,6 +32,9 @@ if (empty($input['name']) || empty($input['role']) || empty($input['posisi'])) {
         'NIP/NIPPK/NRP' => ['rich_text' => [['text' => ['content' => $input['nip'] ?? '']]]]
     ]
 ];
+
+// Add Created By tracking (optional - uncomment after adding property to Notion)
+// $body['properties']['Created By'] = ['rich_text' => [['text' => ['content' => $createdBy]]]];
 
  $ch = curl_init("https://api.notion.com/v1/pages");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

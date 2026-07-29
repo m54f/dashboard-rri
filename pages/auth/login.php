@@ -1,6 +1,13 @@
 <?php
 session_start();
 
+// Load credential config
+$configFile = __DIR__ . '/../../config/auth.php';
+if (!file_exists($configFile)) {
+    die('Error: File konfigurasi auth.php tidak ditemukan. Silakan copy config/auth.php.example menjadi config/auth.php');
+}
+require_once $configFile;
+
 // Jika admin sudah login, langsung arahkan ke dashboard
 if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true) {
     header('Location: ../dashboard.php');
@@ -13,25 +20,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // ==========================================================
-    // DEMO KREDENSIAL STATIS 
-    // Sebaiknya pindahkan ini ke config/auth.php atau database
-    // dan simpan password dalam bentuk hash (password_hash)
-    // ==========================================================
-    $valid_username = 'admin';
-    $valid_password = 'admin123'; // Ganti dengan password asli Anda
-
-    if ($username === $valid_username && $password === $valid_password) {
-        // Login berhasil, set session
-        $_SESSION['is_admin'] = true;
-        $_SESSION['admin_name'] = $username;
+    // Validasi credentials dari config
+    if (isset(ADMIN_CREDENTIALS[$username])) {
+        $user = ADMIN_CREDENTIALS[$username];
         
-        // Redirect ke dashboard admin
-        header('Location: ../dashboard.php');
-        exit;
-    } else {
-        $error = 'Username atau password yang Anda masukkan tidak valid.';
+        // Verifikasi password hash
+        if (password_verify($password, $user['password_hash'])) {
+            // Login berhasil, set session
+            $_SESSION['is_admin'] = true;
+            $_SESSION['admin_name'] = $user['name'];
+            $_SESSION['role'] = $user['role'];
+            
+            // Redirect ke dashboard admin
+            header('Location: ../dashboard.php');
+            exit;
+        }
     }
+    
+    // Login gagal
+    $error = 'Username atau password yang Anda masukkan tidak valid.';
 }
 ?>
 

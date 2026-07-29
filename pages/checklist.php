@@ -125,12 +125,14 @@ include __DIR__ . '/../includes/header.php';
               <a href="<?= htmlspecialchars($c['url']) ?>" target="_blank" class="icon-action view" title="Buka di Notion">
                 <i class="ri-external-link-line"></i>
               </a>
+              <?php if (getRole() === 'admin'): ?>
               <button type="button" class="icon-action edit" title="Edit" data-payload='<?= $editPayload ?>' onclick="openEditModal(this)">
                 <i class="ri-edit-line"></i>
               </button>
               <button type="button" class="icon-action delete" title="Hapus" onclick="deleteChecklist('<?= htmlspecialchars($c['page_id']) ?>', '<?= htmlspecialchars($c['tanggal']) ?> (<?= htmlspecialchars($c['checklist_type']) ?>)')">
                 <i class="ri-delete-bin-line"></i>
               </button>
+              <?php endif; ?>
             </td>
           </tr>
           <?php endforeach; ?>

@@ -195,9 +195,11 @@ include __DIR__ . '/../includes/header.php';
       <h2>Manajemen Petugas</h2>
       <p>Daftar tim Divisi Teknologi &amp; Media Baru</p>
     </div>
+    <?php if (getRole() === 'admin'): ?>
     <button class="btn btn-primary" onclick="openCreateModal()">
       <i class="ri-add-line"></i> Tambah Petugas
     </button>
+    <?php endif; ?>
   </div>
 
   <?php if (isset($errorMessage)): ?>
@@ -270,12 +272,14 @@ include __DIR__ . '/../includes/header.php';
           <button class="icon-action report" title="Lihat Laporan Kinerja" onclick="loadLaporan('<?= htmlspecialchars($p['name']) ?>')">
             <i class="ri-file-chart-line"></i>
           </button>
+          <?php if (getRole() === 'admin'): ?>
           <button class="icon-action edit" title="Edit Data" data-payload='<?= $editPayload ?>' onclick="openEditModal(this)">
             <i class="ri-pencil-line"></i>
           </button>
           <button class="icon-action delete" title="Hapus Data" onclick="deletePetugas('<?= htmlspecialchars($p['page_id']) ?>', '<?= htmlspecialchars($p['name']) ?>')">
             <i class="ri-delete-bin-line"></i>
           </button>
+          <?php endif; ?>
         </div>
       </div>
       <?php endforeach; ?>

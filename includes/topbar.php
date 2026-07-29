@@ -10,6 +10,30 @@
     </div> -->
   </div>
   <div class="topbar-right">
+    <?php
+    // Display role badge
+    $role = getRole();
+    $userLabel = getUserLabel();
+    $badgeClass = $role === 'admin' ? 'role-badge-admin' : 'role-badge-open';
+    $badgeIcon = $role === 'admin' ? 'ri-shield-check-line' : 'ri-global-line';
+    ?>
+    <div class="<?= $badgeClass ?>">
+      <i class="<?= $badgeIcon ?>"></i>
+      <span><?= $userLabel ?></span>
+    </div>
+    
+    <?php if ($role === 'admin'): ?>
+      <!-- Logout button for Admin -->
+      <a href="<?= $base ?>/pages/auth/logout.php" class="icon-btn" title="Logout" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+        <i class="ri-logout-box-line"></i>
+      </a>
+    <?php else: ?>
+      <!-- Login button for Open mode -->
+      <a href="<?= $base ?>/pages/auth/login.php" class="icon-btn" title="Login sebagai Admin" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+        <i class="ri-login-box-line"></i>
+      </a>
+    <?php endif; ?>
+    
     <button class="icon-btn"><i class="ri-notification-3-line"></i><span class="badge">5</span></button>
     <div class="user-chip">
       <div class="user-avatar">AS</div>

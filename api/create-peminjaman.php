@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../config/notion.php';
+require_once __DIR__ . '/../includes/api-auth.php';
 
 if (!defined('NOTION_TOKEN') || !defined('DATABASE_ID_PEMINJAMAN') || !defined('DATABASE_ID_INVENTARIS')) {
     echo json_encode(['error' => 'Konfigurasi Notion belum lengkap.']);
@@ -40,6 +42,9 @@ function notionCurl($method, $url, $body = []) {
  $alatTags = array_unique(array_map(fn($a) => $a['alat'], $payload['alat'] ?? []));
  $detailAlat = implode(', ', array_map(fn($a) => "{$a['alat']} ({$a['jenis']}) ({$a['qty']})", $payload['alat'] ?? []));
 
+// Get admin name for tracking
+ $createdBy = getApiAdminName() ?? 'Open Mode';
+
  $properties = [
     'Nama Kegiatan' => ['title' => [['text' => ['content' => $kegiatan]]]],
     'Nama PIC PT' => ['select' => ['name' => $pic]],
@@ -52,6 +57,10 @@ function notionCurl($method, $url, $body = []) {
     'Keterangan' => ['rich_text' => [['text' => ['content' => $payload['keterangan'] ?? '']]]],
     'Status' => ['select' => ['name' => $status]]
 ];
+
+// Add Created By tracking (optional - uncomment after adding property to Notion)
+// $properties['Created By'] = ['rich_text' => [['text' => ['content' => $createdBy]]]];
+
  $properties = array_filter($properties, fn($v) => $v !== null);
 
  $body = ['parent' => ['database_id' => DATABASE_ID_PEMINJAMAN], 'properties' => $properties];
