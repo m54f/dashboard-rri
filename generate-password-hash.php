@@ -14,7 +14,7 @@
 // ============================================
 // EDIT PASSWORD DI SINI
 // ============================================
-$password = 'admin123';  // <- Ganti dengan password Anda
+$password = 'masalfianganteng';  // <- Ganti dengan password Anda
 // ============================================
 
 // Generate hash
