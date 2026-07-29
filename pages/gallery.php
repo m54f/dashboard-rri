@@ -41,18 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     foreach ($xml->entry as $entry) {
         $media = $entry->children($namespaces['media']);
+        $yt    = $entry->children($namespaces['yt'] ?? 'http://www.youtube.com/xml/schemas/2015');
         $title = (string)$entry->title;
-        $url = (string)$entry->link['href'];
+        $url   = (string)$entry->link['href'];
+
+        // Ambil video ID langsung dari <yt:videoId> — lebih reliable dari parsing URL
+        $videoId = isset($yt->videoId) ? (string)$yt->videoId : '';
+
+        // Fallback: ekstrak dari URL jika <yt:videoId> tidak tersedia
+        if (empty($videoId)) {
+            preg_match('/[?&]v=([^&]+)/', $url, $match);
+            $videoId = $match[1] ?? '';
+        }
+
         $description = (string)$media->group->description;
 
-        // Ekstrak video ID dari URL, lalu bangun thumbnail resolusi tinggi
+        // Bangun thumbnail resolusi tinggi dari video ID
         $thumbnailUrl = '';
-        if (preg_match('/[?&]v=([^&]+)/', $url, $match)) {
-            $videoId = $match[1];
-            // maxresdefault = 1280x720 (jika tersedia), fallback ke hqdefault di client jika 404
+        if (!empty($videoId)) {
             $thumbnailUrl = "https://i.ytimg.com/vi/{$videoId}/maxresdefault.jpg";
         } elseif (isset($media->group->thumbnail)) {
-            // Fallback ke thumbnail dari RSS jika parsing URL gagal
+            // Fallback ke thumbnail dari RSS jika video ID tidak diketahui
             $attrs = $media->group->thumbnail->attributes();
             $thumbnailUrl = (string)$attrs['url'];
         }
@@ -71,9 +80,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // 4. Filter berdasarkan tanggal yang benar-benar tayang
         if ($realDate === $targetDate) {
             $parsed['title_asli'] = $title;
-            $parsed['url'] = $url;
-            $parsed['tanggal'] = $realDate;
-            $parsed['flyer'] = $thumbnailUrl;
+            $parsed['url']        = $url;
+            $parsed['video_id']   = $videoId; // langsung dari <yt:videoId>
+            $parsed['tanggal']    = $realDate;
+            $parsed['flyer']      = $thumbnailUrl;
 
             $videos[] = $parsed;
         }
@@ -599,46 +609,71 @@ include __DIR__ . '/../includes/header.php';
 <script>
 
 // ===== Data video yang sudah tersimpan di Notion (diinjek dari PHP) =====
-// Dipakai untuk mendeteksi duplikat saat tarik RSS: cek berdasarkan URL YouTube & tanggal+namaAcara
-const notionSavedVideos = <?php
-    $savedIndex = [];
+// Pengecekan menggunakan video ID YouTube — lebih reliable dari URL penuh
+const notionSavedVideoIds = <?php
+    $savedIds = [];
     if (is_array($videos)) {
         foreach ($videos as $v) {
-            $url  = isset($v['url'])  ? trim($v['url'])  : '';
-            $nama = isset($v['namaAcara']) ? trim($v['namaAcara']) : '';
-            // Konversi tanggal "j M Y" kembali ke ISO "YYYY-MM-DD" untuk dibandingkan dengan RSS
-            $dateISO = '';
-            if (!empty($v['date']) && $v['date'] !== 'TBA') {
-                try {
-                    $d = new DateTime($v['date']);
-                    $dateISO = $d->format('Y-m-d');
-                } catch (Exception $e) {}
+            $url = isset($v['url']) ? trim($v['url']) : '';
+            if (empty($url) || $url === '#') continue;
+            // Ekstrak video ID dari URL YouTube
+            // Mendukung: ?v=xxx, /live/xxx, youtu.be/xxx
+            $videoId = '';
+            $parsed = parse_url($url);
+            if (!empty($parsed['query'])) {
+                parse_str($parsed['query'], $params);
+                $videoId = $params['v'] ?? '';
             }
-            if ($url && $url !== '#') {
-                $savedIndex[] = ['url' => $url, 'date' => $dateISO, 'namaAcara' => $nama];
-            } elseif ($dateISO && $nama) {
-                $savedIndex[] = ['url' => '', 'date' => $dateISO, 'namaAcara' => $nama];
+            // Format /live/xxx atau /shorts/xxx atau youtu.be/xxx
+            if (empty($videoId) && !empty($parsed['path'])) {
+                $path = trim($parsed['path'], '/');
+                $parts = explode('/', $path);
+                $last = end($parts);
+                if (!empty($last) && strlen($last) > 5) {
+                    $videoId = $last;
+                }
+            }
+            if (!empty($videoId)) {
+                $savedIds[] = $videoId;
             }
         }
     }
-    echo json_encode($savedIndex);
+    echo json_encode(array_values(array_unique($savedIds)));
 ?>;
+console.log('[notionSavedVideoIds] ID video tersimpan di Notion:', notionSavedVideoIds);
 
-// Cek apakah sebuah video dari RSS sudah ada di Notion.
-// Prioritas 1: URL YouTube cocok persis.
-// Prioritas 2: tanggal (ISO) + namaAcara cocok (fallback jika URL belum ada saat RSS ditarik).
-function isAlreadySaved(vidUrl, vidDateISO, vidNamaAcara) {
-    if (!vidUrl && !vidDateISO) return false;
-    return notionSavedVideos.some(function(saved) {
-        if (vidUrl && saved.url && saved.url !== '#') {
-            return saved.url === vidUrl;
-        }
-        // fallback tanggal+namaAcara
-        if (vidDateISO && vidNamaAcara && saved.date && saved.namaAcara) {
-            return saved.date === vidDateISO && saved.namaAcara.toLowerCase() === vidNamaAcara.toLowerCase();
-        }
-        return false;
-    });
+// Ekstrak video ID dari URL YouTube
+// Mendukung format:
+//   youtube.com/watch?v=xxx
+//   youtube.com/live/xxx
+//   youtu.be/xxx
+function extractYoutubeId(url) {
+    if (!url) return '';
+    try {
+        var u = new URL(url);
+        // Format: youtube.com/watch?v=xxx
+        var v = u.searchParams.get('v');
+        if (v) return v;
+        // Format: youtube.com/live/xxx atau youtu.be/xxx
+        var path = u.pathname.replace(/^\//, ''); // hapus leading slash
+        // path bisa "live/ryajG5eSi6g" atau langsung "ryajG5eSi6g"
+        var parts = path.split('/');
+        var last = parts[parts.length - 1];
+        if (last && last.length > 5) return last;
+    } catch(e) {}
+    // Fallback regex untuk format ?v= atau /live/ atau youtu.be/
+    var m = url.match(/[?&]v=([^&]+)/) ||
+            url.match(/\/live\/([^/?&]+)/) ||
+            url.match(/youtu\.be\/([^/?&]+)/);
+    return m ? m[1] : '';
+}
+
+// Cek apakah video dari RSS sudah ada di Notion berdasarkan video ID.
+function isAlreadySaved(vidUrl, vidVideoId) {
+    var id = vidVideoId || extractYoutubeId(vidUrl);
+    console.log('[isAlreadySaved] url:', vidUrl, '| video_id dari RSS:', vidVideoId, '| id dipakai:', id, '| sudah ada:', notionSavedVideoIds.indexOf(id) !== -1);
+    if (!id) return false;
+    return notionSavedVideoIds.indexOf(id) !== -1;
 }
 
 // ===== Tambahkan State untuk file uploads (Kloning dari troubleshoot.php) =====
@@ -1480,11 +1515,9 @@ function renderTabelRss(videos) {
         var hidPT = 'hidden_pt_' + index;
         var hidPA = 'hidden_pa_' + index;
 
-        // ── CEK DUPLIKAT: bandingkan dengan data Notion yang sudah ada di halaman ──
+        // ── CEK DUPLIKAT: bandingkan video ID dari RSS dengan yang sudah ada di Notion ──
         var vidUrl = vid.url || '';
-        var vidDateISO = vid.tanggal || '';
-        var vidNamaAcara = vid.title_asli ? vid.title_asli.split('-')[0].trim() : '';
-        var alreadySaved = isAlreadySaved(vidUrl, vidDateISO, vidNamaAcara);
+        var alreadySaved = isAlreadySaved(vidUrl, vid.video_id || '');
 
         // Catatan: baris tetap dirender lengkap, hanya flag alreadySaved yang berbeda
         var extractedTitle = (vid.title_asli || '').split('-')[0].trim();
@@ -2205,8 +2238,11 @@ async function simpanKeNotion(btn, id) {
             btn.disabled = true;
             btn.style.cursor = 'not-allowed';
 
-            // Daftarkan ke notionSavedVideos agar tarik RSS berikutnya di sesi ini ikut terdeteksi
-            if (link) notionSavedVideos.push({ url: link, date: tanggal, namaAcara: namaAcara });
+            // Daftarkan video ID ke notionSavedVideoIds agar tarik RSS berikutnya ikut terdeteksi
+            var savedId = extractYoutubeId(link);
+            if (savedId && notionSavedVideoIds.indexOf(savedId) === -1) {
+                notionSavedVideoIds.push(savedId);
+            }
 
             // Sembunyikan tombol Hapus
             var deleteBtn = row.querySelector('button.btn[style*="background:#ef4444"]') || row.querySelector('button.btn-danger');
