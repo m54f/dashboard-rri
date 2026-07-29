@@ -1,7 +1,7 @@
 <?php
 $base = '..';
 $pageTitle = 'Jadwal Shift';
-$activeMenu = 'shift';
+$activeMenu = 'jadwal';
 
 include __DIR__ . '/../includes/header.php';
 

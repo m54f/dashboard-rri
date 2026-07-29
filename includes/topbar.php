@@ -33,12 +33,5 @@
         <i class="ri-login-box-line"></i>
       </a>
     <?php endif; ?>
-    
-    <button class="icon-btn"><i class="ri-notification-3-line"></i><span class="badge">5</span></button>
-    <div class="user-chip">
-      <div class="user-avatar">AS</div>
-      <div class="user-meta"><h4>Alif Saiful</h4><span>Operator</span></div>
-      <i class="ri-arrow-down-s-line" style="color:var(--text-secondary);"></i>
-    </div>
   </div>
 </div>
