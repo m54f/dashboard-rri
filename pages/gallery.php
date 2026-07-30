@@ -284,33 +284,34 @@ include __DIR__ . '/../includes/header.php';
   </div>
   <div class="gallery-header-actions">
     <div class="gallery-filter-group">
-        <div class="filter-input-group filter-set">
-            <span class="filter-prefix prefix-set">Set</span>
-            <select id="filterPtSetting" class="header-filter-select" onchange="filterTable()">
+        <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
+            <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>
+            <select id="filterPenyiar" class="header-filter-select" onchange="filterTable()" onclick="event.stopPropagation()">
                 <option value="">Semua</option>
             </select>
         </div>
-        <div class="filter-input-group filter-prod">
-            <span class="filter-prefix prefix-prod">Prod</span>
-            <select id="filterPtProduksi" class="header-filter-select" onchange="filterTable()">
+        <div class="filter-input-group filter-set" onclick="triggerSelect(event, 'filterPtSetting')">
+            <label for="filterPtSetting" class="filter-prefix prefix-set">Set</label>
+            <select id="filterPtSetting" class="header-filter-select" onchange="filterTable()" onclick="event.stopPropagation()">
                 <option value="">Semua</option>
             </select>
         </div>
-        <div class="filter-input-group filter-penyiar">
-            <span class="filter-prefix prefix-penyiar">Host</span>
-            <select id="filterPenyiar" class="header-filter-select" onchange="filterTable()">
+        <div class="filter-input-group filter-prod" onclick="triggerSelect(event, 'filterPtProduksi')">
+            <label for="filterPtProduksi" class="filter-prefix prefix-prod">Prod</label>
+            <select id="filterPtProduksi" class="header-filter-select" onchange="filterTable()" onclick="event.stopPropagation()">
                 <option value="">Semua</option>
             </select>
         </div>
-        <div class="filter-input-group filter-pro">
-            <span class="filter-prefix prefix-pro">Pro</span>
-            <select id="filterPrograma" class="header-filter-select" onchange="filterTable()">
+        <div class="filter-input-group filter-pro" onclick="triggerSelect(event, 'filterPrograma')">
+            <label for="filterPrograma" class="filter-prefix prefix-pro">Pro</label>
+            <select id="filterPrograma" class="header-filter-select" onchange="filterTable()" onclick="event.stopPropagation()">
                 <option value="">Semua</option>
                 <option value="Pro 1">Pro 1</option>
                 <option value="Pro 2">Pro 2</option>
                 <option value="Pro 4">Pro 4</option>
             </select>
         </div>
+        <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter" style="height:40px; padding:0 12px; font-weight:600;"><i class="ri-refresh-line"></i> Reset Filter</button>
     </div>
     <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
   </div>
@@ -474,16 +475,21 @@ include __DIR__ . '/../includes/header.php';
   }
   
   .filter-prefix {
-    padding: 0 10px;
+    width: 48px;
+    min-width: 48px;
+    padding: 0 4px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     height: 100%;
     display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     letter-spacing: 0.5px;
     user-select: none;
     flex-shrink: 0;
+    cursor: pointer;
   }
 
   .filter-prefix.prefix-set { background: #eff6ff; color: #1d4ed8; border-right: 1px solid #dbeafe; }
@@ -1576,6 +1582,14 @@ function renderVideoRows(videos) {
         'default': '#64748b'
     };
 
+    var selPtSetting = document.getElementById('filterPtSetting') ? document.getElementById('filterPtSetting').value : '';
+    var selPtProduksi = document.getElementById('filterPtProduksi') ? document.getElementById('filterPtProduksi').value : '';
+    var selPenyiar = document.getElementById('filterPenyiar') ? document.getElementById('filterPenyiar').value : '';
+
+    var teknikStyle = 'background:#eff6ff; color:#1d4ed8; padding:2px 6px; border-radius:4px; border:1px solid #bfdbfe; font-weight:800; display:inline-block;';
+    var paStyle = 'background:#f5f3ff; color:#6d28d9; padding:2px 6px; border-radius:4px; border:1px solid #ddd6fe; font-weight:800; display:inline-block;';
+    var penyiarStyle = 'background:#ecfdf5; color:#047857; padding:2px 6px; border-radius:4px; border:1px solid #a7f3d0; font-weight:800; display:inline-block;';
+
     videos.forEach(function(video) {
         var title = (video.title && video.title !== '') ? video.title : 'Tanpa Judul';
         var namaAcara = video.namaAcara || '';
@@ -1622,9 +1636,9 @@ function renderVideoRows(videos) {
             ? `<div class="cell-sub">${escapeHtml(namaAcara)}</div>`
             : '';
 
-        var penyiarHtml = penyiar !== '' ? escapeHtml(penyiar) : '—';
-        var teknikHtml = teknik !== '' ? escapeHtml(teknik) : '—';
-        var paHtml = pa !== '' ? escapeHtml(pa) : '—';
+        var penyiarHtml = formatHighlightedText(penyiar, selPenyiar, penyiarStyle);
+        var teknikHtml = formatHighlightedText(teknik, selPtSetting, teknikStyle);
+        var paHtml = formatHighlightedText(pa, selPtProduksi, paStyle);
 
         var narasumberHtml = '—';
         if (narasumber.length > 0) {
@@ -1667,6 +1681,52 @@ function renderVideoRows(videos) {
 
         tbody.appendChild(tr);
     });
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function formatHighlightedText(text, filterValue, style) {
+    if (!text || text.trim() === '') return '—';
+    var escapedText = escapeHtml(text);
+    if (!filterValue || filterValue.trim() === '') return escapedText;
+
+    var query = filterValue.trim();
+    var regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+    if (regex.test(escapedText)) {
+        return escapedText.replace(regex, `<strong style="${style}">$1</strong>`);
+    }
+    return escapedText;
+}
+
+function triggerSelect(e, selectId) {
+    if (e.target && e.target.tagName === 'SELECT') return;
+    var select = document.getElementById(selectId);
+    if (!select) return;
+    if (typeof select.showPicker === 'function') {
+        try {
+            select.showPicker();
+        } catch (err) {
+            select.focus();
+        }
+    } else {
+        select.focus();
+    }
+}
+
+function resetFilters() {
+    var selPtSetting = document.getElementById('filterPtSetting');
+    var selPtProduksi = document.getElementById('filterPtProduksi');
+    var selPenyiar = document.getElementById('filterPenyiar');
+    var selPrograma = document.getElementById('filterPrograma');
+
+    if (selPtSetting) selPtSetting.value = '';
+    if (selPtProduksi) selPtProduksi.value = '';
+    if (selPenyiar) selPenyiar.value = '';
+    if (selPrograma) selPrograma.value = '';
+
+    filterTable();
 }
 
 async function filterTable() {
