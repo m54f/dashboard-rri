@@ -1975,10 +1975,21 @@ function renderTabelRss(videos) {
             var pemanduText = savedVid && savedVid.penyiar ? savedVid.penyiar : (vid.penyiar || '—');
 
             var narasumberText = '—';
+            var naraArray = [];
             if (savedVid && Array.isArray(savedVid.narasumber) && savedVid.narasumber.length > 0) {
-                narasumberText = savedVid.narasumber.map(function(s){ return '<div>' + escapeHtml(s) + '</div>'; }).join('');
+                naraArray = savedVid.narasumber;
             } else if (vid.narasumber) {
-                narasumberText = vid.narasumber.split('\n').filter(function(s){ return s.trim(); }).map(function(s){ return '<div>' + escapeHtml(s) + '</div>'; }).join('');
+                if (Array.isArray(vid.narasumber)) {
+                    naraArray = vid.narasumber;
+                } else if (typeof vid.narasumber === 'string') {
+                    naraArray = vid.narasumber.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+                }
+            }
+
+            if (naraArray.length > 0) {
+                narasumberText = '<ul style="margin:0; padding-left:1.2rem; list-style-type:disc;">' +
+                    naraArray.map(function(s){ return '<li style="margin-bottom:4px;">' + escapeHtml(s) + '</li>'; }).join('') +
+                    '</ul>';
             }
 
             var ptText = savedVid && savedVid.teknik ? savedVid.teknik : ((vid.pt && vid.pt.length) ? vid.pt.join(', ') : '—');
