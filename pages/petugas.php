@@ -192,7 +192,7 @@ include __DIR__ . '/../includes/header.php';
 <div id="mainView">
   <div class="page-head">
     <div>
-      <h2>Manajemen Petugas</h2>
+      <h2>Manajemen Laporan Petugas</h2>
       <p>Daftar tim Divisi Teknologi &amp; Media Baru</p>
     </div>
     <?php if (getRole() === 'admin'): ?>

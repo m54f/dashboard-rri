@@ -20,7 +20,8 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../includes/api-auth.php';
-requireAdmin();
+// Memperbolehkan semua role (bukan hanya Admin) untuk menyimpan video
+// requireAdmin();
 
 // Hanya terima POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

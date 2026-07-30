@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__.'/../config/notion.php';
 
-function getYoutubeVideos()
+function getYoutubeVideos($filters = [])
 {
     $url = "https://api.notion.com/v1/databases/" . DATABASE_ID_YOUTUBE . "/query";
 
@@ -11,12 +11,58 @@ function getYoutubeVideos()
         "Content-Type: application/json"
     ];
 
+    $payload = [];
+    $andConditions = [];
+
+    if (!empty($filters['programa'])) {
+        $prog = trim($filters['programa']);
+        $andConditions[] = [
+            'property' => 'Programa',
+            'select' => ['equals' => $prog]
+        ];
+    }
+
+    if (!empty($filters['pt_setting'])) {
+        $pt = trim($filters['pt_setting']);
+        $andConditions[] = [
+            'property' => 'Petugas PT Setting',
+            'multi_select' => ['contains' => $pt]
+        ];
+    }
+
+    if (!empty($filters['pt_produksi'])) {
+        $pa = trim($filters['pt_produksi']);
+        $andConditions[] = [
+            'property' => 'Petugas PT Produksi',
+            'multi_select' => ['contains' => $pa]
+        ];
+    }
+
+    if (!empty($filters['penyiar'])) {
+        $pen = trim($filters['penyiar']);
+        $andConditions[] = [
+            'or' => [
+                ['property' => 'Penyiar Pro 1', 'multi_select' => ['contains' => $pen]],
+                ['property' => 'Penyiar Pro 2', 'multi_select' => ['contains' => $pen]],
+                ['property' => 'Penyiar Pro 4', 'multi_select' => ['contains' => $pen]]
+            ]
+        ];
+    }
+
+    if (!empty($andConditions)) {
+        if (count($andConditions) === 1) {
+            $payload['filter'] = $andConditions[0];
+        } else {
+            $payload['filter'] = ['and' => $andConditions];
+        }
+    }
+
     $ch = curl_init($url);
 
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode((object)[]));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(!empty($payload) ? $payload : (object)[]));
 
     $response = curl_exec($ch);
 

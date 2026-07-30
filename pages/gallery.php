@@ -295,7 +295,16 @@ include __DIR__ . '/../includes/header.php';
   <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <div class="card-title"><i class="ri-play-list-2-line"></i> Daftar Video</div>
     
-    <div class="table-filters" style="display:flex; gap:10px;">
+    <div class="table-filters" style="display:flex; gap:10px; flex-wrap:wrap;">
+        <select id="filterPtSetting" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua PT Setting</option>
+        </select>
+        <select id="filterPtProduksi" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua PT Produksi</option>
+        </select>
+        <select id="filterPenyiar" onchange="filterTable()" style="padding:5px; border-radius:4px;">
+            <option value="">Semua Penyiar</option>
+        </select>
         <select id="filterPrograma" onchange="filterTable()" style="padding:5px; border-radius:4px;">
             <option value="">Semua Programa</option>
             <option value="Pro 1">Pro 1</option>
@@ -434,6 +443,7 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <style>
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .video-thumb { width:64px; height:40px; object-fit:cover; border-radius:6px; display:block; }
   .video-thumb-empty { display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; font-size:1.1rem; }
   .video-row:hover { background:rgba(0,0,0,0.03); }
@@ -610,8 +620,9 @@ include __DIR__ . '/../includes/header.php';
 
 // ===== Data video yang sudah tersimpan di Notion (diinjek dari PHP) =====
 // Pengecekan menggunakan video ID YouTube — lebih reliable dari URL penuh
-const notionSavedVideoIds = <?php
+<?php
     $savedIds = [];
+    $savedMap = [];
     if (is_array($videos)) {
         foreach ($videos as $v) {
             $url = isset($v['url']) ? trim($v['url']) : '';
@@ -635,11 +646,13 @@ const notionSavedVideoIds = <?php
             }
             if (!empty($videoId)) {
                 $savedIds[] = $videoId;
+                $savedMap[$videoId] = $v;
             }
         }
     }
-    echo json_encode(array_values(array_unique($savedIds)));
-?>;
+?>
+const notionSavedVideoIds = <?= json_encode(array_values(array_unique($savedIds))) ?>;
+const notionSavedVideosMap = <?= json_encode($savedMap) ?>;
 console.log('[notionSavedVideoIds] ID video tersimpan di Notion:', notionSavedVideoIds);
 
 // Ekstrak video ID dari URL YouTube
@@ -710,17 +723,77 @@ async function loadMasterData(){
     }
 }
 
-// Fungsi untuk mengisi dropdown filter petugas saat master data selesai dimuat
+// Fungsi untuk mengisi dropdown filter petugas & penyiar saat master data selesai dimuat
 function initFilterPetugas() {
-    var select = document.getElementById('filterPetugas');
-    if (!select) return; // Elemen filter ini cuma ada di galleryMainView -- aman diskip di halaman/view lain
-    var petugasList = masterData.petugas || []; // Mengambil dari objek masterData yang sudah ada
+    initFilters();
+}
 
-    petugasList.forEach(function(nama) {
+function initFilters() {
+    var ptSettingSelect = document.getElementById('filterPtSetting');
+    var ptProduksiSelect = document.getElementById('filterPtProduksi');
+    var penyiarSelect = document.getElementById('filterPenyiar');
+
+    if (!ptSettingSelect || !ptProduksiSelect || !penyiarSelect) return;
+
+    var ptSettingSet = new Set(masterData.petugas || []);
+    var ptProduksiSet = new Set(masterData.petugas || []);
+    
+    var penyiarSet = new Set();
+    if (masterData.pemandu) {
+        Object.values(masterData.pemandu).forEach(function(list) {
+            if (Array.isArray(list)) {
+                list.forEach(function(name) { if (name) penyiarSet.add(name.trim()); });
+            }
+        });
+    }
+
+    // Scan table rows for any additional names in current video data
+    var rows = document.querySelectorAll('.video-row');
+    rows.forEach(function(row) {
+        try {
+            var v = JSON.parse(row.dataset.video);
+            if (v.teknik) {
+                v.teknik.split(/[,&]|\bdan\b/i).forEach(function(n) {
+                    n = n.trim();
+                    if (n) ptSettingSet.add(n);
+                });
+            }
+            if (v.pa) {
+                v.pa.split(/[,&]|\bdan\b/i).forEach(function(n) {
+                    n = n.trim();
+                    if (n) ptProduksiSet.add(n);
+                });
+            }
+            if (v.penyiar) {
+                v.penyiar.split(/[,&]|\bdan\b/i).forEach(function(n) {
+                    n = n.trim();
+                    if (n) penyiarSet.add(n);
+                });
+            }
+        } catch (e) {}
+    });
+
+    populateSelectOptions(ptSettingSelect, Array.from(ptSettingSet).sort(), 'Semua PT Setting');
+    populateSelectOptions(ptProduksiSelect, Array.from(ptProduksiSet).sort(), 'Semua PT Produksi');
+    populateSelectOptions(penyiarSelect, Array.from(penyiarSet).sort(), 'Semua Penyiar');
+}
+
+function populateSelectOptions(selectEl, itemsArray, defaultLabel) {
+    var currentValue = selectEl.value;
+    selectEl.innerHTML = '';
+    
+    var defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = defaultLabel;
+    selectEl.appendChild(defaultOpt);
+
+    itemsArray.forEach(function(name) {
+        if (!name) return;
         var opt = document.createElement('option');
-        opt.value = nama;
-        opt.textContent = nama;
-        select.appendChild(opt);
+        opt.value = name;
+        opt.textContent = name;
+        if (name === currentValue) opt.selected = true;
+        selectEl.appendChild(opt);
     });
 }
 
@@ -926,6 +999,7 @@ function handleLiveChange(){
 
 document.addEventListener('DOMContentLoaded', () => {
   loadMasterData();
+  initFilters();
 
   const dropzone = document.getElementById('dropzone');
   if (dropzone) {
@@ -1381,22 +1455,201 @@ function deleteVideoRow(pageId, title) {
     });
 }
 
-function filterTable() {
-    var programFilter = document.getElementById('filterPrograma').value.toLowerCase();
-    var rows = document.querySelectorAll('.video-row');
+const currentUserRole = <?= json_encode(getRole()) ?>;
+let currentFilterController = null;
 
-    rows.forEach(function(row) {
-        var videoData = JSON.parse(row.dataset.video);
-        
-        // Cek Programa
-        var matchPrograma = programFilter === "" || videoData.programa.toLowerCase().includes(programFilter);
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
-        if (matchPrograma) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+function escapeJs(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function renderVideoRows(videos) {
+    const tbody = document.querySelector('#videoTable tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (!videos || videos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+                    Data video gallery tidak ditemukan di Notion untuk filter ini.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const colorMap = {
+        'gray': '#64748b', 'brown': '#92400e', 'orange': '#f59e0b',
+        'yellow': '#fbbf24', 'green': '#10b981', 'blue': '#2563eb',
+        'purple': '#8b5cf6', 'pink': '#ec4899', 'red': '#ef4444',
+        'default': '#64748b'
+    };
+
+    videos.forEach(function(video) {
+        var title = (video.title && video.title !== '') ? video.title : 'Tanpa Judul';
+        var namaAcara = video.namaAcara || '';
+        var tema = video.tema || '';
+        var programa = video.programa || 'Umum';
+        var programaColor = video.programaColor || 'gray';
+        var date = video.date || 'TBA';
+        var time = video.time || 'TBA';
+        var url = video.url || '';
+        var flyer = video.flyer || '';
+        var penyiar = video.penyiar || '';
+        var narasumber = Array.isArray(video.narasumber) ? video.narasumber : [];
+        var teknik = video.teknik || '';
+        var pa = video.pa || '';
+
+        var bgColor = colorMap[programaColor] || colorMap['default'];
+
+        var videoDataObj = {
+            id: video.id,
+            namaAcara: namaAcara,
+            title: title,
+            tema: tema,
+            programa: programa,
+            programaColor: programaColor,
+            flyer: flyer,
+            date: date,
+            time: time,
+            url: url,
+            penyiar: penyiar,
+            narasumber: narasumber,
+            teknik: teknik,
+            pa: pa
+        };
+
+        var tr = document.createElement('tr');
+        tr.className = 'video-row';
+        tr.dataset.video = JSON.stringify(videoDataObj);
+
+        var flyerHtml = flyer !== ''
+            ? `<img src="${escapeHtml(flyer)}" alt="${escapeHtml(title)}" class="video-thumb">`
+            : `<div class="video-thumb video-thumb-empty"><i class="ri-image-line"></i></div>`;
+
+        var subTitleHtml = namaAcara !== ''
+            ? `<div class="cell-sub">${escapeHtml(namaAcara)}</div>`
+            : '';
+
+        var penyiarHtml = penyiar !== '' ? escapeHtml(penyiar) : '—';
+        var teknikHtml = teknik !== '' ? escapeHtml(teknik) : '—';
+        var paHtml = pa !== '' ? escapeHtml(pa) : '—';
+
+        var narasumberHtml = '—';
+        if (narasumber.length > 0) {
+            narasumberHtml = '<ul style="margin: 0; padding-left: 1.2rem; list-style-type: disc;">' +
+                narasumber.map(function(item){ return `<li style="margin-bottom: 6px;">${escapeHtml(item)}</li>`; }).join('') +
+                '</ul>';
         }
+
+        var actionsHtml = '';
+        if (url !== '' && url !== '#') {
+            actionsHtml += `<a href="${escapeHtml(url)}" target="_blank" class="icon-action view" title="Buka di Youtube" onclick="event.stopPropagation();">
+                <i class="ri-external-link-line"></i>
+            </a> `;
+        }
+        if (currentUserRole === 'admin') {
+            actionsHtml += `<button type="button" class="icon-action edit" title="Edit" onclick="event.stopPropagation(); openEditView(JSON.parse(this.closest('tr').dataset.video));">
+                <i class="ri-edit-line"></i>
+            </button> `;
+            actionsHtml += `<button type="button" class="icon-action delete" title="Hapus" onclick="event.stopPropagation(); deleteVideoRow('${escapeHtml(video.id)}', '${escapeJs(title)}');">
+                <i class="ri-delete-bin-line"></i>
+            </button>`;
+        }
+
+        tr.innerHTML = `
+            <td>${flyerHtml}</td>
+            <td class="cell-title">${escapeHtml(title)}${subTitleHtml}</td>
+            <td>
+                <span class="tag" style="background:${bgColor}1a; color:${bgColor}; border:1px solid ${bgColor}4d;">
+                    ${escapeHtml(programa)}
+                </span>
+            </td>
+            <td class="cell-sub">${escapeHtml(date)}</td>
+            <td class="cell-sub">${escapeHtml(time)}</td>
+            <td class="cell-sub">${penyiarHtml}</td>
+            <td class="cell-sub">${narasumberHtml}</td>
+            <td class="cell-sub">${teknikHtml}</td>
+            <td class="cell-sub">${paHtml}</td>
+            <td class="cell-actions">${actionsHtml}</td>
+        `;
+
+        tbody.appendChild(tr);
     });
+}
+
+async function filterTable() {
+    var ptSettingFilter = document.getElementById('filterPtSetting') ? document.getElementById('filterPtSetting').value : "";
+    var ptProduksiFilter = document.getElementById('filterPtProduksi') ? document.getElementById('filterPtProduksi').value : "";
+    var penyiarFilter = document.getElementById('filterPenyiar') ? document.getElementById('filterPenyiar').value : "";
+    var programFilter = document.getElementById('filterPrograma') ? document.getElementById('filterPrograma').value : "";
+
+    var tbody = document.querySelector('#videoTable tbody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="ri-loader-4-line spin" style="display:inline-block; animation: spin 1s linear infinite;"></i> Memuat data dari Notion...
+                </td>
+            </tr>
+        `;
+    }
+
+    if (currentFilterController) {
+        currentFilterController.abort();
+    }
+    currentFilterController = new AbortController();
+
+    try {
+        var params = new URLSearchParams({
+            pt_setting: ptSettingFilter,
+            pt_produksi: ptProduksiFilter,
+            penyiar: penyiarFilter,
+            programa: programFilter
+        });
+
+        var res = await fetch('../api/filter-videos.php?' + params.toString(), {
+            signal: currentFilterController.signal
+        });
+        var data = await res.json();
+
+        if (data.success) {
+            renderVideoRows(data.data);
+        } else {
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align:center; padding: 2rem; color: #ef4444;">
+                            ⚠️ Gagal memuat data dari Notion: ${escapeHtml(data.error || 'Terjadi kesalahan')}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') return;
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" style="text-align:center; padding: 2rem; color: #ef4444;">
+                        ⚠️ Terjadi kesalahan jaringan saat memfilter data Notion.
+                    </td>
+                </tr>
+            `;
+        }
+    }
 }
 
 // ==========================================
@@ -1565,22 +1818,35 @@ function renderTabelRss(videos) {
             tr.style.background = '#f8fafc';
             tr.style.opacity = '0.82';
 
-            // Narasumber sebagai teks baris
-            var narasumberText = vid.narasumber
-                ? vid.narasumber.split('\n').filter(function(s){ return s.trim(); }).map(function(s){ return '<div>' + s + '</div>'; }).join('')
-                : '—';
+            var vId = vid.video_id || extractYoutubeId(vidUrl);
+            var savedVid = (typeof notionSavedVideosMap !== 'undefined' && notionSavedVideosMap[vId]) ? notionSavedVideosMap[vId] : null;
 
-            // Pemandu: gunakan string mentah dari vid.penyiar
-            var pemanduText = vid.penyiar || '—';
+            // Prioritaskan data yang sudah benar-benar tersimpan di Notion
+            var namaAcaraText = savedVid && savedVid.namaAcara ? savedVid.namaAcara : (vid.title_asli ? vid.title_asli.split('-')[0].trim() : '—');
+            var temaText = savedVid ? (savedVid.tema || savedVid.title || '—') : (vid.tema || '—');
+            
+            var rawProg = savedVid && savedVid.programa ? savedVid.programa : (vid.programa || '—');
+            var progLabel = rawProg.includes('Pro 1') ? 'Pro 1'
+                          : rawProg.includes('Pro 2') ? 'Pro 2'
+                          : rawProg.includes('Pro 4') ? 'Pro 4' : rawProg;
 
-            // PT Setting & PT Produksi
-            var ptText  = (vid.pt  && vid.pt.length)  ? vid.pt.join(', ')  : '—';
-            var paText  = (vid.pa  && vid.pa.length)  ? vid.pa.join(', ')  : '—';
+            var tglText = savedVid && savedVid.date ? savedVid.date : (vid.tanggal || '—');
+            var jamText = savedVid && savedVid.time ? savedVid.time : (vid.jamMulai || '—');
 
-            // Programa singkat
-            var progLabel = (vid.programa || '').includes('Pro 1') ? 'Pro 1'
-                          : (vid.programa || '').includes('Pro 2') ? 'Pro 2'
-                          : (vid.programa || '').includes('Pro 4') ? 'Pro 4' : (vid.programa || '—');
+            var pemanduText = savedVid && savedVid.penyiar ? savedVid.penyiar : (vid.penyiar || '—');
+
+            var narasumberText = '—';
+            if (savedVid && Array.isArray(savedVid.narasumber) && savedVid.narasumber.length > 0) {
+                narasumberText = savedVid.narasumber.map(function(s){ return '<div>' + escapeHtml(s) + '</div>'; }).join('');
+            } else if (vid.narasumber) {
+                narasumberText = vid.narasumber.split('\n').filter(function(s){ return s.trim(); }).map(function(s){ return '<div>' + escapeHtml(s) + '</div>'; }).join('');
+            }
+
+            var ptText = savedVid && savedVid.teknik ? savedVid.teknik : ((vid.pt && vid.pt.length) ? vid.pt.join(', ') : '—');
+            var paText = savedVid && savedVid.pa ? savedVid.pa : ((vid.pa && vid.pa.length) ? vid.pa.join(', ') : '—');
+
+            var flyerUrl = savedVid && savedVid.flyer ? savedVid.flyer : (vid.flyer || '');
+            var linkUrl = savedVid && savedVid.url ? savedVid.url : (vid.url || '');
 
             tr.innerHTML = `
                 <td style="${cellStyle} text-align:center; padding-top:12px;">
@@ -1589,39 +1855,39 @@ function renderTabelRss(videos) {
                 </td>
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Nama Acara</span>
-                    <span style="${valueStyle}">${vid.title_asli ? vid.title_asli.split('-')[0].trim() : '—'}</span>
+                    <span style="${valueStyle}">${escapeHtml(namaAcaraText)}</span>
                     <span style="${labelStyle} margin-top:8px;">Tema</span>
-                    <span style="${valueStyle}">${vid.tema || '—'}</span>
+                    <span style="${valueStyle}">${escapeHtml(temaText)}</span>
                 </td>
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Programa</span>
-                    <span style="${valueStyle}">${progLabel}</span>
+                    <span style="${valueStyle}">${escapeHtml(progLabel)}</span>
                     <span style="${labelStyle} margin-top:8px;">Tanggal</span>
-                    <span style="${valueStyle}">${vid.tanggal || '—'}</span>
+                    <span style="${valueStyle}">${escapeHtml(tglText)}</span>
                     <span style="${labelStyle} margin-top:8px;">Jam Mulai</span>
-                    <span style="${valueStyle}">${vid.jamMulai || '—'}</span>
+                    <span style="${valueStyle}">${escapeHtml(jamText)}</span>
                 </td>
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Pemandu / Host / Penyiar</span>
-                    <span style="${valueStyle}">${pemanduText}</span>
+                    <span style="${valueStyle}">${escapeHtml(pemanduText)}</span>
                     <span style="${labelStyle} margin-top:8px;">Narasumber</span>
                     <div style="${valueStyle}">${narasumberText}</div>
                 </td>
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Petugas PT Setting</span>
-                    <span style="${valueStyle}">${ptText}</span>
+                    <span style="${valueStyle}">${escapeHtml(ptText)}</span>
                     <span style="${labelStyle} margin-top:8px;">Petugas PT Produksi</span>
-                    <span style="${valueStyle}">${paText}</span>
+                    <span style="${valueStyle}">${escapeHtml(paText)}</span>
                 </td>
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Link YouTube</span>
-                    ${vid.url && vid.url !== ''
-                        ? `<a href="${vid.url}" target="_blank" rel="noopener" style="font-size:12px; color:#2563eb; word-break:break-all;">${vid.url}</a>`
+                    ${linkUrl && linkUrl !== ''
+                        ? `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener" style="font-size:12px; color:#2563eb; word-break:break-all;">${escapeHtml(linkUrl)}</a>`
                         : '<span style="' + valueStyle + '">—</span>'
                     }
                     <span style="${labelStyle} margin-top:8px;">Flyer</span>
-                    ${vid.flyer
-                        ? `<img src="${vid.flyer}" style="width:100%; max-width:120px; height:70px; object-fit:cover; border-radius:4px; cursor:zoom-in; display:block;" onclick="openImagePopup('${vid.flyer}')" alt="Flyer">`
+                    ${flyerUrl
+                        ? `<img src="${escapeHtml(flyerUrl)}" style="width:100%; max-width:120px; height:70px; object-fit:cover; border-radius:4px; cursor:zoom-in; display:block;" onclick="openImagePopup('${escapeHtml(flyerUrl)}')" alt="Flyer">`
                         : '<span style="' + valueStyle + '">—</span>'
                     }
                 </td>
@@ -1630,7 +1896,7 @@ function renderTabelRss(videos) {
                 </td>
             `;
             tbody.appendChild(tr);
-            return; // baris tersimpan selesai — skip pembuatan form & widget JS
+            return;
         }
 
         tr.innerHTML = `
@@ -2240,8 +2506,27 @@ async function simpanKeNotion(btn, id) {
 
             // Daftarkan video ID ke notionSavedVideoIds agar tarik RSS berikutnya ikut terdeteksi
             var savedId = extractYoutubeId(link);
-            if (savedId && notionSavedVideoIds.indexOf(savedId) === -1) {
-                notionSavedVideoIds.push(savedId);
+            if (savedId) {
+                if (notionSavedVideoIds.indexOf(savedId) === -1) {
+                    notionSavedVideoIds.push(savedId);
+                }
+                if (typeof notionSavedVideosMap !== 'undefined') {
+                    notionSavedVideosMap[savedId] = {
+                        id: (data && data.page_id) ? data.page_id : id,
+                        namaAcara: namaAcara,
+                        title: tema || namaAcara,
+                        tema: tema,
+                        programa: liveValue,
+                        date: tanggal,
+                        time: jamMulai,
+                        url: link,
+                        flyer: (uploadedFilesPayload && uploadedFilesPayload.length > 0) ? (uploadedFilesPayload[0].name || '') : (hiddenFlyerEl ? hiddenFlyerEl.value : ''),
+                        penyiar: pemandu,
+                        narasumber: narasumberText ? narasumberText.split('\n') : [],
+                        teknik: teknik,
+                        pa: pa
+                    };
+                }
             }
 
             // Sembunyikan tombol Hapus
