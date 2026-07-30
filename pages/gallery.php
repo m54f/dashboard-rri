@@ -282,7 +282,38 @@ include __DIR__ . '/../includes/header.php';
     <h2>Rekap Youtube</h2>
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
-  <button class="btn btn-primary" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
+  <div class="gallery-header-actions">
+    <div class="gallery-filter-group">
+        <div class="filter-input-group filter-set">
+            <span class="filter-prefix prefix-set">Set</span>
+            <select id="filterPtSetting" class="header-filter-select" onchange="filterTable()">
+                <option value="">Semua</option>
+            </select>
+        </div>
+        <div class="filter-input-group filter-prod">
+            <span class="filter-prefix prefix-prod">Prod</span>
+            <select id="filterPtProduksi" class="header-filter-select" onchange="filterTable()">
+                <option value="">Semua</option>
+            </select>
+        </div>
+        <div class="filter-input-group filter-penyiar">
+            <span class="filter-prefix prefix-penyiar">Host</span>
+            <select id="filterPenyiar" class="header-filter-select" onchange="filterTable()">
+                <option value="">Semua</option>
+            </select>
+        </div>
+        <div class="filter-input-group filter-pro">
+            <span class="filter-prefix prefix-pro">Pro</span>
+            <select id="filterPrograma" class="header-filter-select" onchange="filterTable()">
+                <option value="">Semua</option>
+                <option value="Pro 1">Pro 1</option>
+                <option value="Pro 2">Pro 2</option>
+                <option value="Pro 4">Pro 4</option>
+            </select>
+        </div>
+    </div>
+    <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
+  </div>
 </div>
 
 <?php if (isset($errorMessage)): ?>
@@ -292,26 +323,8 @@ include __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <div class="card">
-  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <div class="card-header">
     <div class="card-title"><i class="ri-play-list-2-line"></i> Daftar Video</div>
-    
-    <div class="table-filters" style="display:flex; gap:10px; flex-wrap:wrap;">
-        <select id="filterPtSetting" onchange="filterTable()" style="padding:5px; border-radius:4px;">
-            <option value="">Semua PT Setting</option>
-        </select>
-        <select id="filterPtProduksi" onchange="filterTable()" style="padding:5px; border-radius:4px;">
-            <option value="">Semua PT Produksi</option>
-        </select>
-        <select id="filterPenyiar" onchange="filterTable()" style="padding:5px; border-radius:4px;">
-            <option value="">Semua Penyiar</option>
-        </select>
-        <select id="filterPrograma" onchange="filterTable()" style="padding:5px; border-radius:4px;">
-            <option value="">Semua Programa</option>
-            <option value="Pro 1">Pro 1</option>
-            <option value="Pro 2">Pro 2</option>
-            <option value="Pro 4">Pro 4</option>
-        </select>
-    </div>
   </div>
   <div class="table-wrap">
     <table class="data-table" id="videoTable">
@@ -444,6 +457,72 @@ include __DIR__ . '/../includes/header.php';
 
 <style>
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .gallery-header-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .gallery-filter-group { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+  .filter-input-group {
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 9px;
+    height: 40px;
+    width: 155px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    overflow: hidden;
+  }
+  
+  .filter-prefix {
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.5px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .filter-prefix.prefix-set { background: #eff6ff; color: #1d4ed8; border-right: 1px solid #dbeafe; }
+  .filter-prefix.prefix-prod { background: #f5f3ff; color: #6d28d9; border-right: 1px solid #ddd6fe; }
+  .filter-prefix.prefix-penyiar { background: #ecfdf5; color: #047857; border-right: 1px solid #a7f3d0; }
+  .filter-prefix.prefix-pro { background: #fff7ed; color: #c2410c; border-right: 1px solid #fed7aa; }
+
+  .filter-input-group.filter-set:hover { border-color: #93c5fd; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.1); }
+  .filter-input-group.filter-prod:hover { border-color: #c4b5fd; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1); }
+  .filter-input-group.filter-penyiar:hover { border-color: #6ee7b7; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1); }
+  .filter-input-group.filter-pro:hover { border-color: #fde68a; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.1); }
+
+  .filter-input-group.filter-set:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+  .filter-input-group.filter-prod:focus-within { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
+  .filter-input-group.filter-penyiar:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+  .filter-input-group.filter-pro:focus-within { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
+
+  .header-filter-select {
+    height: 40px;
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+    padding: 0 24px 0 8px;
+    border: none;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 6px center;
+    background-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary, #0f172a);
+    cursor: pointer;
+    outline: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
   .video-thumb { width:64px; height:40px; object-fit:cover; border-radius:6px; display:block; }
   .video-thumb-empty { display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; font-size:1.1rem; }
   .video-row:hover { background:rgba(0,0,0,0.03); }
@@ -773,9 +852,9 @@ function initFilters() {
         } catch (e) {}
     });
 
-    populateSelectOptions(ptSettingSelect, Array.from(ptSettingSet).sort(), 'Semua PT Setting');
-    populateSelectOptions(ptProduksiSelect, Array.from(ptProduksiSet).sort(), 'Semua PT Produksi');
-    populateSelectOptions(penyiarSelect, Array.from(penyiarSet).sort(), 'Semua Penyiar');
+    populateSelectOptions(ptSettingSelect, Array.from(ptSettingSet).sort(), 'Semua');
+    populateSelectOptions(ptProduksiSelect, Array.from(ptProduksiSet).sort(), 'Semua');
+    populateSelectOptions(penyiarSelect, Array.from(penyiarSet).sort(), 'Semua');
 }
 
 function populateSelectOptions(selectEl, itemsArray, defaultLabel) {
