@@ -186,13 +186,30 @@ include __DIR__ . '/../includes/header.php';
   .form-group input, .form-group select { width: 100%; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.9rem; transition: all 0.2s; outline: none; box-sizing: border-box; background: #fff; }
   .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* Input Search Style */
+  .search-input {
+    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    outline: none;
+    width: 200px;
+    transition: all 0.2s;
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="%2364748b"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 16.032 2 11C2 5.968 6.032 2 11 2C15.968 2 20 5.968 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>') no-repeat 10px center;
+  }
+  .search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    width: 250px;
+  }
 </style>
 
 <!-- ===== MAIN VIEW ===== -->
 <div id="mainView">
   <div class="page-head">
     <div>
-      <h2>Manajemen Laporan Petugas</h2>
+      <h2>Manajemen Petugas</h2>
       <p>Daftar tim Divisi Teknologi &amp; Media Baru</p>
     </div>
     
@@ -338,6 +355,9 @@ include __DIR__ . '/../includes/header.php';
             <option value="<?= htmlspecialchars($p['name']) ?>"><?= htmlspecialchars($p['name']) ?></option>
           <?php endforeach; ?>
         </select>
+
+        <!-- Search Bar Teks -->
+        <input type="text" id="reportSearch" class="search-input" placeholder="Cari aktivitas..." oninput="handleReportSearch(this.value)">
         
         <div style="width: 1px; height: 24px; background: var(--border);"></div>
 
@@ -351,7 +371,7 @@ include __DIR__ . '/../includes/header.php';
       </div>
       
       <div style="display:flex; gap:0.75rem; align-items:center; border-left: 1px solid var(--border); padding-left: 1rem;">
-        <select id="filterTahun" onchange="renderReportTable()" style="padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; background: #fff; cursor: pointer; outline: none;">
+        <select id="filterTahun" onchange="filterTahunChanged(this)" style="padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; background: #fff; cursor: pointer; outline: none;">
           <option value="Semua">Semua Tahun</option>
         </select>
         <div class="filter-group" id="timeFilterWrap">
@@ -364,7 +384,8 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </div>
 
-    <div style="overflow-x: auto; border-radius: 12px; border: 1px solid var(--border);">
+    <!-- Tabel Data -->
+    <div style="overflow-x: auto; border-radius: 12px 12px 0 0; border: 1px solid var(--border); border-bottom: none;">
       <table class="data-table">
         <thead>
           <tr>
@@ -385,6 +406,13 @@ include __DIR__ . '/../includes/header.php';
         </tbody>
       </table>
     </div>
+    
+    <!-- Paging Container -->
+    <div class="pagination-wrap" id="reportPaginationWrap" style="display: none; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--border); background: #fff; border-radius: 0 0 12px 12px;">
+      <div class="pagination-info" id="reportPaginationInfo" style="font-size: 0.85rem; color: #64748b;">Menampilkan data</div>
+      <div class="pagination-buttons" id="reportPaginationButtons" style="display: flex; gap: 8px; align-items: center;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -435,10 +463,16 @@ include __DIR__ . '/../includes/header.php';
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
+// ===== State Variables =====
 let currentReportData = null;
 let currentFilter = 'Semua';
 let currentTahun = 'Semua';
 let currentTriwulan = 'Semua';
+let currentSearchQuery = '';
+
+// Paging Variables
+let reportCurrentPage = 1;
+const reportRowsPerPage = 10;
 
 function parseTanggalToParts(str) {
   if (!str || str === '-') return null;
@@ -457,19 +491,23 @@ function parseTanggalToParts(str) {
   return null;
 }
 
-// Fungsi membuka laporan global langsung menampilkan semua data
+// Fungsi membuka laporan global
 function openGlobalReport() {
-  document.getElementById('filterPegawai').value = ''; // Reset dropdown ke "Semua Pegawai"
-  loadLaporan(''); // Langsung tarik data (nama kosong = semua)
+  document.getElementById('filterPegawai').value = '';
+  document.getElementById('reportSearch').value = ''; 
+  loadLaporan(''); 
 }
 
 function loadLaporan(nama) {
   document.getElementById('mainView').style.display = 'none';
   document.getElementById('reportView').style.display = 'block';
   document.getElementById('reportNama').textContent = nama ? nama : 'Semua Pegawai';
-  document.getElementById('filterPegawai').value = nama; // Sinkronkan nilai dropdown
+  document.getElementById('filterPegawai').value = nama; 
   
   const tbody = document.getElementById('reportTableBody');
+  const paginationWrap = document.getElementById('reportPaginationWrap');
+  if(paginationWrap) paginationWrap.style.display = 'none';
+
   tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);"><i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br><span style="margin-top:0.5rem; display:block; font-weight:500;">Mengumpulkan data dari seluruh logbook...</span></td></tr>`;
   
   fetch(`../api/laporan-individu.php?nama=${encodeURIComponent(nama)}`)
@@ -478,7 +516,13 @@ function loadLaporan(nama) {
       if (data.error) { showToast('❌ ' + data.error, 'error'); closeReportView(); return; }
       
       currentReportData = data;
-      currentFilter = 'Semua'; currentTriwulan = 'Semua'; currentTahun = 'Semua';
+      
+      // Reset State
+      currentFilter = 'Semua'; 
+      currentTriwulan = 'Semua'; 
+      currentTahun = 'Semua';
+      currentSearchQuery = document.getElementById('reportSearch').value; 
+      reportCurrentPage = 1;
       
       document.getElementById('reportFilterBar').style.display = 'flex';
       document.getElementById('btnExport').style.display = 'inline-flex';
@@ -520,11 +564,15 @@ function closeReportView() {
   document.getElementById('mainView').style.display = 'block';
   document.getElementById('btnExport').style.display = 'none';
   document.getElementById('reportFilterBar').style.display = 'none';
+  document.getElementById('reportPaginationWrap').style.display = 'none';
+  document.getElementById('reportSearch').value = ''; 
   currentReportData = null;
 }
 
+// ===== EVENT HANDLERS =====
 function filterReport(kategori, el) {
   currentFilter = kategori;
+  reportCurrentPage = 1;
   document.querySelectorAll('#reportFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   renderReportTable();
@@ -532,58 +580,115 @@ function filterReport(kategori, el) {
 
 function filterTriwulan(tw, el) {
   currentTriwulan = tw;
+  reportCurrentPage = 1;
   document.querySelectorAll('#timeFilterWrap .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   renderReportTable();
 }
 
+function filterTahunChanged(el) {
+  currentTahun = el.value;
+  reportCurrentPage = 1;
+  renderReportTable();
+}
+
+function handleReportSearch(val) {
+  currentSearchQuery = val;
+  reportCurrentPage = 1;
+  renderReportTable();
+}
+
+function changeReportPage(page) {
+  reportCurrentPage = page;
+  renderReportTable();
+}
+
+function jumpToReportPage(val, maxPage) {
+  let p = parseInt(val, 10);
+  if (!isNaN(p) && p >= 1 && p <= maxPage) {
+    changeReportPage(p);
+  } else if (p > maxPage) {
+    changeReportPage(maxPage);
+  } else {
+    changeReportPage(1); 
+  }
+}
+
 function getFilteredData() {
   if (!currentReportData) return [];
   return currentReportData.riwayat.filter(r => {
+    // 1. Kategori Filter
     let matchKat = (currentFilter === 'Semua' || r.kategori === currentFilter);
     if (!matchKat) return false;
-    if (currentTahun === 'Semua' && currentTriwulan === 'Semua') return true;
     
-    let parts = parseTanggalToParts(r.tanggal);
-    if (!parts) return false;
-    
-    let matchYear = (currentTahun === 'Semua' || parts.year == currentTahun);
-    let matchTriwulan = true;
-    if (currentTriwulan !== 'Semua') {
-      let tw = Math.ceil(parts.month / 3);
-      matchTriwulan = (tw == currentTriwulan);
+    // 2. Tahun & Triwulan Filter
+    let matchTime = false;
+    if (currentTahun === 'Semua' && currentTriwulan === 'Semua') {
+      matchTime = true;
+    } else {
+      let parts = parseTanggalToParts(r.tanggal);
+      if (parts) {
+        let matchYear = (currentTahun === 'Semua' || parts.year == currentTahun);
+        let matchTriwulan = true;
+        if (currentTriwulan !== 'Semua') {
+          let tw = Math.ceil(parts.month / 3);
+          matchTriwulan = (tw == currentTriwulan);
+        }
+        matchTime = matchYear && matchTriwulan;
+      }
     }
-    return matchYear && matchTriwulan;
+    if (!matchTime) return false;
+
+    // 3. Search Bar Filter
+    if (currentSearchQuery) {
+      const query = currentSearchQuery.toLowerCase();
+      const desc = (r.deskripsi || '').toLowerCase();
+      const kat = (r.kategori || '').toLowerCase();
+      const tgl = (r.tanggal || '').toLowerCase();
+      
+      if (!desc.includes(query) && !kat.includes(query) && !tgl.includes(query)) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 }
 
 function renderReportTable() {
   const tbody = document.getElementById('reportTableBody');
+  const paginationWrap = document.getElementById('reportPaginationWrap');
+  const paginationInfo = document.getElementById('reportPaginationInfo');
+  const paginationButtons = document.getElementById('reportPaginationButtons');
+
   if (!currentReportData) return;
 
   let filteredData = getFilteredData();
-  tbody.innerHTML = '';
   
   if (filteredData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada filter ini.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada pencarian/filter ini.</td></tr>';
+    if(paginationWrap) paginationWrap.style.display = 'none';
     return;
   }
 
-  filteredData.forEach(r => {
+  // Hitung Paging
+  const totalRows = filteredData.length;
+  const totalPages = Math.ceil(totalRows / reportRowsPerPage) || 1;
+
+  if (reportCurrentPage > totalPages) reportCurrentPage = totalPages;
+  if (reportCurrentPage < 1) reportCurrentPage = 1;
+
+  const startIndex = (reportCurrentPage - 1) * reportRowsPerPage;
+  const endIndex = Math.min(startIndex + reportRowsPerPage, totalRows);
+  
+  // Potong Array
+  const pagedData = filteredData.slice(startIndex, endIndex);
+
+  // Render Tabel
+  tbody.innerHTML = '';
+  pagedData.forEach(r => {
     let statusColor = r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316';
-    
-    // Tampilkan semua thumbnail foto (fotos = array, foto = fallback URL pertama)
-    const fotoList = (r.fotos && r.fotos.length > 0) ? r.fotos : (r.foto ? [r.foto] : []);
-    let fotoHtml;
-    if (fotoList.length === 0) {
-      fotoHtml = `<span style="color:#94a3b8;">-</span>`;
-    } else {
-      fotoHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;">`;
-      fotoList.forEach(url => {
-        fotoHtml += `<img src="${url}" alt="Foto" style="width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid #e2e8f0;" onclick="openLightbox('${url}')">`;
-      });
-      fotoHtml += `</div>`;
-    }
+    let fotoHtml = r.foto ? `<img src="${r.foto}" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
     
     tbody.innerHTML += `
       <tr>
@@ -597,6 +702,26 @@ function renderReportTable() {
       </tr>
     `;
   });
+
+  // Render UI Paging
+  paginationWrap.style.display = 'flex';
+  paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} laporan`;
+
+  let buttonsHTML = '';
+
+  const prevDisabled = reportCurrentPage === 1 ? 'disabled' : '';
+  const prevStyle = reportCurrentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+  buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changeReportPage(${reportCurrentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+  buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${reportCurrentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToReportPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToReportPage(this.value, ${totalPages})">`;
+
+  buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+
+  const nextDisabled = reportCurrentPage === totalPages ? 'disabled' : '';
+  const nextStyle = reportCurrentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+  buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changeReportPage(${reportCurrentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
+
+  paginationButtons.innerHTML = buttonsHTML;
 }
 
 function openModal(){ document.getElementById('petugasModal').classList.add('active'); }
@@ -681,148 +806,96 @@ async function exportToExcel() {
   btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses 0%...';
 
   try {
-    // 1. Ambil foto sebagai binary lewat proxy; setiap baris bisa punya BANYAK foto
     const toImageBuffer = async (url) => {
       try {
         const proxyUrl = '../api/image-proxy.php?url=' + encodeURIComponent(url);
         const res = await fetch(proxyUrl);
         if (!res.ok) return null;
         const blob = await res.blob();
-        if (!blob.type.startsWith('image/') && !blob.type.includes('octet')) return null;
         const buffer = await blob.arrayBuffer();
         const extension = blob.type.includes('png') ? 'png' : 'jpeg';
         return { buffer, extension };
       } catch (e) { return null; }
     };
 
-    // 2. Kumpulkan semua URL foto dari setiap baris (fotos = array, foto = fallback)
-    //    photoBuffers[rowIdx] = array of { buffer, extension } | null
-    const allFotoUrls = dataToExport.map(r =>
-      (r.fotos && r.fotos.length > 0) ? r.fotos : (r.foto ? [r.foto] : [])
-    );
+    const photoBuffers = new Array(dataToExport.length).fill(null);
+    const indexWithPhoto = [];
+    dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
 
-    // Hitung total tugas download untuk progress
-    const totalDownloads = allFotoUrls.reduce((sum, arr) => sum + arr.length, 0);
     let completed = 0;
-
-    const photoBuffers = await Promise.all(allFotoUrls.map(async (urls) => {
-      const results = await Promise.all(urls.map(async (url) => {
-        const img = await toImageBuffer(url);
-        completed++;
-        const progress = totalDownloads ? Math.round((completed / totalDownloads) * 100) : 100;
-        btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
-        return img;
-      }));
-      return results.filter(Boolean); // buang yang gagal diunduh
+    await Promise.all(indexWithPhoto.map(async (idx) => {
+      const img = await toImageBuffer(dataToExport[idx].foto);
+      if (img) photoBuffers[idx] = img;
+      completed++;
+      const progress = indexWithPhoto.length ? Math.round((completed / indexWithPhoto.length) * 100) : 100;
+      btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
     }));
 
     btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
 
-    // 3. Hitung kolom foto maksimum dalam satu baris
-    const maxFotos = Math.max(1, ...photoBuffers.map(imgs => imgs.length));
-
-    // 4. Susun workbook
-    const nama = currentReportData.nama;
+    const nama = currentReportData.nama ? currentReportData.nama : 'Semua Pegawai';
     const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
     let filterDesc = [];
     if (currentFilter !== 'Semua') filterDesc.push(currentFilter);
     if (currentTahun !== 'Semua') filterDesc.push("Tahun " + currentTahun);
     if (currentTriwulan !== 'Semua') filterDesc.push("TW " + currentTriwulan);
+    if (currentSearchQuery) filterDesc.push("Cari: " + currentSearchQuery);
     let filterText = filterDesc.length > 0 ? filterDesc.join(' - ') : 'Semua Data';
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Logbook RRI';
     const sheet = workbook.addWorksheet('Laporan');
 
-    // Kolom: No, Tanggal, Kategori, Deskripsi, Foto 1 ... Foto N, Durasi, Status
-    const IMG_W = 13; // lebar kolom foto (satuan karakter Excel)
-    const IMG_PX = 90; // ukuran gambar dalam piksel (per foto)
-    const baseColumns = [
-      { width: 5 },   // A  No
-      { width: 14 },  // B  Tanggal
-      { width: 16 },  // C  Kategori
-      { width: 45 },  // D  Deskripsi
+    sheet.columns = [
+      { width: 5 },   
+      { width: 14 },  
+      { width: 16 },  
+      { width: 45 },  
+      { width: 13 },  
+      { width: 10 },  
+      { width: 14 },  
     ];
-    const fotoColumns = Array.from({ length: maxFotos }, () => ({ width: IMG_W }));
-    const tailColumns = [
-      { width: 10 },  // Durasi
-      { width: 14 },  // Status
-    ];
-    sheet.columns = [...baseColumns, ...fotoColumns, ...tailColumns];
 
-    // Kolom indeks (1-based) untuk kebutuhan addImage
-    const COL_FOTO_START = baseColumns.length + 1; // kolom pertama foto
-    const COL_DURASI     = COL_FOTO_START + maxFotos;
-    const COL_STATUS     = COL_DURASI + 1;
-    const TOTAL_COLS     = COL_STATUS;
-
-    // Helper: konversi kolom-number ke huruf Excel (A, B, ..., Z, AA, ...)
-    const colLetter = (n) => {
-      let s = '';
-      while (n > 0) { n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); }
-      return s;
-    };
-    const lastCol = colLetter(TOTAL_COLS);
-
-    // Header blok
-    sheet.mergeCells(`A1:${lastCol}1`);
+    sheet.mergeCells('A1:G1');
     sheet.getCell('A1').value = 'Laporan Kinerja Petugas';
     sheet.getCell('A1').font = { size: 14, bold: true };
 
-    sheet.mergeCells(`A2:${lastCol}2`);
+    sheet.mergeCells('A2:G2');
     sheet.getCell('A2').value = `Nama: ${nama}   |   Tanggal: ${tanggalCetak}`;
     sheet.getCell('A2').font = { size: 10, color: { argb: 'FF64748B' } };
 
-    sheet.mergeCells(`A3:${lastCol}3`);
+    sheet.mergeCells('A3:G3');
     sheet.getCell('A3').value = `Filter: ${filterText}   |   Total: ${dataToExport.length} tugas`;
     sheet.getCell('A3').font = { size: 10, color: { argb: 'FF64748B' } };
 
     sheet.addRow([]);
 
-    // Header kolom
-    const fotoHeaders = Array.from({ length: maxFotos }, (_, i) => maxFotos === 1 ? 'Foto' : `Foto ${i + 1}`);
-    const headerRow = sheet.addRow(['No', 'Tanggal', 'Kategori', 'Deskripsi', ...fotoHeaders, 'Durasi', 'Status']);
+    const headerRow = sheet.addRow(['No', 'Tanggal', 'Kategori', 'Deskripsi', 'Foto', 'Durasi', 'Status']);
     headerRow.eachCell(cell => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
-    // 5. Isi baris data + embed gambar di kolom Foto 1..N
     dataToExport.forEach((r, idx) => {
-      const imgs = photoBuffers[idx]; // array of {buffer, extension}
-      const rowCount = imgs.length;
-
-      // Tinggi row: minimal 70px, tambah 75px per foto jika lebih dari 1 kolom terisi
-      // (semua foto diletakkan berderet horizontal satu kolom per foto)
-      const rowHeightPx = Math.max(IMG_PX + 12, 70);
-      const rowHeightPt = Math.round(rowHeightPx * 0.75); // Excel pakai poin
-
-      const fotoPlaceholders = Array.from({ length: maxFotos }, (_, i) => (imgs[i] ? '' : '-'));
-      const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, ...fotoPlaceholders, r.durasi, r.status]);
-      row.height = rowHeightPt;
-
+      const img = photoBuffers[idx];
+      const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, img ? '' : '-', r.durasi, r.status]);
+      row.height = 58; 
       row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
       row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-      for (let f = 0; f < maxFotos; f++) {
-        row.getCell(COL_FOTO_START + f).alignment = { vertical: 'middle', horizontal: 'center' };
-      }
-      row.getCell(COL_DURASI).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
 
-      // Embed tiap gambar ke kolom fotonya masing-masing
-      imgs.forEach((img, fIdx) => {
-        if (!img) return;
+      if (img) {
         const imageId = workbook.addImage({ buffer: img.buffer, extension: img.extension });
-        const colOffset = COL_FOTO_START - 1 + fIdx; // 0-based kolom untuk tl
         sheet.addImage(imageId, {
-          tl: { col: colOffset + 0.1, row: row.number - 1 + 0.1 },
-          ext: { width: IMG_PX, height: IMG_PX },
+          tl: { col: 4.15, row: row.number - 1 + 0.1 },
+          ext: { width: 62, height: 62 },
           editAs: 'oneCell'
         });
-      });
+      }
     });
 
-    // 6. Tulis & unduh file .xlsx
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
@@ -846,11 +919,6 @@ async function exportToExcel() {
     btnExport.innerHTML = originalText;
   }
 }
-
-document.getElementById('filterTahun').addEventListener('change', function() {
-  currentTahun = this.value;
-  renderReportTable();
-});
 
 function showToast(message, type) {
   const existing = document.querySelector('.toast-notification');
