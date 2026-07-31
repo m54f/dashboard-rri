@@ -195,11 +195,18 @@ include __DIR__ . '/../includes/header.php';
       <h2>Manajemen Laporan Petugas</h2>
       <p>Daftar tim Divisi Teknologi &amp; Media Baru</p>
     </div>
-    <?php if (getRole() === 'admin'): ?>
-    <button class="btn btn-primary" onclick="openCreateModal()">
-      <i class="ri-add-line"></i> Tambah Petugas
-    </button>
-    <?php endif; ?>
+    
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <button class="btn btn-secondary" onclick="openGlobalReport()">
+        <i class="ri-file-search-line"></i> Laporan Keseluruhan
+      </button>
+      
+      <?php if (getRole() === 'admin'): ?>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        <i class="ri-add-line"></i> Tambah Petugas
+      </button>
+      <?php endif; ?>
+    </div>
   </div>
 
   <?php if (isset($errorMessage)): ?>
@@ -319,12 +326,28 @@ include __DIR__ . '/../includes/header.php';
 
   <div style="background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow-card); border: 1px solid var(--border); padding: 1.5rem;">
     <div class="filter-bar" id="reportFilterBar" style="display: none;">
-      <div class="filter-group" id="reportFilterTabs">
-        <div class="filter-tab active" onclick="filterReport('Semua', this)">Semua</div>
-        <div class="filter-tab" onclick="filterReport('Pemadaman Listrik', this)">Pemadaman</div>
-        <div class="filter-tab" onclick="filterReport('Troubleshoot', this)">Troubleshoot</div>
-        <div class="filter-tab" onclick="filterReport('Checklist', this)">Checklist</div>
-        <div class="filter-tab" onclick="filterReport('Jurnal Kegiatan', this)">Jurnal</div>
+      
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap: wrap;">
+        <!-- Dropdown Cari Pegawai -->
+        <select id="filterPegawai" onchange="loadLaporan(this.value)" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--primary); font-size: 0.85rem; font-weight: 700; background: var(--primary-light); color: var(--primary); cursor: pointer; outline: none;">
+          <option value="">Semua Pegawai</option>
+          <?php
+          $sortedPetugas = $petugas;
+          usort($sortedPetugas, fn($a, $b) => strcmp($a['name'], $b['name']));
+          foreach ($sortedPetugas as $p): ?>
+            <option value="<?= htmlspecialchars($p['name']) ?>"><?= htmlspecialchars($p['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        
+        <div style="width: 1px; height: 24px; background: var(--border);"></div>
+
+        <div class="filter-group" id="reportFilterTabs">
+          <div class="filter-tab active" onclick="filterReport('Semua', this)">Semua</div>
+          <div class="filter-tab" onclick="filterReport('Pemadaman Listrik', this)">Pemadaman</div>
+          <div class="filter-tab" onclick="filterReport('Troubleshoot', this)">Troubleshoot</div>
+          <div class="filter-tab" onclick="filterReport('Checklist', this)">Checklist</div>
+          <div class="filter-tab" onclick="filterReport('Jurnal Kegiatan', this)">Jurnal</div>
+        </div>
       </div>
       
       <div style="display:flex; gap:0.75rem; align-items:center; border-left: 1px solid var(--border); padding-left: 1rem;">
@@ -410,7 +433,6 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ExcelJS: dipakai untuk menyusun file .xlsx asli (bukan trik HTML-as-.xls) supaya foto benar-benar ter-embed di dalam cell -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
 let currentReportData = null;
@@ -435,10 +457,17 @@ function parseTanggalToParts(str) {
   return null;
 }
 
+// Fungsi membuka laporan global langsung menampilkan semua data
+function openGlobalReport() {
+  document.getElementById('filterPegawai').value = ''; // Reset dropdown ke "Semua Pegawai"
+  loadLaporan(''); // Langsung tarik data (nama kosong = semua)
+}
+
 function loadLaporan(nama) {
   document.getElementById('mainView').style.display = 'none';
   document.getElementById('reportView').style.display = 'block';
-  document.getElementById('reportNama').textContent = nama;
+  document.getElementById('reportNama').textContent = nama ? nama : 'Semua Pegawai';
+  document.getElementById('filterPegawai').value = nama; // Sinkronkan nilai dropdown
   
   const tbody = document.getElementById('reportTableBody');
   tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);"><i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br><span style="margin-top:0.5rem; display:block; font-weight:500;">Mengumpulkan data dari seluruh logbook...</span></td></tr>`;
@@ -642,11 +671,6 @@ async function deletePetugas(pageId, name) {
   }
 }
 
-/**
- * Export laporan ke .xlsx ASLI memakai ExcelJS (bukan trik "HTML disimpan sebagai .xls").
- * Foto diunduh lewat image-proxy.php, lalu di-embed sebagai gambar sungguhan yang
- * ditempel (anchor) tepat di dalam cell kolom "Foto" -- bukan cuma link/base64 di src <img>.
- */
 async function exportToExcel() {
   let dataToExport = getFilteredData();
   if (dataToExport.length === 0) { showToast("⚠️ Tidak ada data pada filter ini!", "error"); return; }

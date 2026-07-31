@@ -7,7 +7,7 @@ error_reporting(0);
 require_once __DIR__.'/../config/notion.php';
 
 // Load semua file API dengan aman
- $apiFiles = [
+$apiFiles = [
     __DIR__.'/pemadaman.php',
     __DIR__.'/troubleshoot.php',
     __DIR__.'/checklist.php',
@@ -20,17 +20,21 @@ foreach ($apiFiles as $file) {
     }
 }
 
- $namaInput = $_GET['nama'] ?? '';
-if (empty($namaInput)) {
-    echo json_encode(['error' => 'Nama petugas wajib diisi']);
-    exit;
-}
+// 1. BAGIAN INI DIPERBARUI: Blokir error jika nama kosong dihapus
+$namaInput = $_GET['nama'] ?? '';
 
-// Fungsi pencocokan nama yang pintar (mencocokkan sebagian nama)
+// 2. BAGIAN INI DIPERBARUI: Fungsi pencocokan nama
+// Jika targetName kosong, berarti mode "Laporan Keseluruhan", jadi anggap selalu true (cocok untuk semua data).
 function isPetugasIni($targetName, $dataArray) {
+    $targetClean = strtolower(trim($targetName));
+    
+    // Jika tidak ada nama yang dikirim dari frontend, tampilkan semua laporan
+    if (empty($targetClean)) {
+        return true;
+    }
+
     if (empty($dataArray)) return false;
     
-    $targetClean = strtolower(trim($targetName));
     $namesToCheck = [];
     
     // Jika data adalah array (multi-select)
@@ -78,10 +82,10 @@ function extractFotoUrl($dataArray, $keysToCheck) {
     return !empty($urls) ? $urls[0] : '';
 }
 
- $riwayat = [];
- $totalDurasiMenit = 0;
- $statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0];
- $debugLog = [];
+$riwayat = [];
+$totalDurasiMenit = 0;
+$statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0];
+$debugLog = [];
 
 // ==========================================
 // 1. DARI LOGBOOK PEMADAMAN
@@ -108,10 +112,13 @@ if (function_exists('getPemadaman')) {
                     // Ambil SEMUA URL foto dari kegiatan ini
                     $fotoUrls = extractFotoUrls($p, ['foto', 'docs', 'eviden', 'dokumentasi']);
                     
+                    // 3. TAMBAHAN OPSIONAL: Selipkan nama petugas ke dalam deskripsi agar jelas laporan ini milik siapa
+                    $namaLabel = empty($namaInput) ? " (Oleh: " . ($p['petugas'] ?? 'Anonim') . ")" : "";
+                    
                     $riwayat[] = [
                         'tanggal' => $p['tanggal'] ?? '-',
                         'kategori' => 'Pemadaman Listrik',
-                        'deskripsi' => $p['pemancar'] ?? '-',
+                        'deskripsi' => ($p['pemancar'] ?? '-') . $namaLabel,
                         'status' => 'Selesai',
                         'durasi' => $durasiText,
                         'url' => $p['url'] ?? '#',
@@ -150,10 +157,12 @@ if (function_exists('getTroubleshoot')) {
                         $fotoUrls = extractFotoUrls($t, ['foto', 'docs', 'eviden']);
                     }
                     
+                    $namaLabel = empty($namaInput) ? " (Oleh: " . ($t['petugas'] ?? $t['pic'] ?? 'Anonim') . ")" : "";
+                    
                     $riwayat[] = [
                         'tanggal' => $t['date'] ?? '-',
                         'kategori' => 'Troubleshoot',
-                        'deskripsi' => $t['title'] ?? '-',
+                        'deskripsi' => ($t['title'] ?? '-') . $namaLabel,
                         'status' => $t['status'] ?? '-',
                         'durasi' => '-',
                         'url' => $t['url'] ?? '#',
@@ -183,10 +192,12 @@ if (function_exists('getChecklist')) {
                     
                     $fotoUrls = extractFotoUrls($c, ['foto', 'docs', 'eviden', 'dokumentasi']);
                     
+                    $namaLabel = empty($namaInput) ? " (Oleh: " . ($c['petugas'] ?? 'Anonim') . ")" : "";
+                    
                     $riwayat[] = [
                         'tanggal' => $c['tanggal'] ?? '-',
                         'kategori' => 'Checklist',
-                        'deskripsi' => 'Cek ' . ($c['done_items'] ?? 0) . '/5 Perangkat',
+                        'deskripsi' => 'Cek ' . ($c['done_items'] ?? 0) . '/5 Perangkat' . $namaLabel,
                         'status' => ($c['is_complete'] ?? false) ? 'Lengkap' : 'Belum Lengkap',
                         'durasi' => '-',
                         'url' => $c['url'] ?? '#',
@@ -225,10 +236,12 @@ if (function_exists('getJurnal')) {
                         $fotoUrls = extractFotoUrls($j, ['foto', 'eviden', 'dokumentasi']);
                     }
                     
+                    $namaLabel = empty($namaInput) ? " (Oleh: " . ($j['op'] ?? 'Anonim') . ")" : "";
+                    
                     $riwayat[] = [
                         'tanggal' => $j['date'] ?? '-',
                         'kategori' => 'Jurnal Kegiatan',
-                        'deskripsi' => $j['title'] ?? '-',
+                        'deskripsi' => ($j['title'] ?? '-') . $namaLabel,
                         'status' => $j['status'] ?? '-',
                         'durasi' => '-',
                         'url' => $j['url'] ?? '#',
@@ -252,11 +265,11 @@ usort($riwayat, function($a, $b) {
     return $timeB - $timeA;
 });
 
- $totalJam = floor($totalDurasiMenit / 60);
- $sisaMenit = $totalDurasiMenit % 60;
+$totalJam = floor($totalDurasiMenit / 60);
+$sisaMenit = $totalDurasiMenit % 60;
 
 echo json_encode([
-    'nama' => $namaInput,
+    'nama' => empty($namaInput) ? 'Semua Pegawai' : $namaInput,
     'total_tugas' => count($riwayat),
     'total_durasi' => $totalJam . ' Jam ' . $sisaMenit . ' Menit',
     'statistik' => $statistik,
