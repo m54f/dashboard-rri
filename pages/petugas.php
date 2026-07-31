@@ -192,7 +192,7 @@ include __DIR__ . '/../includes/header.php';
 <div id="mainView">
   <div class="page-head">
     <div>
-      <h2>Manajemen Petugas</h2>
+      <h2>Manajemen Laporan Petugas</h2>
       <p>Daftar tim Divisi Teknologi &amp; Media Baru</p>
     </div>
     
@@ -572,8 +572,18 @@ function renderReportTable() {
   filteredData.forEach(r => {
     let statusColor = r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316';
     
-    // Cek apakah ada foto, jika ada tampilkan thumbnail
-    let fotoHtml = r.foto ? `<img src="${r.foto}" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
+    // Tampilkan semua thumbnail foto (fotos = array, foto = fallback URL pertama)
+    const fotoList = (r.fotos && r.fotos.length > 0) ? r.fotos : (r.foto ? [r.foto] : []);
+    let fotoHtml;
+    if (fotoList.length === 0) {
+      fotoHtml = `<span style="color:#94a3b8;">-</span>`;
+    } else {
+      fotoHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;">`;
+      fotoList.forEach(url => {
+        fotoHtml += `<img src="${url}" alt="Foto" style="width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid #e2e8f0;" onclick="openLightbox('${url}')">`;
+      });
+      fotoHtml += `</div>`;
+    }
     
     tbody.innerHTML += `
       <tr>
@@ -671,34 +681,48 @@ async function exportToExcel() {
   btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses 0%...';
 
   try {
+    // 1. Ambil foto sebagai binary lewat proxy; setiap baris bisa punya BANYAK foto
     const toImageBuffer = async (url) => {
       try {
         const proxyUrl = '../api/image-proxy.php?url=' + encodeURIComponent(url);
         const res = await fetch(proxyUrl);
         if (!res.ok) return null;
         const blob = await res.blob();
+        if (!blob.type.startsWith('image/') && !blob.type.includes('octet')) return null;
         const buffer = await blob.arrayBuffer();
         const extension = blob.type.includes('png') ? 'png' : 'jpeg';
         return { buffer, extension };
       } catch (e) { return null; }
     };
 
-    const photoBuffers = new Array(dataToExport.length).fill(null);
-    const indexWithPhoto = [];
-    dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
+    // 2. Kumpulkan semua URL foto dari setiap baris (fotos = array, foto = fallback)
+    //    photoBuffers[rowIdx] = array of { buffer, extension } | null
+    const allFotoUrls = dataToExport.map(r =>
+      (r.fotos && r.fotos.length > 0) ? r.fotos : (r.foto ? [r.foto] : [])
+    );
 
+    // Hitung total tugas download untuk progress
+    const totalDownloads = allFotoUrls.reduce((sum, arr) => sum + arr.length, 0);
     let completed = 0;
-    await Promise.all(indexWithPhoto.map(async (idx) => {
-      const img = await toImageBuffer(dataToExport[idx].foto);
-      if (img) photoBuffers[idx] = img;
-      completed++;
-      const progress = indexWithPhoto.length ? Math.round((completed / indexWithPhoto.length) * 100) : 100;
-      btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
+
+    const photoBuffers = await Promise.all(allFotoUrls.map(async (urls) => {
+      const results = await Promise.all(urls.map(async (url) => {
+        const img = await toImageBuffer(url);
+        completed++;
+        const progress = totalDownloads ? Math.round((completed / totalDownloads) * 100) : 100;
+        btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
+        return img;
+      }));
+      return results.filter(Boolean); // buang yang gagal diunduh
     }));
 
     btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
 
-    const nama = currentReportData.nama ? currentReportData.nama : 'Semua Pegawai';
+    // 3. Hitung kolom foto maksimum dalam satu baris
+    const maxFotos = Math.max(1, ...photoBuffers.map(imgs => imgs.length));
+
+    // 4. Susun workbook
+    const nama = currentReportData.nama;
     const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
     let filterDesc = [];
     if (currentFilter !== 'Semua') filterDesc.push(currentFilter);
@@ -710,56 +734,95 @@ async function exportToExcel() {
     workbook.creator = 'Logbook RRI';
     const sheet = workbook.addWorksheet('Laporan');
 
-    sheet.columns = [
-      { width: 5 },   
-      { width: 14 },  
-      { width: 16 },  
-      { width: 45 },  
-      { width: 13 },  
-      { width: 10 },  
-      { width: 14 },  
+    // Kolom: No, Tanggal, Kategori, Deskripsi, Foto 1 ... Foto N, Durasi, Status
+    const IMG_W = 13; // lebar kolom foto (satuan karakter Excel)
+    const IMG_PX = 90; // ukuran gambar dalam piksel (per foto)
+    const baseColumns = [
+      { width: 5 },   // A  No
+      { width: 14 },  // B  Tanggal
+      { width: 16 },  // C  Kategori
+      { width: 45 },  // D  Deskripsi
     ];
+    const fotoColumns = Array.from({ length: maxFotos }, () => ({ width: IMG_W }));
+    const tailColumns = [
+      { width: 10 },  // Durasi
+      { width: 14 },  // Status
+    ];
+    sheet.columns = [...baseColumns, ...fotoColumns, ...tailColumns];
 
-    sheet.mergeCells('A1:G1');
+    // Kolom indeks (1-based) untuk kebutuhan addImage
+    const COL_FOTO_START = baseColumns.length + 1; // kolom pertama foto
+    const COL_DURASI     = COL_FOTO_START + maxFotos;
+    const COL_STATUS     = COL_DURASI + 1;
+    const TOTAL_COLS     = COL_STATUS;
+
+    // Helper: konversi kolom-number ke huruf Excel (A, B, ..., Z, AA, ...)
+    const colLetter = (n) => {
+      let s = '';
+      while (n > 0) { n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); }
+      return s;
+    };
+    const lastCol = colLetter(TOTAL_COLS);
+
+    // Header blok
+    sheet.mergeCells(`A1:${lastCol}1`);
     sheet.getCell('A1').value = 'Laporan Kinerja Petugas';
     sheet.getCell('A1').font = { size: 14, bold: true };
 
-    sheet.mergeCells('A2:G2');
+    sheet.mergeCells(`A2:${lastCol}2`);
     sheet.getCell('A2').value = `Nama: ${nama}   |   Tanggal: ${tanggalCetak}`;
     sheet.getCell('A2').font = { size: 10, color: { argb: 'FF64748B' } };
 
-    sheet.mergeCells('A3:G3');
+    sheet.mergeCells(`A3:${lastCol}3`);
     sheet.getCell('A3').value = `Filter: ${filterText}   |   Total: ${dataToExport.length} tugas`;
     sheet.getCell('A3').font = { size: 10, color: { argb: 'FF64748B' } };
 
     sheet.addRow([]);
 
-    const headerRow = sheet.addRow(['No', 'Tanggal', 'Kategori', 'Deskripsi', 'Foto', 'Durasi', 'Status']);
+    // Header kolom
+    const fotoHeaders = Array.from({ length: maxFotos }, (_, i) => maxFotos === 1 ? 'Foto' : `Foto ${i + 1}`);
+    const headerRow = sheet.addRow(['No', 'Tanggal', 'Kategori', 'Deskripsi', ...fotoHeaders, 'Durasi', 'Status']);
     headerRow.eachCell(cell => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
+    // 5. Isi baris data + embed gambar di kolom Foto 1..N
     dataToExport.forEach((r, idx) => {
-      const img = photoBuffers[idx];
-      const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, img ? '' : '-', r.durasi, r.status]);
-      row.height = 58; 
+      const imgs = photoBuffers[idx]; // array of {buffer, extension}
+      const rowCount = imgs.length;
+
+      // Tinggi row: minimal 70px, tambah 75px per foto jika lebih dari 1 kolom terisi
+      // (semua foto diletakkan berderet horizontal satu kolom per foto)
+      const rowHeightPx = Math.max(IMG_PX + 12, 70);
+      const rowHeightPt = Math.round(rowHeightPx * 0.75); // Excel pakai poin
+
+      const fotoPlaceholders = Array.from({ length: maxFotos }, (_, i) => (imgs[i] ? '' : '-'));
+      const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, ...fotoPlaceholders, r.durasi, r.status]);
+      row.height = rowHeightPt;
+
       row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
       row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+      for (let f = 0; f < maxFotos; f++) {
+        row.getCell(COL_FOTO_START + f).alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+      row.getCell(COL_DURASI).alignment = { vertical: 'middle', horizontal: 'center' };
 
-      if (img) {
+      // Embed tiap gambar ke kolom fotonya masing-masing
+      imgs.forEach((img, fIdx) => {
+        if (!img) return;
         const imageId = workbook.addImage({ buffer: img.buffer, extension: img.extension });
+        const colOffset = COL_FOTO_START - 1 + fIdx; // 0-based kolom untuk tl
         sheet.addImage(imageId, {
-          tl: { col: 4.15, row: row.number - 1 + 0.1 },
-          ext: { width: 62, height: 62 },
+          tl: { col: colOffset + 0.1, row: row.number - 1 + 0.1 },
+          ext: { width: IMG_PX, height: IMG_PX },
           editAs: 'oneCell'
         });
-      }
+      });
     });
 
+    // 6. Tulis & unduh file .xlsx
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);

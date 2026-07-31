@@ -16,7 +16,7 @@ $menuDokumentasi = [
     'aplikasi' => ['Aplikasi RRI',  'ri-folder-line',  '/pages/aplikasi.php'],
 ];
 $menuPersonal = [
-    'petugas'  => ['Petugas', 'ri-team-line', '/pages/petugas.php'],
+    'petugas'  => ['Laporan Petugas', 'ri-team-line', '/pages/petugas.php'],
 ];
 
 function render_menu_group($items, $base, $activeMenu) {

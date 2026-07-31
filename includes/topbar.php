@@ -51,6 +51,11 @@
         <i class="ri-login-box-line"></i>
         <span class="btn-text">Masuk</span>
       </a>
+      
+      <!-- Link ke Telegram (Hanya Teks) -->
+      <a href="https://t.me/CakraIT_bot" class="topbar-btn btn-telegram-text" title="Hubungi Tim Teknik" target="_blank" rel="noopener noreferrer">
+        <span class="btn-text">Cakra Bot </span>
+      </a>
     <?php endif; ?>
   </div>
 </div>

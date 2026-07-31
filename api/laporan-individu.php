@@ -58,17 +58,28 @@ function isPetugasIni($targetName, $dataArray) {
     return false;
 }
 
-// Fungsi bantu untuk ekstrak URL foto dari array Notion files
-function extractFotoUrl($dataArray, $keysToCheck) {
+// Fungsi bantu untuk ekstrak SEMUA URL foto dari array Notion files (mengembalikan array)
+function extractFotoUrls($dataArray, $keysToCheck) {
+    $urls = [];
     foreach ($keysToCheck as $key) {
         if (isset($dataArray[$key]) && is_array($dataArray[$key]) && !empty($dataArray[$key])) {
-            $file = $dataArray[$key][0];
-            if (isset($file['url'])) return $file['url']; // Jika formatnya langsung array berisi url
-            if (isset($file['file']['url'])) return $file['file']['url']; // Jika upload ke Notion
-            if (isset($file['external']['url'])) return $file['external']['url']; // Jika link eksternal
+            foreach ($dataArray[$key] as $file) {
+                $url = '';
+                if (isset($file['url'])) $url = $file['url'];
+                elseif (isset($file['file']['url'])) $url = $file['file']['url'];
+                elseif (isset($file['external']['url'])) $url = $file['external']['url'];
+                if (!empty($url)) $urls[] = $url;
+            }
+            if (!empty($urls)) break; // Gunakan key pertama yang ditemukan
         }
     }
-    return ''; // Kosong jika tidak ada foto
+    return $urls;
+}
+
+// Wrapper backward-compat: kembalikan URL pertama saja
+function extractFotoUrl($dataArray, $keysToCheck) {
+    $urls = extractFotoUrls($dataArray, $keysToCheck);
+    return !empty($urls) ? $urls[0] : '';
 }
 
 $riwayat = [];
@@ -98,8 +109,8 @@ if (function_exists('getPemadaman')) {
                         } catch (Exception $e) {}
                     }
                     
-                    // Ambil URL foto (sesuaikan 'foto', 'docs', atau 'eviden' dengan nama kolom di Notion Anda)
-                    $fotoUrl = extractFotoUrl($p, ['foto', 'docs', 'eviden', 'dokumentasi']);
+                    // Ambil SEMUA URL foto dari kegiatan ini
+                    $fotoUrls = extractFotoUrls($p, ['foto', 'docs', 'eviden', 'dokumentasi']);
                     
                     // 3. TAMBAHAN OPSIONAL: Selipkan nama petugas ke dalam deskripsi agar jelas laporan ini milik siapa
                     $namaLabel = empty($namaInput) ? " (Oleh: " . ($p['petugas'] ?? 'Anonim') . ")" : "";
@@ -111,7 +122,8 @@ if (function_exists('getPemadaman')) {
                         'status' => 'Selesai',
                         'durasi' => $durasiText,
                         'url' => $p['url'] ?? '#',
-                        'foto' => $fotoUrl
+                        'foto' => !empty($fotoUrls) ? $fotoUrls[0] : '',
+                        'fotos' => $fotoUrls
                     ];
                 }
             }
@@ -134,12 +146,15 @@ if (function_exists('getTroubleshoot')) {
                 if (isPetugasIni($namaInput, $t['petugas_arr'] ?? []) || isPetugasIni($namaInput, $t['petugas'] ?? '') || isPetugasIni($namaInput, $t['pic'] ?? '')) {
                     $statistik['Troubleshoot']++;
                     
-                    // Ambil URL foto dari array dokumentasi troubleshoot
-                    $fotoUrl = '';
-                    if (!empty($t['dokumentasi'][0]['url'])) {
-                        $fotoUrl = $t['dokumentasi'][0]['url'];
-                    } else {
-                        $fotoUrl = extractFotoUrl($t, ['foto', 'docs', 'eviden']);
+                    // Ambil SEMUA URL foto dari array dokumentasi troubleshoot
+                    $fotoUrls = [];
+                    if (!empty($t['dokumentasi'])) {
+                        foreach ($t['dokumentasi'] as $dok) {
+                            if (!empty($dok['url'])) $fotoUrls[] = $dok['url'];
+                        }
+                    }
+                    if (empty($fotoUrls)) {
+                        $fotoUrls = extractFotoUrls($t, ['foto', 'docs', 'eviden']);
                     }
                     
                     $namaLabel = empty($namaInput) ? " (Oleh: " . ($t['petugas'] ?? $t['pic'] ?? 'Anonim') . ")" : "";
@@ -151,7 +166,8 @@ if (function_exists('getTroubleshoot')) {
                         'status' => $t['status'] ?? '-',
                         'durasi' => '-',
                         'url' => $t['url'] ?? '#',
-                        'foto' => $fotoUrl
+                        'foto' => !empty($fotoUrls) ? $fotoUrls[0] : '',
+                        'fotos' => $fotoUrls
                     ];
                 }
             }
@@ -174,7 +190,7 @@ if (function_exists('getChecklist')) {
                 if (isPetugasIni($namaInput, $c['petugas_arr'] ?? []) || isPetugasIni($namaInput, $c['petugas'] ?? '')) {
                     $statistik['Checklist']++;
                     
-                    $fotoUrl = extractFotoUrl($c, ['foto', 'docs', 'eviden', 'dokumentasi']);
+                    $fotoUrls = extractFotoUrls($c, ['foto', 'docs', 'eviden', 'dokumentasi']);
                     
                     $namaLabel = empty($namaInput) ? " (Oleh: " . ($c['petugas'] ?? 'Anonim') . ")" : "";
                     
@@ -185,7 +201,8 @@ if (function_exists('getChecklist')) {
                         'status' => ($c['is_complete'] ?? false) ? 'Lengkap' : 'Belum Lengkap',
                         'durasi' => '-',
                         'url' => $c['url'] ?? '#',
-                        'foto' => $fotoUrl
+                        'foto' => !empty($fotoUrls) ? $fotoUrls[0] : '',
+                        'fotos' => $fotoUrls
                     ];
                 }
             }
@@ -208,12 +225,15 @@ if (function_exists('getJurnal')) {
                 if (isPetugasIni($namaInput, $j['ops_arr'] ?? []) || isPetugasIni($namaInput, $j['op'] ?? '')) {
                     $statistik['Jurnal Kegiatan']++;
                     
-                    // Ambil URL foto dari array docs jurnal
-                    $fotoUrl = '';
-                    if (!empty($j['docs'][0]['url'])) {
-                        $fotoUrl = $j['docs'][0]['url'];
-                    } else {
-                        $fotoUrl = extractFotoUrl($j, ['foto', 'eviden', 'dokumentasi']);
+                    // Ambil SEMUA URL foto dari array docs jurnal
+                    $fotoUrls = [];
+                    if (!empty($j['docs'])) {
+                        foreach ($j['docs'] as $dok) {
+                            if (!empty($dok['url'])) $fotoUrls[] = $dok['url'];
+                        }
+                    }
+                    if (empty($fotoUrls)) {
+                        $fotoUrls = extractFotoUrls($j, ['foto', 'eviden', 'dokumentasi']);
                     }
                     
                     $namaLabel = empty($namaInput) ? " (Oleh: " . ($j['op'] ?? 'Anonim') . ")" : "";
@@ -225,7 +245,8 @@ if (function_exists('getJurnal')) {
                         'status' => $j['status'] ?? '-',
                         'durasi' => '-',
                         'url' => $j['url'] ?? '#',
-                        'foto' => $fotoUrl
+                        'foto' => !empty($fotoUrls) ? $fotoUrls[0] : '',
+                        'fotos' => $fotoUrls
                     ];
                 }
             }
