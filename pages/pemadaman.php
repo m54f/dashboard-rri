@@ -278,9 +278,35 @@ include __DIR__ . '/../includes/header.php';
             <td><?= htmlspecialchars($p['petugas']) ?></td>
             <td>
               <?php if (!empty($p['files'])): ?>
-                <span class="tag green"><i class="ri-image-line"></i> <?= count($p['files']) ?> file</span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <?php foreach (array_slice($p['files'], 0, 3) as $file): ?>
+                    <div style="position:relative; width:48px; height:48px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; background:#f8fafc; cursor:pointer; transition:transform 0.2s;" 
+                         onclick="openLightbox('<?= htmlspecialchars($file['url']) ?>')"
+                         onmouseover="this.style.transform='scale(1.05)'" 
+                         onmouseout="this.style.transform='scale(1)'">
+                      
+                      <!-- Gambar Thumbnail -->
+                      <img src="<?= htmlspecialchars($file['url']) ?>" 
+                           alt="<?= htmlspecialchars($file['name']) ?>" 
+                           style="width:100%; height:100%; object-fit:cover;"
+                           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                      
+                      <!-- Fallback Icon (Muncul jika URL Notion expired/rusak) -->
+                      <div style="position:absolute; inset:0; display:none; align-items:center; justify-content:center; color:#94a3b8;">
+                        <i class="ri-image-line" style="font-size:20px;"></i>
+                      </div>
+                    </div>
+                  <?php endforeach; ?>
+                  
+                  <!-- Badge Jumlah Sisa Gambar -->
+                  <?php if (count($p['files']) > 3): ?>
+                    <div style="width:48px; height:48px; border-radius:8px; background:#f1f5f9; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569;">
+                      +<?= count($p['files']) - 3 ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
               <?php else: ?>
-                <span style="font-size:11px; color:var(--text-secondary);">-</span>
+                <span style="font-size:12px; color:#94a3b8;">-</span>
               <?php endif; ?>
             </td>
             <td class="cell-sub"><?= htmlspecialchars($p['submission']) ?></td>
@@ -638,6 +664,28 @@ function showToast(message, type) {
   `;
   document.body.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 4000);
+}
+
+
+// ===== Lightbox Modern untuk Preview Foto =====
+function openLightbox(url) {
+  let lb = document.getElementById('lightboxOverlay');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'lightboxOverlay';
+    lb.style.cssText = 'position:fixed; inset:0; background:rgba(15, 23, 42, 0.85); z-index:9999; display:none; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(4px);';
+    lb.onclick = () => { lb.style.display = 'none'; };
+    lb.innerHTML = '<img id="lightboxImg" src="" alt="Preview" style="max-width:90vw; max-height:90vh; border-radius:12px; object-fit:contain; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); transition:transform 0.2s;" onclick="event.stopPropagation()">';
+    document.body.appendChild(lb);
+  }
+  
+  const img = document.getElementById('lightboxImg');
+  img.style.transform = 'scale(0.95)';
+  img.src = url;
+  
+  lb.style.display = 'flex';
+  // Animasi masuk halus
+  setTimeout(() => { img.style.transform = 'scale(1)'; }, 50);
 }
 </script>
 
