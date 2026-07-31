@@ -55,9 +55,21 @@ function getPemadaman() {
         }
 
         $filesArr = [];
-        if (isset($props['Files & media']['files'])) {
+        if (isset($props['Files & media']['files']) && is_array($props['Files & media']['files'])) {
             foreach ($props['Files & media']['files'] as $f) {
-                $filesArr[] = $f['name'];
+                $fileUrl = '';
+                if (isset($f['external']['url'])) {
+                    $fileUrl = $f['external']['url'];
+                } elseif (isset($f['file']['url'])) {
+                    $fileUrl = $f['file']['url'];
+                }
+                
+                if (!empty($fileUrl)) {
+                    $filesArr[] = [
+                        'name' => $f['name'] ?? 'file',
+                        'url'  => $fileUrl
+                    ];
+                }
             }
         }
 
