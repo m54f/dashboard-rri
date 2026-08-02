@@ -920,21 +920,7 @@ async function exportToExcel() {
   }
 }
 
-function showToast(message, type) {
-  const existing = document.querySelector('.toast-notification');
-  if (existing) existing.remove();
-  const toast = document.createElement('div');
-  toast.className = 'toast-notification ' + type;
-  toast.textContent = message;
-  toast.style.cssText = `
-    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
-    padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
-    color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18); animation: slideInToast 0.4s ease;
-    ${type === 'success' ? 'background: linear-gradient(135deg, #22c55e, #16a34a);' : 'background: linear-gradient(135deg, #ef4444, #dc2626);'}
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 3000);
-}
+// showToast() is provided globally by /assets/css/js/sonner.js
 
 const style = document.createElement('style');
 style.innerHTML = `

@@ -610,16 +610,7 @@ async function deleteJurnal(pageId, title) {
     }
 }
 
-function showToast(message, type) {
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification ' + type;
-    toast.textContent = message;
-    toast.style.cssText = `position: fixed; bottom: 2rem; right: 2rem; z-index: 99999; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18); ${type === 'success' ? 'background: #22c55e;' : 'background: #ef4444;'}`;
-    document.body.appendChild(toast);
-    setTimeout(() => { toast.remove(); }, 4000);
-}
+// showToast() is provided globally by /assets/css/js/sonner.js
 
 document.addEventListener("DOMContentLoaded", () => { renderTable(); });
 </script>

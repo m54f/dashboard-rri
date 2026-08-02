@@ -25,6 +25,7 @@ require_once __DIR__ . '/auth.php';
 <?php $cssPath = __DIR__ . '/../assets/css/style.css'; $cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time(); ?>
 <link href="<?= $base ?>/assets/css/style.css?v=<?= $cssVersion ?>" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="<?= $base ?>/assets/css/js/sonner.js"></script>
 </head>
 <body>
 <div class="layout">
