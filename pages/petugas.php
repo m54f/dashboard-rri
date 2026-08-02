@@ -319,7 +319,7 @@ include __DIR__ . '/../includes/header.php';
         <button class="btn btn-secondary" onclick="closeReportView()" style="padding:0.4rem 0.6rem;"><i class="ri-arrow-left-line"></i></button>
         <span>Laporan Kinerja: <span id="reportNama" style="color: var(--primary);"></span></span>
       </h2>
-      <p style="margin-top:0.25rem;">Rekap aktivitas dari seluruh logbook (Listrik, Troubleshoot, Checklist, Jurnal).</p>
+      <p style="margin-top:0.25rem;">Rekap aktivitas dari seluruh logbook (Listrik, Troubleshoot, Checklist, Jurnal, Youtube, Peminjaman).</p>
     </div>
     <button class="btn btn-primary" onclick="exportToExcel()" id="btnExport" style="display: none;">
       <i class="ri-file-excel-line"></i> Export Excel
@@ -367,6 +367,8 @@ include __DIR__ . '/../includes/header.php';
           <div class="filter-tab" onclick="filterReport('Troubleshoot', this)">Troubleshoot</div>
           <div class="filter-tab" onclick="filterReport('Checklist', this)">Checklist</div>
           <div class="filter-tab" onclick="filterReport('Jurnal Kegiatan', this)">Jurnal</div>
+          <div class="filter-tab" onclick="filterReport('Rekap Youtube', this)">Youtube</div>
+          <div class="filter-tab" onclick="filterReport('Peminjaman Alat', this)">Peminjaman</div>
         </div>
       </div>
       
