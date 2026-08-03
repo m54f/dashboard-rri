@@ -12,3 +12,4 @@ setup/setup_database_petugas.php
 # Credential files - DO NOT COMMIT
 config/auth.php
 config/notion.php
+REVIEW-INVENTARIS-PEMINJAMAN.md
