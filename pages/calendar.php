@@ -71,15 +71,36 @@ include __DIR__ . '/../includes/header.php';
   .cal-dow { font-size: 10px !important; padding: 4px 0 !important; }
   .cal-cell { padding: 4px 3px !important; min-height: 56px; }
   .cal-daynum { font-size: 11px !important; margin-bottom: 2px !important; }
-  .cal-event {
-    font-size: 8.5px !important;
-    padding: 1px 3px !important;
-    margin-bottom: 2px !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+
+  /* Di HP, teks nama kegiatan diganti titik warna doang (teks kepanjangan
+     nggak bakal muat kebaca di kolom sesempit ini) — tap tanggalnya buat
+     lihat daftar lengkap nama kegiatannya lewat modal. */
+  .cal-event-list { display: none !important; }
+  .cal-event-dots { display: flex !important; }
+  .cal-cell.has-events { cursor: pointer; }
+  .cal-cell.has-events:active { background: var(--bg-color); }
 }
+
+.cal-event-dots {
+  display: none;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.cal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); display: inline-block; }
+.cal-dot.live { background: var(--danger); }
+.cal-dot.event { background: var(--warning); }
+
+/* Modal detail kegiatan per-tanggal (dipakai pas tap kotak tanggal di HP) */
+#dayEventsModal .modal-content { max-width: 400px; }
+#dayEventsModal .day-event-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border-color);
+}
+#dayEventsModal .day-event-item:last-child { border-bottom: none; }
+#dayEventsModal .day-event-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: var(--primary); }
+#dayEventsModal .day-event-dot.live { background: var(--danger); }
+#dayEventsModal .day-event-dot.event { background: var(--warning); }
 </style>
 
 <div class="page-head">
@@ -140,21 +161,75 @@ include __DIR__ . '/../includes/header.php';
     <?php for ($d = 1; $d <= $daysInMonth; $d++):
       $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
       $isToday = $dateStr === $todayStr;
+      $hasEvents = isset($events[$d]);
     ?>
-    <div class="cal-cell <?= $isToday ? 'today' : '' ?>">
+    <div class="cal-cell <?= $isToday ? 'today' : '' ?> <?= $hasEvents ? 'has-events' : '' ?>" <?= $hasEvents ? 'onclick="showDayEvents(' . $d . ')"' : '' ?>>
       <div class="cal-daynum"><?= $d ?></div>
-      <?php if (isset($events[$d])):
+      <?php if ($hasEvents):
         $dayEvents = $events[$d];
         $shownEvents = array_slice($dayEvents, 0, 3);
         $moreCount = count($dayEvents) - count($shownEvents);
-        foreach ($shownEvents as $ev): ?>
+      ?>
+      <div class="cal-event-list">
+        <?php foreach ($shownEvents as $ev): ?>
         <div class="cal-event <?= $ev['type'] === 'live' ? 'live' : ($ev['type'] === 'event' ? 'event' : '') ?>"><?= htmlspecialchars($ev['label']) ?></div>
-      <?php endforeach;
-        if ($moreCount > 0): ?>
+        <?php endforeach; ?>
+        <?php if ($moreCount > 0): ?>
         <div class="cal-event" style="color:var(--text-secondary); background:transparent;">+<?= $moreCount ?> lainnya</div>
-      <?php endif; endif; ?>
+        <?php endif; ?>
+      </div>
+      <div class="cal-event-dots">
+        <?php foreach (array_slice($dayEvents, 0, 4) as $ev): ?>
+        <span class="cal-dot <?= $ev['type'] === 'live' ? 'live' : ($ev['type'] === 'event' ? 'event' : '') ?>"></span>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
     </div>
     <?php endfor; ?>
   </div>
 </div>
+
+<!-- Modal detail kegiatan per-tanggal, dipakai pas kotak tanggal di-tap (khususnya di HP) -->
+<div class="modal-overlay" id="dayEventsModal">
+  <div class="modal-content">
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <div class="modal-title" id="dayEventsTitle">Kegiatan</div>
+      <button class="modal-close" onclick="closeDayEvents()">&times;</button>
+    </div>
+    <div id="dayEventsBody"></div>
+  </div>
+</div>
+
+<script>
+// Data kegiatan per-tanggal (bulan yang lagi ditampilkan), dipakai modal detail hari
+const CAL_EVENTS = <?= json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+const CAL_MONTH_LABEL = <?= json_encode($monthNames[$month] . ' ' . $year, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+function escapeHtmlCal(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function showDayEvents(day) {
+  const list = CAL_EVENTS[day] || [];
+  document.getElementById('dayEventsTitle').textContent = day + ' ' + CAL_MONTH_LABEL;
+  document.getElementById('dayEventsBody').innerHTML = list.map(ev => {
+    const dotClass = ev.type === 'live' ? 'live' : (ev.type === 'event' ? 'event' : '');
+    return `<div class="day-event-item"><span class="day-event-dot ${dotClass}"></span><span>${escapeHtmlCal(ev.label)}</span></div>`;
+  }).join('') || '<p style="color:var(--text-secondary);">Tidak ada kegiatan.</p>';
+  document.getElementById('dayEventsModal').classList.add('active');
+}
+
+function closeDayEvents() {
+  document.getElementById('dayEventsModal').classList.remove('active');
+}
+
+document.getElementById('dayEventsModal').addEventListener('click', function (e) {
+  if (e.target === this) closeDayEvents();
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') closeDayEvents();
+});
+</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

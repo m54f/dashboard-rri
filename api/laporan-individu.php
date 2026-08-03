@@ -11,7 +11,9 @@ $apiFiles = [
     __DIR__.'/pemadaman.php',
     __DIR__.'/troubleshoot.php',
     __DIR__.'/checklist.php',
-    __DIR__.'/jurnal.php'
+    __DIR__.'/jurnal.php',
+    __DIR__.'/youtube.php',
+    __DIR__.'/peminjaman.php'
 ];
 
 foreach ($apiFiles as $file) {
@@ -84,7 +86,7 @@ function extractFotoUrl($dataArray, $keysToCheck) {
 
 $riwayat = [];
 $totalDurasiMenit = 0;
-$statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0];
+$statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0, 'Rekap Youtube' => 0, 'Peminjaman Alat' => 0];
 $debugLog = [];
 
 // ==========================================
@@ -255,6 +257,90 @@ if (function_exists('getJurnal')) {
         }
     } catch (Exception $e) {
         $debugLog[] = 'Jurnal Exception: ' . $e->getMessage();
+    }
+}
+
+// ==========================================
+// 5. DARI REKAP YOUTUBE
+// ==========================================
+if (function_exists('getYoutubeVideos')) {
+    try {
+        $youtube = getYoutubeVideos();
+        if (is_array($youtube) && !isset($youtube['error'])) {
+            foreach ($youtube as $y) {
+                // Cek apakah petugas terlibat sebagai Teknik (PT Setting) atau PA (PT Produksi)
+                $isTeknik = isPetugasIni($namaInput, $y['teknik'] ?? '');
+                $isPA = isPetugasIni($namaInput, $y['pa'] ?? '');
+                
+                if ($isTeknik || $isPA) {
+                    $statistik['Rekap Youtube']++;
+                    
+                    // Gunakan flyer sebagai foto
+                    $fotoUrls = !empty($y['flyer']) ? [$y['flyer']] : [];
+                    
+                    $role = [];
+                    if ($isTeknik) $role[] = 'PT Setting';
+                    if ($isPA) $role[] = 'PT Produksi';
+                    $roleLabel = implode(' & ', $role);
+                    
+                    $namaLabel = empty($namaInput) ? " (Sebagai: {$roleLabel})" : " (Sebagai: {$roleLabel})";
+                    
+                    $riwayat[] = [
+                        'tanggal' => $y['date'] ?? '-',
+                        'kategori' => 'Rekap Youtube',
+                        'deskripsi' => ($y['title'] ?? 'Video Youtube') . $namaLabel,
+                        'status' => 'Selesai',
+                        'durasi' => $y['time'] ?? '-',
+                        'url' => $y['url'] ?? '#',
+                        'foto' => !empty($fotoUrls) ? $fotoUrls[0] : '',
+                        'fotos' => $fotoUrls
+                    ];
+                }
+            }
+        } else {
+            $debugLog[] = 'Youtube API Error: ' . ($youtube['error'] ?? 'Unknown');
+        }
+    } catch (Exception $e) {
+        $debugLog[] = 'Youtube Exception: ' . $e->getMessage();
+    }
+}
+
+// ==========================================
+// 6. DARI PEMINJAMAN ALAT
+// ==========================================
+if (function_exists('getPeminjaman')) {
+    try {
+        $peminjaman = getPeminjaman();
+        if (is_array($peminjaman) && !isset($peminjaman['error'])) {
+            foreach ($peminjaman as $p) {
+                if (isPetugasIni($namaInput, $p['pic'] ?? '')) {
+                    $statistik['Peminjaman Alat']++;
+                    
+                    $namaLabel = empty($namaInput) ? " (PIC: " . ($p['pic'] ?? 'Anonim') . ")" : "";
+                    
+                    // Format tanggal untuk durasi peminjaman
+                    $durasiText = '-';
+                    if (!empty($p['durasi'])) {
+                        $durasiText = $p['durasi'] . ' Jam';
+                    }
+                    
+                    $riwayat[] = [
+                        'tanggal' => $p['tgl_pinjam'] ?? '-',
+                        'kategori' => 'Peminjaman Alat',
+                        'deskripsi' => ($p['kegiatan'] ?? 'Peminjaman') . ' - ' . ($p['alat_display'] ?? '-') . $namaLabel,
+                        'status' => $p['status'] ?? 'Dipinjam',
+                        'durasi' => $durasiText,
+                        'url' => $p['url'] ?? '#',
+                        'foto' => '',
+                        'fotos' => []
+                    ];
+                }
+            }
+        } else {
+            $debugLog[] = 'Peminjaman API Error: ' . ($peminjaman['error'] ?? 'Unknown');
+        }
+    } catch (Exception $e) {
+        $debugLog[] = 'Peminjaman Exception: ' . $e->getMessage();
     }
 }
 
