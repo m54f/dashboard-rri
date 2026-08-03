@@ -32,6 +32,7 @@ require_once __DIR__ . '/auth.php';
 <?php include __DIR__ . '/sidebar.php'; ?>
   <main class="main">
 <?php include __DIR__ . '/topbar.php'; ?>
+  <div class="content-body">
 
 
 
