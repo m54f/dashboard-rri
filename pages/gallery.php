@@ -45,10 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $title = (string)$entry->title;
         $url   = (string)$entry->link['href'];
 
-        // Ambil video ID langsung dari <yt:videoId> — lebih reliable dari parsing URL
         $videoId = isset($yt->videoId) ? (string)$yt->videoId : '';
 
-        // Fallback: ekstrak dari URL jika <yt:videoId> tidak tersedia
         if (empty($videoId)) {
             preg_match('/[?&]v=([^&]+)/', $url, $match);
             $videoId = $match[1] ?? '';
@@ -56,32 +54,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         $description = (string)$media->group->description;
 
-        // Bangun thumbnail resolusi tinggi dari video ID
         $thumbnailUrl = '';
         if (!empty($videoId)) {
             $thumbnailUrl = "https://i.ytimg.com/vi/{$videoId}/maxresdefault.jpg";
         } elseif (isset($media->group->thumbnail)) {
-            // Fallback ke thumbnail dari RSS jika video ID tidak diketahui
             $attrs = $media->group->thumbnail->attributes();
             $thumbnailUrl = (string)$attrs['url'];
         }
 
-        // 1. Ekstrak data dari deskripsi (termasuk mencari tanggal asli yang tertulis)
         $parsed = parseDeskripsiRss($description);
 
-        // 2. Ambil waktu sistem YouTube sebagai cadangan (dikonversi ke WIB)
         $dt = new DateTime((string)$entry->published);
         $dt->setTimezone(new DateTimeZone('Asia/Jakarta'));
         $fallbackDate = $dt->format('Y-m-d');
 
-        // 3. PRIORITAS: Gunakan tanggal dari deskripsi jika ada, jika tidak pakai cadangan
         $realDate = !empty($parsed['tanggal_asli']) ? $parsed['tanggal_asli'] : $fallbackDate;
 
-        // 4. Filter berdasarkan tanggal yang benar-benar tayang
         if ($realDate === $targetDate) {
             $parsed['title_asli'] = $title;
             $parsed['url']        = $url;
-            $parsed['video_id']   = $videoId; // langsung dari <yt:videoId>
+            $parsed['video_id']   = $videoId; 
             $parsed['tanggal']    = $realDate;
             $parsed['flyer']      = $thumbnailUrl;
 
@@ -93,7 +85,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Fungsi Mesin Regex untuk parsing deskripsi video Youtube
 function parseDeskripsiRss($description) {
     $data = [
         'tema' => '', 'penyiar' => '', 'narasumber' => '',
@@ -105,7 +96,6 @@ function parseDeskripsiRss($description) {
 
     $cleanDesc = preg_replace('/[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', '', $description);
 
-    // 1. Ekstrak Tanggal dari Teks (Misal: "Selasa, 14 Juli 2026" atau "15 Juli 2026")
     $bulanIndo = [
         'januari'=>'01', 'februari'=>'02', 'maret'=>'03', 'april'=>'04',
         'mei'=>'05', 'juni'=>'06', 'juli'=>'07', 'agustus'=>'08',
@@ -119,36 +109,29 @@ function parseDeskripsiRss($description) {
         $data['tanggal_asli'] = "$thn-$bln-$tgl";
     }
 
-    // 2. Ekstrak Programa
     if (preg_match('/Pro\s*1/i', $cleanDesc)) $data['programa'] = 'Pro 1 FM 94.6 Mhz';
     elseif (preg_match('/Pro\s*2/i', $cleanDesc)) $data['programa'] = 'Pro 2 FM 87.9 Mhz';
     elseif (preg_match('/Pro\s*4/i', $cleanDesc)) $data['programa'] = 'Pro 4 FM 105.3 Mhz';
 
-    // 3. Ekstrak Jam (Contoh: 15.00 - 16.00, 15.00 – 16.00, atau 06.00 s/d Selesai)
     if (preg_match('/(\d{2}[.:]\d{2})\s*(?:s\/d|-|–|—|sd)\s*(Selesai|\d{2}[.:]\d{2})?/i', $cleanDesc, $m)) {
         $data['jamMulai'] = str_replace('.', ':', $m[1]);
     }
 
-    // 4. Pemandu
     if (preg_match('/(?:Presenter|Penyiar|Host)\s*[:\-]?\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['penyiar'] = trim(str_replace(['(Presenter)', '(Host)'], '', $m[1]));
     } elseif (preg_match('/Dipandu oleh:?\s*\r?\n([^\n\r]+)/i', $cleanDesc, $m)) {
         $data['penyiar'] = trim(str_replace(['(Presenter)', '(Host)'], '', $m[1]));
     }
 
-    // 5. PT Setting (Dikosongkan / tidak diambil dari deskripsi sesuai permintaan)
     $data['pt'] = [];
 
-    // 6. PT Produksi / PA (Diambil dari label "Petugas Teknik" atau sejenisnya yang ada di deskripsi)
     if (preg_match('/(?:Petugas Teknik|Petugas PT(?: Setting)?|Pengarah Teknik)\s*[:\-]?\s*([^\n\r]+)|\bPT(?: Setting)?\b\s*[:\-]\s*([^\n\r]+)/i', $cleanDesc, $m)) {
         $paString = !empty($m[1]) ? $m[1] : (isset($m[2]) ? $m[2] : '');
         $data['pa'] = mapPetugasToMasterRss($paString);
     } else {
         $data['pa'] = [];
     }
-    
 
-    // 7. Tema
     if (preg_match('/Tema\s*[:\-]?\s*"?([^"\n\r]+)"?/i', $cleanDesc, $m)) {
         $data['tema'] = trim($m[1], " \t\n\r\0\x0B\"");
     } else {
@@ -163,7 +146,6 @@ function parseDeskripsiRss($description) {
         }
     }
 
-    // 8. Narasumber
     if (preg_match('/(?:Narasumber|Bersama)\s*[:\-]?\s*\r?\n?([\s\S]*?)(?=\r?\n\s*(?:Dipandu|Presenter|Penyiar|Host|Petugas|Telepon|WhatsApp|Dapatkan|PT|PA|Pengarah|Line|Pro\s*[124])|$)/i', $cleanDesc, $m)) {
         $rawNarasumber = ltrim(trim($m[1]), ": \t\n\r\0\x0B");
         $lines = explode("\n", $rawNarasumber);
@@ -180,7 +162,6 @@ function parseDeskripsiRss($description) {
         $data['narasumber'] = implode("\n", $cleanLines);
     }
 
-    // 8. Narasumber (Mendukung label "Narasumber:" satu baris maupun multi-line ke bawah)
     if (preg_match('/Narasumber\s*[:\-]?\s*\r?\n?([\s\S]*?)(?=\r?\n\s*(?:Presenter|Penyiar|Host|Petugas|Pengarah|Telepon|WhatsApp|Dapatkan|PT|PA|Line|Pro\s*[124])|$)/i', $cleanDesc, $m)) {
         $rawNarasumber = ltrim(trim($m[1]), ": \t\n\r\0\x0B");
         $lines = explode("\n", $rawNarasumber);
@@ -188,7 +169,6 @@ function parseDeskripsiRss($description) {
 
         foreach ($lines as $line) {
             $line = trim($line);
-            // Membersihkan penomoran ganda seperti "1. 1." atau simbol urut di awal baris
             $line = preg_replace('/^(\d+\.\s*)+/', '', $line);
             if (!empty($line)) {
                 $cleanLines[] = $line;
@@ -214,13 +194,10 @@ function parseDeskripsiRss($description) {
     return $data;
 }
 
-// Fungsi untuk mencocokkan nama dengan master data (Fuzzy Matching)
-// Fungsi untuk mencocokkan nama dengan master data (Fuzzy Matching) diambil dari master-data.json
 function mapPetugasToMasterRss($rawString) {
     $masterPetugas = [];
     $jsonPath = __DIR__ . '/../data/master-data.json';
     
-    // Membaca file master-data.json dan mengambil data pada key 'petugas'
     if (file_exists($jsonPath)) {
         $jsonData = json_decode(file_get_contents($jsonPath), true);
         if (isset($jsonData['petugas']) && is_array($jsonData['petugas'])) {
@@ -283,6 +260,10 @@ include __DIR__ . '/../includes/header.php';
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
   <div class="gallery-header-actions">
+    
+    <!-- PENCARIAN & FILTER UNTUK DAFTAR VIDEO UTAMA -->
+    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; outline: none; width:200px;">
+    
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>
@@ -311,7 +292,7 @@ include __DIR__ . '/../includes/header.php';
                 <option value="Pro 4">Pro 4</option>
             </select>
         </div>
-        <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter" style="height:40px; padding:0 12px; font-weight:600;"><i class="ri-refresh-line"></i> Reset Filter</button>
+        <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter" style="height:40px; padding:0 12px; font-weight:600;"><i class="ri-refresh-line"></i> Reset</button>
     </div>
     <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
   </div>
@@ -343,7 +324,7 @@ include __DIR__ . '/../includes/header.php';
           <th>Aksi</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="mainTableBody">
         <?php if (empty($videos)): ?>
           <tr>
             <td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
@@ -367,36 +348,19 @@ include __DIR__ . '/../includes/header.php';
               $teknik = isset($video['teknik']) ? $video['teknik'] : '';
               $pa = isset($video['pa']) ? $video['pa'] : '';
 
-              // Map Notion colors to theme palette
               $colorMap = [
-                  'gray'    => '#64748b',  // --secondary
-                  'brown'   => '#92400e',  // warm brown
-                  'orange'  => '#f59e0b',  // --warning
-                  'yellow'  => '#fbbf24',  // amber
-                  'green'   => '#10b981',  // --success
-                  'blue'    => '#2563eb',  // --primary
-                  'purple'  => '#8b5cf6',  // --purple
-                  'pink'    => '#ec4899',  // rose-500
-                  'red'     => '#ef4444',  // --danger
-                  'default' => '#64748b'   // --secondary
+                  'gray'    => '#64748b', 'brown'   => '#92400e', 'orange'  => '#f59e0b',
+                  'yellow'  => '#fbbf24', 'green'   => '#10b981', 'blue'    => '#2563eb',
+                  'purple'  => '#8b5cf6', 'pink'    => '#ec4899', 'red'     => '#ef4444',
+                  'default' => '#64748b'
               ];
               $bgColor = isset($colorMap[$programaColor]) ? $colorMap[$programaColor] : $colorMap['default'];
             ?>
             <?php $videoData = htmlspecialchars(json_encode([
-              'id' => $video['id'],
-              'namaAcara' => $namaAcara,
-              'title' => $title,
-              'tema' => $tema,
-              'programa' => $programa,
-              'programaColor' => $programaColor,
-              'flyer' => $flyer,
-              'date' => $date,
-              'time' => $time,
-              'url' => $url,
-              'penyiar' => $penyiar,
-              'narasumber' => $narasumber,
-              'teknik' => $teknik,
-              'pa' => $pa
+              'id' => $video['id'], 'namaAcara' => $namaAcara, 'title' => $title, 'tema' => $tema,
+              'programa' => $programa, 'programaColor' => $programaColor, 'flyer' => $flyer,
+              'date' => $date, 'time' => $time, 'url' => $url, 'penyiar' => $penyiar,
+              'narasumber' => $narasumber, 'teknik' => $teknik, 'pa' => $pa
             ]), ENT_QUOTES, 'UTF-8'); ?>
             <tr class="video-row" data-video="<?= $videoData ?>">
               <td>
@@ -454,6 +418,13 @@ include __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
+  
+  <!-- PAGING CONTAINER UTAMA -->
+  <div class="pagination-wrap" id="mainPaginationWrap" style="display: none; justify-content: space-between; align-items: center; padding: 1rem; border-top: 1px solid #e2e8f0; background: #fff; border-radius: 0 0 8px 8px;">
+    <div class="pagination-info" id="mainPaginationInfo" style="font-size: 0.85rem; color: #64748b;">Menampilkan data</div>
+    <div class="pagination-buttons" id="mainPaginationButtons" style="display: flex; gap: 8px; align-items: center;"></div>
+  </div>
+
 </div>
 
 <style>
@@ -535,7 +506,6 @@ include __DIR__ . '/../includes/header.php';
   .icon-action.view { color:#0ea5e9; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; text-decoration:none; display:inline-flex; }
   .icon-action.view:hover { background:rgba(14,165,233,0.12); }
 </style>
-</div>
 
 <div id="imageModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center;" onclick="this.style.display='none'">
   <img id="imageModalSrc" src="" alt="Pop-up Flyer" style="max-width:90%; max-height:90%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); cursor:zoom-out;">
@@ -565,31 +535,34 @@ include __DIR__ . '/../includes/header.php';
         <label>Pilih Tanggal</label>
         <input type="date" id="rssTargetDate" value="<?= date('Y-m-d') ?>">
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn btn-primary" onclick="tarikRss()"><i class="ri-refresh-line"></i> Tarik Data</button>
-        <button type="button" class="btn btn-secondary" onclick="bersihkanTabel()"><i class="ri-eraser-line"></i> Clear Tabel</button>
-        <button type="button" class="btn btn-primary" style="background:#16a34a;" onclick="simpanSemuaKeNotion()"><i class="ri-save-3-line"></i> Simpan Semua</button>
+      
+      <div style="display:flex; gap:10px; flex-wrap:wrap; width: 100%; justify-content: space-between;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary" onclick="tarikRss()"><i class="ri-refresh-line"></i> Tarik Data</button>
+            <button type="button" class="btn btn-secondary" onclick="bersihkanTabel()"><i class="ri-eraser-line"></i> Clear Tabel</button>
+            <button type="button" class="btn btn-primary" style="background:#16a34a;" onclick="simpanSemuaKeNotion()"><i class="ri-save-3-line"></i> Simpan Semua</button>
+        </div>
+        
+        <!-- PENCARIAN & FILTER UNTUK TABEL TAMBAH VIDEO (RSS) -->
+        <div style="flex:1; min-width:200px; display:flex; justify-content:flex-end;">
+            <input type="text" id="rssSearchInput" placeholder="Cari judul/acara..." oninput="handleRssSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; outline: none; width:100%; max-width: 250px;">
+        </div>
       </div>
       <div id="rssLoadingStatus" style="display:none; color:var(--primary); font-weight:600; align-self:center; font-size:13px;">Menghubungi Youtube &amp; mengekstrak data...</div>
     </div>
 
     <div class="table-wrap">
       <table class="data-table" id="rssTable">
-        <!-- <thead>
-          <tr>
-            <th style="width:3%;">No.</th>
-            <th style="width:19%;">Acara &amp; Tema</th>
-            <th style="width:15%;">Jadwal &amp; Programa</th>
-            <th style="width:20%;">Pemandu &amp; Narasumber</th>
-            <th style="width:20%;">Petugas (PT Setting &amp; PT Produksi)</th>
-            <th style="width:15%;">Media (URL &amp; Flyer)</th>
-            <th style="width:8%;">Aksi</th>
-          </tr>
-        </thead> -->
         <tbody id="rssTableBody">
           <tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:30px;">Belum ada data ditarik. Masukkan ID Channel dan klik Tarik Data.</td></tr>
         </tbody>
       </table>
+    </div>
+    
+    <!-- PAGING CONTAINER RSS -->
+    <div class="pagination-wrap" id="rssPaginationWrap" style="display: none; justify-content: space-between; align-items: center; padding: 1rem; border-top: 1px solid #e2e8f0; background: #fff; border-radius: 0 0 12px 12px; margin-top:-1px;">
+      <div class="pagination-info" id="rssPaginationInfo" style="font-size: 0.85rem; color: #64748b;">Menampilkan data</div>
+      <div class="pagination-buttons" id="rssPaginationButtons" style="display: flex; gap: 8px; align-items: center;"></div>
     </div>
 
     <div style="padding:16px; display:flex; justify-content:flex-end;">
@@ -614,16 +587,6 @@ include __DIR__ . '/../includes/header.php';
     <div class="card" style="margin-bottom:20px;">
       <div class="table-wrap">
         <table class="data-table" id="editVideoTable">
-          <!-- <thead>
-            <tr>
-              <th style="width:19%;">Acara &amp; Tema</th>
-              <th style="width:15%;">Programa &amp; Jadwal</th>
-              <th style="width:20%;">Pemandu &amp; Narasumber</th>
-              <th style="width:20%;">Petugas (PT Setting &amp; PT Produksi)</th>
-              <th style="width:18%;">Media (URL &amp; Flyer)</th>
-              <th style="width:8%;">Aksi</th>
-            </tr>
-          </thead> -->
           <tbody>
             <tr>
               <td>
@@ -666,12 +629,10 @@ include __DIR__ . '/../includes/header.php';
               <td>
                 <div class="row-group">
                   <label class="tabel-label">Petugas PT Setting</label>
-                  <!-- Container untuk custom dropdown -->
                   <div id="teknikContainer"></div>
                   <input type="hidden" id="teknik" name="teknik">
 
                   <label class="tabel-label" style="margin-top:6px;">Petugas PT Produksi</label>
-                  <!-- Container untuk custom dropdown -->
                   <div id="paContainer"></div>
                   <input type="hidden" id="pa" name="pa">
                 </div>
@@ -702,9 +663,6 @@ include __DIR__ . '/../includes/header.php';
 <div id="descToast" style="display:none; position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:10px 16px; border-radius:4px; font-size:14px; z-index:1000;">Teks berhasil disalin ke clipboard!</div>
 
 <script>
-
-// ===== Data video yang sudah tersimpan di Notion (diinjek dari PHP) =====
-// Pengecekan menggunakan video ID YouTube — lebih reliable dari URL penuh
 <?php
     $savedIds = [];
     $savedMap = [];
@@ -712,15 +670,12 @@ include __DIR__ . '/../includes/header.php';
         foreach ($videos as $v) {
             $url = isset($v['url']) ? trim($v['url']) : '';
             if (empty($url) || $url === '#') continue;
-            // Ekstrak video ID dari URL YouTube
-            // Mendukung: ?v=xxx, /live/xxx, youtu.be/xxx
             $videoId = '';
             $parsed = parse_url($url);
             if (!empty($parsed['query'])) {
                 parse_str($parsed['query'], $params);
                 $videoId = $params['v'] ?? '';
             }
-            // Format /live/xxx atau /shorts/xxx atau youtu.be/xxx
             if (empty($videoId) && !empty($parsed['path'])) {
                 $path = trim($parsed['path'], '/');
                 $parts = explode('/', $path);
@@ -738,48 +693,33 @@ include __DIR__ . '/../includes/header.php';
 ?>
 const notionSavedVideoIds = <?= json_encode(array_values(array_unique($savedIds))) ?>;
 const notionSavedVideosMap = <?= json_encode($savedMap) ?>;
-console.log('[notionSavedVideoIds] ID video tersimpan di Notion:', notionSavedVideoIds);
 
-// Ekstrak video ID dari URL YouTube
-// Mendukung format:
-//   youtube.com/watch?v=xxx
-//   youtube.com/live/xxx
-//   youtu.be/xxx
 function extractYoutubeId(url) {
     if (!url) return '';
     try {
         var u = new URL(url);
-        // Format: youtube.com/watch?v=xxx
         var v = u.searchParams.get('v');
         if (v) return v;
-        // Format: youtube.com/live/xxx atau youtu.be/xxx
-        var path = u.pathname.replace(/^\//, ''); // hapus leading slash
-        // path bisa "live/ryajG5eSi6g" atau langsung "ryajG5eSi6g"
+        var path = u.pathname.replace(/^\//, ''); 
         var parts = path.split('/');
         var last = parts[parts.length - 1];
         if (last && last.length > 5) return last;
     } catch(e) {}
-    // Fallback regex untuk format ?v= atau /live/ atau youtu.be/
     var m = url.match(/[?&]v=([^&]+)/) ||
             url.match(/\/live\/([^/?&]+)/) ||
             url.match(/youtu\.be\/([^/?&]+)/);
     return m ? m[1] : '';
 }
 
-// Cek apakah video dari RSS sudah ada di Notion berdasarkan video ID.
 function isAlreadySaved(vidUrl, vidVideoId) {
     var id = vidVideoId || extractYoutubeId(vidUrl);
-    console.log('[isAlreadySaved] url:', vidUrl, '| video_id dari RSS:', vidVideoId, '| id dipakai:', id, '| sudah ada:', notionSavedVideoIds.indexOf(id) !== -1);
     if (!id) return false;
     return notionSavedVideoIds.indexOf(id) !== -1;
 }
 
-// ===== Tambahkan State untuk file uploads (Kloning dari troubleshoot.php) =====
 let selectedFiles = []; 
 let editingPageId = null;
 
-// ===== Master Data (Nama Acara & Nama Pemandu per Programa) =====
-// Perbaikan: Ubah 'teknik' dan 'pa' menjadi array tunggal 'petugas' sesuai JSON
 let masterData = { acara: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, pemandu: { 'Pro 1': [], 'Pro 2': [], 'Pro 4': [] }, petugas: [] };
 let masterDataLoaded = false;
 
@@ -788,29 +728,15 @@ async function loadMasterData(){
         const res = await fetch('../api/get-master-data.php');
         const data = await res.json();
         if (data.success) {
-            // Perbaikan: Ambil data.petugas langsung dari hasil respons JSON
             masterData = { acara: data.acara, pemandu: data.pemandu, petugas: data.petugas };
-            initFilterPetugas(); // Inisialisasi dropdown filter petugas setelah data dimuat
-        } else {
-            console.error('Gagal memuat master data:', data.error);
-        }
+            initFilters(); 
+        } 
     } catch (err) {
-        console.error('Gagal memuat master data:', err);
     } finally {
         masterDataLoaded = true;
-        // Nama Acara & Pemandu sudah tidak butuh "pre-populate" di sini --
-        // keduanya sekarang dibangun on-demand langsung dari masterData lewat
-        // createRssSingleSelect()/createRssMultiCreatableSelect() saat form
-        // Edit atau tabel RSS dibuka. Yang masih perlu di-refresh di sini
-        // cuma widget Petugas Teknik & PA (flat list, bukan grouped).
         populateTeknikOptions();
         populatePaOptions();
     }
-}
-
-// Fungsi untuk mengisi dropdown filter petugas & penyiar saat master data selesai dimuat
-function initFilterPetugas() {
-    initFilters();
 }
 
 function initFilters() {
@@ -832,7 +758,6 @@ function initFilters() {
         });
     }
 
-    // Scan table rows for any additional names in current video data
     var rows = document.querySelectorAll('.video-row');
     rows.forEach(function(row) {
         try {
@@ -890,182 +815,6 @@ function getProgramaLabelFromLive(){
     return 'Pro 1';
 }
 
-// Isi ulang dropdown multi-select Petugas Teknik (PT) sesuai Programa terpilih.
-// --- FUNGSI CUSTOM MULTISELECT DROPDOWN (TAMPILAN SEPERTI GAMBAR) ---
-function createCustomMultiSelect(containerId, hiddenInputId, options) {
-    var container = document.getElementById(containerId);
-    container.innerHTML = '';
-    container.style.position = 'relative';
-    container.style.width = '100%';
-
-    var hiddenInput = document.getElementById(hiddenInputId);
-    
-    // Ambil nilai yang mungkin sudah ada (misal saat edit video)
-    var selectedValues = hiddenInput.value ? hiddenInput.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
-
-    // 1. Kotak Pilih (Visual pengganti select)
-    var selectBox = document.createElement('div');
-    selectBox.style.cssText = 'width:100%; box-sizing:border-box; min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 8px; background:#fff; cursor:pointer; display:flex; align-items:center; position:relative; font-size:12px; font-weight:600; color:#334155;';
-
-    // Panah dropdown
-    var arrow = document.createElement('div');
-    arrow.innerHTML = '▼';
-    arrow.style.cssText = 'position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; color:#6c757d;';
-    selectBox.appendChild(arrow);
-
-    // 2. Menu Dropdown (Search + Checkbox List)
-    var dropdown = document.createElement('div');
-    dropdown.className = 'custom-dropdown-menu'; // Untuk identifikasi saat klik di luar
-    dropdown.style.cssText = 'position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
-
-    // Baris Search
-    var searchDiv = document.createElement('div');
-    searchDiv.style.cssText = 'padding:8px; border-bottom:1px solid #eee;';
-    var searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.placeholder = 'Search...';
-    searchInput.style.cssText = 'width:100%; padding:6px 10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:13px;';
-    searchDiv.appendChild(searchInput);
-    dropdown.appendChild(searchDiv);
-
-    // Daftar List
-    var listDiv = document.createElement('div');
-    listDiv.style.cssText = 'max-height:200px; overflow-y:auto; padding:4px 0;';
-    dropdown.appendChild(listDiv);
-
-    container.appendChild(selectBox);
-    container.appendChild(dropdown);
-
-    // Render Tag / Chip di kotak pilih
-    function renderChips() {
-        // Bersihkan area selectBox (kecuali panah)
-        var elementsToRemove = [];
-        for(var i = 0; i < selectBox.children.length; i++) {
-            if (selectBox.children[i] !== arrow) elementsToRemove.push(selectBox.children[i]);
-        }
-        elementsToRemove.forEach(function(el){ selectBox.removeChild(el); });
-
-        if (selectedValues.length === 0) {
-            var placeholder = document.createElement('span');
-            placeholder.textContent = 'Pilih petugas...';
-            placeholder.style.cssText = 'color:#6c757d; font-size:14px;';
-            selectBox.insertBefore(placeholder, arrow);
-        } else {
-            selectedValues.forEach(function(val) {
-                var chip = document.createElement('span');
-                // Styling mirip tag/chip seperti di referensi gambar
-                chip.style.cssText = 'background:#e2e8f0; color:#334155; padding:2px 8px; border-radius:4px; font-size:12px; display:inline-flex; align-items:center; gap:6px; border:1px solid #cbd5e1;';
-                chip.textContent = val;
-                
-                var closeBtn = document.createElement('span');
-                closeBtn.innerHTML = '&times;';
-                closeBtn.style.cssText = 'cursor:pointer; font-size:14px; font-weight:bold; color:#64748b;';
-                closeBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    toggleValue(val, false);
-                };
-                chip.appendChild(closeBtn);
-                selectBox.insertBefore(chip, arrow);
-            });
-        }
-        
-        hiddenInput.value = selectedValues.join(', ');
-    }
-
-    // Toggle (Centang / Hapus Centang)
-    function toggleValue(val, isChecked) {
-        if (isChecked && !selectedValues.includes(val)) {
-            selectedValues.push(val);
-        } else if (!isChecked) {
-            selectedValues = selectedValues.filter(function(v){ return v !== val; });
-        }
-        renderChips();
-        renderList(searchInput.value); // Update centang di list
-    }
-
-    // Render daftar nama (dengan filter search)
-    // Render daftar nama (dengan filter search)
-    function renderList(filterText) {
-        if (!filterText) filterText = '';
-        listDiv.innerHTML = '';
-        listDiv.style.textAlign = 'left'; // Paksa bungkus utama ke kiri
-        
-        var filtered = options.filter(function(o){ 
-            return o.toLowerCase().indexOf(filterText.toLowerCase()) !== -1; 
-        });
-        
-        if (filtered.length === 0) {
-            var empty = document.createElement('div');
-            empty.textContent = 'Tidak ditemukan';
-            empty.style.cssText = 'padding:8px; color:#999; text-align:center; font-size:13px;';
-            listDiv.appendChild(empty);
-            return;
-        }
-
-        filtered.forEach(function(opt) {
-            var label = document.createElement('label');
-            // Gunakan !important, width: 100%, dan flex-direction: row untuk melawan CSS template
-            label.style.cssText = 'display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:flex-start !important; text-align:left !important; padding:6px 12px !important; cursor:pointer !important; font-size:14px !important; margin:0 !important; width:100% !important; box-sizing:border-box !important; transition:background 0.2s;';
-            label.onmouseover = function() { label.style.background = '#f8f9fa'; };
-            label.onmouseout = function() { label.style.background = 'transparent'; };
-
-            var cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.value = opt;
-            cb.checked = selectedValues.includes(opt);
-            // Kunci posisi checkbox persis di ujung kiri
-            cb.style.cssText = 'margin:0 10px 0 0 !important; position:static !important; float:none !important; width:auto !important; flex-shrink:0 !important;';
-            
-            cb.onchange = function(e) {
-                e.stopPropagation();
-                toggleValue(opt, e.target.checked);
-            };
-
-            // Bungkus teks dalam span agar tidak terpengaruh margin label bawaan
-            var textSpan = document.createElement('span');
-            textSpan.textContent = opt;
-            textSpan.style.cssText = 'flex-grow:1 !important; text-align:left !important; margin:0 !important;';
-
-            label.appendChild(cb);
-            label.appendChild(textSpan); 
-            listDiv.appendChild(label);
-        });
-    }
-
-    // Event Klik untuk Buka/Tutup Dropdown
-    selectBox.onclick = function() {
-        var isOpen = dropdown.style.display === 'block';
-        
-        // Tutup semua dropdown custom lain yang sedang terbuka
-        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ d.style.display = 'none'; });
-        
-        if (!isOpen) {
-            dropdown.style.display = 'block';
-            searchInput.focus();
-            renderList(searchInput.value);
-        }
-    };
-
-    // Event Ketik di Search
-    searchInput.oninput = function(e) {
-        renderList(e.target.value);
-    };
-
-    renderChips();
-    renderList('');
-}
-
-// Tutup dropdown jika user klik di luar area
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('#teknikContainer') && !e.target.closest('#paContainer') &&
-        !e.target.closest('[id^="pt_"]') && !e.target.closest('[id^="pa_"]')) {
-        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ 
-            d.style.display = 'none'; 
-        });
-    }
-});
-
-// Panggil fungsi pembuat UI di fungsi standar yang sudah dipanggil sistem Anda
 function populateTeknikOptions() {
     var names = (masterData.petugas) ? masterData.petugas : [];
     createCustomMultiSelect('teknikContainer', 'teknik', names);
@@ -1076,7 +825,6 @@ function populatePaOptions() {
     createCustomMultiSelect('paContainer', 'pa', names);
 }
 
-// Dipanggil saat Live Dimana (Programa) berubah: isi ulang dropdown Nama Acara & Nama Pemandu
 function handleLiveChange(){
     populateTeknikOptions();
     populatePaOptions();
@@ -1084,7 +832,9 @@ function handleLiveChange(){
 
 document.addEventListener('DOMContentLoaded', () => {
   loadMasterData();
-  initFilters();
+  
+  // Inisiasi paging untuk tabel utama
+  updateMainTablePagination();
 
   const dropzone = document.getElementById('dropzone');
   if (dropzone) {
@@ -1103,16 +853,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ===== Handle Pilihan File dari Dropzone (Form Edit) =====
-// Persis meniru pola handleFlyerSelect() milik baris tabel Tambah Video,
-// hanya tanpa suffix index karena form edit cuma untuk 1 video.
 function handleFileSelectEdit(files) {
   var file = files && files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) { alert('Harap pilih file gambar.'); return; }
   if (file.size > 10 * 1024 * 1024) { alert('Ukuran gambar maksimal 10MB.'); return; }
 
-  selectedFiles = [file]; // Flyer video hanya butuh 1, reset setiap pilih baru
+  selectedFiles = [file]; 
 
   var reader = new FileReader();
   reader.onload = function(e) {
@@ -1121,8 +868,6 @@ function handleFileSelectEdit(files) {
   reader.readAsDataURL(file);
 }
 
-// Menampilkan gambar di dalam kotak dropzone-mini + tombol hapus,
-// persis seperti tampilan flyer pada baris tabel Tambah Video.
 function renderFlyerPreviewEdit(src) {
   var dropzone = document.getElementById('dropzone');
   if (!dropzone) return;
@@ -1165,9 +910,6 @@ function hapusFlyerEdit(event) {
   dropzone.appendChild(span);
 }
 
-// ===== Narasumber: daftar input dinamis (Form Edit) =====
-// Persis meniru pola addNarasumberField() milik baris tabel Tambah Video,
-// hanya tanpa suffix index karena form edit cuma untuk 1 video.
 function addNarasumberFieldEdit(value) {
   if (value === undefined) value = '';
   var container = document.getElementById('editNarasumberContainer');
@@ -1194,24 +936,19 @@ function addNarasumberFieldEdit(value) {
   container.appendChild(wrapper);
 }
 
-// ===== Fungsi Asynchronous Upload (Sesuai spesifikasi upload-to-notion.php Anda) =====
 async function uploadFiles(files) {
   if (files.length === 0) return [];
   const formData = new FormData();
   
-  // SINKRONISASI: Menggunakan key 'dokumentasi[]' agar terbaca oleh file upload-to-notion.php Anda
   files.forEach(f => formData.append('dokumentasi[]', f)); 
   
   const res = await fetch('../api/upload-to-notion.php', { method: 'POST', body: formData });
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Upload ke Notion gagal');
   
-  // Mengembalikan data hasil upload dari Notion (id, original)
   return data.files.map(f => ({ id: f.id, name: f.original })); 
 }
 
-// Kebalikan dari format gabungan "00.00-00.00" yang disimpan di Notion:
-// pecah jadi { mulai, selesai } dalam format "HH:MM" untuk <input type="time">.
 function parseJamGabungToInputs(gabung){
     if (!gabung) return { mulai: '', selesai: '' };
     var toHHMM = function(s){
@@ -1228,9 +965,6 @@ function parseJamGabungToInputs(gabung){
     };
 }
 
-// Kebalikan dari formatTanggalIndonesia: menerima ISO ("2026-07-17"),
-// format Indonesia ("17 Juli 2026"), atau string tanggal lain yang bisa
-// di-parse Date(), lalu selalu mengembalikan "YYYY-MM-DD" untuk <input type="date">.
 function parseTanggalToISO(str){
     if (!str) return '';
     str = String(str).trim();
@@ -1266,12 +1000,10 @@ function showAddView(){
     document.getElementById('addVideoView').style.display = 'block';
     window.scrollTo(0, 0);
 
-    // Reset tabel draft RSS ke kondisi awal setiap kali dibuka
     document.getElementById('rssTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:30px;">Belum ada data ditarik. Masukkan ID Channel dan klik Tarik Data.</td></tr>';
 }
 
 function openEditView(videoData){
-//   console.log("Data Video dari Notion:", videoData);
     editingPageId = videoData.id;
 
     document.getElementById('galleryMainView').style.display = 'none';
@@ -1281,38 +1013,29 @@ function openEditView(videoData){
     document.getElementById('addVideoForm').reset();
     selectedFiles = [];
 
-    // ---- Live Dimana (Programa) : diset LEBIH DULU karena menentukan isi dropdown Acara & Pemandu ----
     var liveSelect = document.getElementById('live');
     var liveIndexByProgram = { 'Pro 1': 0, 'Pro 2': 1, 'Pro 4': 2 };
     if (videoData.programa in liveIndexByProgram) {
         liveSelect.selectedIndex = liveIndexByProgram[videoData.programa];
     }
 
-    // ---- Program / Nama Acara (dropdown diisi sesuai Programa di atas) ----
     var namaAcara = videoData.namaAcara || '';
     document.getElementById('hidden_edit_acara').value = namaAcara;
     createRssSingleSelect('editAcaraContainer', 'hidden_edit_acara', masterData.acara || {}, 'Pilih Acara');
 
-    // ---- Pemandu Acara (dropdown diisi sesuai Programa di atas) ----
     var namaPenyiar = videoData.penyiar || '';
     document.getElementById('hidden_edit_pemandu').value = namaPenyiar;
     createRssMultiCreatableSelect('editPemanduContainer', 'hidden_edit_pemandu', masterData.pemandu || {}, 'Pilih Pemandu');
 
-    // ---- Petugas Teknik & PA ----
-    // 1. Masukkan data dari database ke dalam hidden input
     document.getElementById('teknik').value = videoData.teknik || '';
     document.getElementById('pa').value = videoData.pa || '';
 
-    // 2. Baru panggil pembentuk UI (skrip kita otomatis membaca hidden input di atas)
     populateTeknikOptions();
     populatePaOptions();
 
-    // ---- Tema (diambil langsung dari properti "Tema Acara" di Notion) ----
     var tema = videoData.tema || '';
 
     if (tema.trim() === '' && videoData.title) {
-        // Fallback untuk data lama yang belum punya properti Tema Acara terisi --
-        // coba turunkan dari judul "Nama Acara - Tema".
         var rawTitle = videoData.title;
         var normNamaAcara = (namaAcara || '').trim();
         var exactRegex = normNamaAcara !== ''
@@ -1330,12 +1053,10 @@ function openEditView(videoData){
     }
     document.getElementById('tema').value = tema.trim();
 
-    // ---- Tanggal & Jam ----
     document.getElementById('tanggal').value = parseTanggalToISO(videoData.date);
     var jamParsed = parseJamGabungToInputs(videoData.time);
     document.getElementById('jamMulai').value = jamParsed.mulai;
 
-    // ---- Narasumber (daftar input dinamis, persis seperti form Tambah Video) ----
     var editNarasumberContainer = document.getElementById('editNarasumberContainer');
     editNarasumberContainer.innerHTML = '';
     var narasumberArr = Array.isArray(videoData.narasumber) ? videoData.narasumber : [];
@@ -1345,11 +1066,9 @@ function openEditView(videoData){
         addNarasumberFieldEdit('');
     }
 
-    // ---- Link Youtube ----
     var linkInput = document.querySelector('#addVideoForm input[name="link"]');
     if (linkInput) linkInput.value = (videoData.url && videoData.url !== '#') ? videoData.url : '';
 
-    // ---- Flyer: tampilkan yang sudah ada via dropzone-mini, ganti hanya jika user pilih foto baru ----
     var editDropzone = document.getElementById('dropzone');
     Array.from(editDropzone.children).forEach(function(child) {
         if (child.tagName !== 'INPUT') editDropzone.removeChild(child);
@@ -1369,9 +1088,7 @@ function hideAddView(){
     document.getElementById('galleryMainView').style.display = 'block';
 }
 
-// Fungsi untuk menangani klik tombol Kembali pada form Tambah Video
 function handleBackFromAddView() {
-    // Cari tombol Simpan di dalam tabel yang statusnya sudah 'Tersimpan'
     var savedButtons = document.querySelectorAll('#rssTableBody .btn-success[disabled]');
     var isAnySaved = false;
 
@@ -1381,11 +1098,9 @@ function handleBackFromAddView() {
         }
     });
 
-    // Jika ada baris yang tersimpan, refresh halaman agar data rekap diperbarui
     if (isAnySaved) {
         location.reload();
     } else {
-        // Jika belum ada data yang tersimpan, kembali ke tampilan rekap tanpa refresh
         hideAddView();
     }
 }
@@ -1396,10 +1111,7 @@ function hideEditView(){
     document.getElementById('addVideoForm').reset();
 
     selectedFiles = [];
-    flyerBase64Data = null;
-    flyerFileName = '';
 
-    // Reset dropzone-mini kembali ke placeholder
     var dropzone = document.getElementById('dropzone');
     if (dropzone) {
         Array.from(dropzone.children).forEach(function(child) {
@@ -1411,14 +1123,12 @@ function hideEditView(){
         dropzone.appendChild(placeholder);
     }
 
-    // Reset daftar narasumber dinamis
     var narasumberContainer = document.getElementById('editNarasumberContainer');
     if (narasumberContainer) narasumberContainer.innerHTML = '';
 
     editingPageId = null;
 }
 
-// UBAH MENJADI ASYNC FUNCTION
 async function submitAddVideo(){
     var form = document.getElementById('addVideoForm');
     var isEditMode = !!editingPageId;
@@ -1431,11 +1141,9 @@ async function submitAddVideo(){
         }
     });
 
-    // AMBIL NILAI DARI HIDDEN INPUT KUSTOM (Baik untuk mode Edit maupun Tambah jika menggunakan kustom)
     var hiddenAcara = document.getElementById('hidden_edit_acara');
     var hiddenPemandu = document.getElementById('hidden_edit_pemandu');
     
-    // Fallback jika form edit aktif atau menggunakan elemen kustom
     var finalAcara = hiddenAcara ? hiddenAcara.value.trim() : (plainObject['program'] || '');
     var finalPemandu = hiddenPemandu ? hiddenPemandu.value.trim() : (plainObject['penyiar'] || '');
 
@@ -1443,9 +1151,6 @@ async function submitAddVideo(){
     plainObject['namaAcaraDisplay'] = finalAcara;
     plainObject['penyiar'] = finalPemandu;
 
-    // ---- Kumpulkan Narasumber dari daftar input dinamis ----
-    // (textarea "narasumber" sudah diganti daftar input, jadi tidak lagi
-    // otomatis ikut terbawa oleh FormData(form) di atas)
     var narasumberContainerEl = document.getElementById('editNarasumberContainer');
     var narasumberArrSubmit = [];
     if (narasumberContainerEl) {
@@ -1455,7 +1160,6 @@ async function submitAddVideo(){
     }
     plainObject['narasumber'] = narasumberArrSubmit.join('\n');
 
-    // Set field 'judul' agar murni diisi nilai 'tema'
     plainObject['judul'] = plainObject['tema'] || '';
 
     var missing = [];
@@ -1477,9 +1181,8 @@ async function submitAddVideo(){
     try {
         let uploadedFilesPayload = [];
         
-        // Jalankan pre-upload ke Notion via AWS S3 (jika ada file baru di dropzone)
         if (selectedFiles.length > 0) {
-            submitBtn.textContent = 'Menyimpan Gambar ke Notion S3...';
+            submitBtn.textContent = 'Menyimpan Gambar...';
             uploadedFilesPayload = await uploadFiles(selectedFiles);
         }
 
@@ -1494,9 +1197,7 @@ async function submitAddVideo(){
 
         const res = await fetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(plainObject)
         });
 
@@ -1517,7 +1218,6 @@ async function submitAddVideo(){
     }
 }
 
-// Hapus video langsung dari baris tabel (tanpa buka modal detail)
 function deleteVideoRow(pageId, title) {
     if (!confirm(`Hapus video "${title}" dari rekap?`)) return;
 
@@ -1572,6 +1272,9 @@ function renderVideoRows(videos) {
                 </td>
             </tr>
         `;
+        
+        mainCurrentPage = 1;
+        updateMainTablePagination();
         return;
     }
 
@@ -1681,6 +1384,10 @@ function renderVideoRows(videos) {
 
         tbody.appendChild(tr);
     });
+    
+    // Terapkan Paging ke Tabel Utama Setelah Render Ulang
+    mainCurrentPage = 1;
+    updateMainTablePagination();
 }
 
 function escapeRegExp(string) {
@@ -1744,6 +1451,11 @@ async function filterTable() {
                 </td>
             </tr>
         `;
+        
+        // Sembunyikan paging selama loading
+        if(document.getElementById('mainPaginationWrap')) {
+            document.getElementById('mainPaginationWrap').style.display = 'none';
+        }
     }
 
     if (currentFilterController) {
@@ -1792,12 +1504,182 @@ async function filterTable() {
 }
 
 // ==========================================
-// RSS AUTO-FILL: TARIK & RENDER TABEL DRAFT
-// (Dipindahkan & disesuaikan dari test-rss-autofill.php)
+// FUNGSI PAGING & SEARCH TABEL UTAMA
 // ==========================================
+let mainCurrentPage = 1;
+const mainRowsPerPage = 8;
+let mainSearchQuery = '';
 
-// Bangun peta "Nama Acara" -> "Programa lengkap" dari masterData.acara yang
-// sudah dimuat lewat get-master-data.php (sama persis dipakai form Edit).
+function handleMainSearch() {
+    mainSearchQuery = document.getElementById('mainSearchInput').value.toLowerCase();
+    mainCurrentPage = 1;
+    updateMainTablePagination();
+}
+
+function changeMainPage(page) {
+    mainCurrentPage = page;
+    updateMainTablePagination();
+}
+
+function jumpToMainPage(val, maxPage) {
+    let p = parseInt(val, 10);
+    if (!isNaN(p) && p >= 1 && p <= maxPage) { changeMainPage(p); }
+    else if (p > maxPage) { changeMainPage(maxPage); }
+    else { changeMainPage(1); }
+}
+
+function updateMainTablePagination() {
+    const allRows = Array.from(document.querySelectorAll('.video-row'));
+    const paginationWrap = document.getElementById('mainPaginationWrap');
+
+    if (allRows.length === 0) {
+        if (paginationWrap) paginationWrap.style.display = 'none';
+        return;
+    }
+
+    const filteredRows = allRows.filter(row => {
+        if (!mainSearchQuery) return true;
+        let textContent = row.textContent.toLowerCase();
+        return textContent.includes(mainSearchQuery);
+    });
+
+    const totalRows = filteredRows.length;
+    const totalPages = Math.ceil(totalRows / mainRowsPerPage) || 1;
+
+    if (mainCurrentPage > totalPages) mainCurrentPage = totalPages;
+    if (mainCurrentPage < 1) mainCurrentPage = 1;
+
+    allRows.forEach(row => row.style.display = 'none');
+
+    const startIndex = (mainCurrentPage - 1) * mainRowsPerPage;
+    const endIndex = Math.min(startIndex + mainRowsPerPage, totalRows);
+    for (let i = startIndex; i < endIndex; i++) {
+        filteredRows[i].style.display = '';
+    }
+
+    const paginationInfo = document.getElementById('mainPaginationInfo');
+    const paginationButtons = document.getElementById('mainPaginationButtons');
+
+    if (totalRows === 0) {
+        if (paginationWrap) paginationWrap.style.display = 'none';
+    } else {
+        paginationWrap.style.display = 'flex';
+        paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} video`;
+
+        let buttonsHTML = '';
+        const prevDisabled = mainCurrentPage === 1 ? 'disabled' : '';
+        const prevStyle = mainCurrentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changeMainPage(${mainCurrentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+        buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${mainCurrentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToMainPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToMainPage(this.value, ${totalPages})">`;
+        buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+
+        const nextDisabled = mainCurrentPage === totalPages ? 'disabled' : '';
+        const nextStyle = mainCurrentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changeMainPage(${mainCurrentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
+
+        paginationButtons.innerHTML = buttonsHTML;
+    }
+}
+
+
+// ==========================================
+// FUNGSI PAGING & SEARCH RSS YOUTUBE
+// ==========================================
+let rssCurrentPage = 1;
+const rssRowsPerPage = 5; 
+let rssSearchQuery = '';
+let isRssPagingActive = false;
+
+function handleRssSearch() {
+    rssSearchQuery = document.getElementById('rssSearchInput').value.toLowerCase();
+    rssCurrentPage = 1;
+    updateRssTablePagination();
+}
+
+function changeRssPage(page) {
+    rssCurrentPage = page;
+    updateRssTablePagination();
+}
+
+function jumpToRssPage(val, maxPage) {
+    let p = parseInt(val, 10);
+    if (!isNaN(p) && p >= 1 && p <= maxPage) {
+        changeRssPage(p);
+    } else if (p > maxPage) {
+        changeRssPage(maxPage);
+    } else {
+        changeRssPage(1); 
+    }
+}
+
+function updateRssTablePagination() {
+    if (!isRssPagingActive) return;
+
+    const allRows = Array.from(document.querySelectorAll('#rssTableBody tr'));
+    const paginationWrap = document.getElementById('rssPaginationWrap');
+    
+    if (allRows.length === 1 && allRows[0].querySelector('td[colspan]')) {
+        if(paginationWrap) paginationWrap.style.display = 'none';
+        return;
+    }
+
+    const filteredRows = allRows.filter(row => {
+        if (!rssSearchQuery) return true;
+        let textContent = '';
+        row.querySelectorAll('input[type="text"], input[type="hidden"], textarea').forEach(inp => textContent += inp.value + ' ');
+        row.querySelectorAll('span').forEach(sp => textContent += sp.textContent + ' ');
+        return textContent.toLowerCase().includes(rssSearchQuery);
+    });
+
+    const totalRows = filteredRows.length;
+    const totalPages = Math.ceil(totalRows / rssRowsPerPage) || 1;
+
+    if (rssCurrentPage > totalPages) rssCurrentPage = totalPages;
+    if (rssCurrentPage < 1) rssCurrentPage = 1;
+
+    allRows.forEach(row => row.style.display = 'none');
+
+    const startIndex = (rssCurrentPage - 1) * rssRowsPerPage;
+    const endIndex = Math.min(startIndex + rssRowsPerPage, totalRows);
+    for (let i = startIndex; i < endIndex; i++) {
+        filteredRows[i].style.display = '';
+    }
+
+    let visibleCounter = 1;
+    filteredRows.forEach(row => {
+        const firstCell = row.querySelector('td:first-child span') || row.querySelector('td:first-child');
+        if (firstCell && !row.querySelector('td[colspan]')) {
+             if(firstCell.tagName === 'SPAN') firstCell.textContent = startIndex + visibleCounter++;
+             else firstCell.innerHTML = startIndex + visibleCounter++;
+        }
+    });
+
+    const paginationInfo = document.getElementById('rssPaginationInfo');
+    const paginationButtons = document.getElementById('rssPaginationButtons');
+
+    if (totalRows === 0) {
+        if (paginationWrap) paginationWrap.style.display = 'none';
+    } else {
+        paginationWrap.style.display = 'flex';
+        paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} baris`;
+
+        let buttonsHTML = '';
+        const prevDisabled = rssCurrentPage === 1 ? 'disabled' : '';
+        const prevStyle = rssCurrentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changeRssPage(${rssCurrentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+        buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${rssCurrentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToRssPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToRssPage(this.value, ${totalPages})">`;
+        buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+
+        const nextDisabled = rssCurrentPage === totalPages ? 'disabled' : '';
+        const nextStyle = rssCurrentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changeRssPage(${rssCurrentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
+
+        paginationButtons.innerHTML = buttonsHTML;
+    }
+}
+
 function getAcaraToProgramaMapRss() {
     var programaFullNames = { 'Pro 1': 'Pro 1 FM 94.6 Mhz', 'Pro 2': 'Pro 2 FM 87.9 Mhz', 'Pro 4': 'Pro 4 FM 105.3 Mhz' };
     var map = {};
@@ -1863,6 +1745,9 @@ async function tarikRss() {
     var tbody = document.getElementById('rssTableBody');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:20px;">Memproses RSS...</td></tr>';
 
+    isRssPagingActive = false;
+    if(document.getElementById('rssPaginationWrap')) document.getElementById('rssPaginationWrap').style.display = 'none';
+
     var formData = new URLSearchParams();
     formData.append('action', 'fetch_rss');
     formData.append('channel_id', channelId);
@@ -1907,11 +1792,9 @@ function renderTabelRss(videos) {
         var hidPT = 'hidden_pt_' + index;
         var hidPA = 'hidden_pa_' + index;
 
-        // ── CEK DUPLIKAT: bandingkan video ID dari RSS dengan yang sudah ada di Notion ──
         var vidUrl = vid.url || '';
         var alreadySaved = isAlreadySaved(vidUrl, vid.video_id || '');
 
-        // Catatan: baris tetap dirender lengkap, hanya flag alreadySaved yang berbeda
         var extractedTitle = (vid.title_asli || '').split('-')[0].trim();
         var normalizedTitle = normalizeTextRss(extractedTitle);
         var optionsAcara = '<option value="">-- Pilih Acara --</option>';
@@ -1960,7 +1843,6 @@ function renderTabelRss(videos) {
             var vId = vid.video_id || extractYoutubeId(vidUrl);
             var savedVid = (typeof notionSavedVideosMap !== 'undefined' && notionSavedVideosMap[vId]) ? notionSavedVideosMap[vId] : null;
 
-            // Prioritaskan data yang sudah benar-benar tersimpan di Notion
             var namaAcaraText = savedVid && savedVid.namaAcara ? savedVid.namaAcara : (vid.title_asli ? vid.title_asli.split('-')[0].trim() : '—');
             var temaText = savedVid ? (savedVid.tema || savedVid.title || '—') : (vid.tema || '—');
             
@@ -2133,7 +2015,7 @@ function renderTabelRss(videos) {
         createRssMultiSelect(idPT, hidPT, petugasList);
         createRssMultiSelect(idPA, hidPA, petugasList);
         attachDropzoneEvents(index);
-        // Pencocokan otomatis judul RSS ke master data
+
         var matchedAcaraName = "";
         Object.keys(acaraGrouped).forEach(function(prog) {
             (acaraGrouped[prog] || []).forEach(function(ac) {
@@ -2145,7 +2027,6 @@ function renderTabelRss(videos) {
         });
 
         var matchedPemanduNames = [];
-        // Pecah string penyiar dari RSS berdasarkan separator umum (& , / dan)
         var rawPemanduParts = extractedPenyiar
             ? extractedPenyiar.split(/[,&\/]|\bdan\b/i).map(function(s){ return s.trim(); }).filter(Boolean)
             : [];
@@ -2161,31 +2042,25 @@ function renderTabelRss(videos) {
                     }
                 });
             });
-            // Jika tidak cocok di master, pakai nama asli dari RSS
             matchedPemanduNames.push(matched || part);
         });
 
-        // Fallback: jika tidak ada satu pun nama terpecah, gunakan string mentah
         if (matchedPemanduNames.length === 0 && extractedPenyiar) {
             matchedPemanduNames = [extractedPenyiar];
         }
 
-        // Masukkan nilai ke hidden input
         document.getElementById('hidden_acara_' + index).value = matchedAcaraName;
         document.getElementById('hidden_pemandu_' + index).value = matchedPemanduNames.join(', ');
 
-        // Render komponen select kustom
         createRssSingleSelect('acara_container_' + index, 'hidden_acara_' + index, acaraGrouped, 'Pilih Acara');
         createRssMultiCreatableSelect('pemandu_container_' + index, 'hidden_pemandu_' + index, penyiarGrouped, 'Pilih Pemandu');
     });
+    
     perbaruiNomorUrut();
+    isRssPagingActive = true;
+    updateRssTablePagination();
 }
 
-// ==========================================
-// CUSTOM DROPDOWN MULTISELECT KHUSUS BARIS RSS
-// (Terpisah dari createCustomMultiSelect single-form supaya tidak ikut
-// memanggil generateDescription() yang tidak relevan di konteks tabel ini)
-// ==========================================
 function createRssMultiSelect(containerId, hiddenInputId, options) {
     var container = document.getElementById(containerId);
     if (!container) return;
@@ -2278,12 +2153,10 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
         });
     }
 
-    // Event Klik untuk Buka/Tutup Dropdown
     selectBox.onclick = function(e) {
-        e.stopPropagation(); // Mencegah klik menutup dropdown seketika
+        e.stopPropagation(); 
         var isOpen = dropdown.style.display === 'block';
         
-        // Tutup semua dropdown custom lain yang sedang terbuka
         document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ 
             d.style.display = 'none'; 
         });
@@ -2296,7 +2169,6 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
         }
     };
 
-    // Mencegah klik di dalam kotak pencarian menutup dropdown
     searchInput.onclick = function(e) { 
         e.stopPropagation(); 
     };
@@ -2305,9 +2177,6 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
     renderList('');
 }
 
-// ==========================================
-// TAMBAH BARIS KOSONG & NOMOR URUT
-// ==========================================
 function tambahBarisKosong() {
     var tbody = document.getElementById('rssTableBody');
 
@@ -2422,22 +2291,26 @@ function tambahBarisKosong() {
     attachDropzoneEvents(uniqueId);
 
     perbaruiNomorUrut();
+
+    isRssPagingActive = true;
+    updateRssTablePagination();
 }
 
 function perbaruiNomorUrut() {
     var rows = document.querySelectorAll('#rssTableBody tr');
     var counter = 1;
     rows.forEach(function(row) {
-        var cell = row.querySelector('td:first-child');
-        if (cell && !cell.hasAttribute('colspan')) {
-            cell.innerHTML = counter++;
+        var cell = row.querySelector('td:first-child span') || row.querySelector('td:first-child');
+        if (cell && !row.querySelector('td[colspan]')) {
+             if(cell.tagName === 'SPAN'){
+                 cell.textContent = counter++;
+             } else {
+                 cell.innerHTML = counter++;
+             }
         }
     });
 }
 
-// ==========================================
-// FLYER: DRAG & DROP, PREVIEW, POP-UP
-// ==========================================
 function attachDropzoneEvents(id) {
     var zone = document.getElementById('dropzone_' + id);
     if (!zone) return;
@@ -2518,15 +2391,13 @@ function openImagePopup(src) {
     modal.style.display = 'flex';
 }
 
-// ==========================================
-// HAPUS BARIS & CLEAR TABEL
-// ==========================================
 function hapusBaris(btn) {
     if (confirm("Apakah Anda yakin ingin menghapus baris ini?")) {
         var row = btn.closest('tr');
         if (row) {
             row.remove();
             perbaruiNomorUrut();
+            if (typeof updateRssTablePagination === 'function') updateRssTablePagination();
         }
     }
 }
@@ -2534,12 +2405,13 @@ function hapusBaris(btn) {
 function bersihkanTabel() {
     if (confirm("Apakah Anda yakin ingin menghapus semua isian di tabel ini?")) {
         document.getElementById('rssTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:30px;">Belum ada data ditarik. Masukkan ID Channel dan klik Tarik Data.</td></tr>';
+        
+        isRssPagingActive = false;
+        if(document.getElementById('rssSearchInput')) document.getElementById('rssSearchInput').value = '';
+        if(document.getElementById('rssPaginationWrap')) document.getElementById('rssPaginationWrap').style.display = 'none';
     }
 }
 
-// ==========================================
-// SIMPAN KE NOTION (per baris & semua baris)
-// ==========================================
 async function simpanKeNotion(btn, id) {
     var originalText = btn.textContent;
     btn.disabled = true;
@@ -2607,7 +2479,6 @@ async function simpanKeNotion(btn, id) {
         var uploadedFilesPayload = [];
 
         if (fileInput && fileInput.files.length > 0) {
-            // Jalur 1: User memilih file baru secara manual
             btn.textContent = 'Upload Flyer...';
             var uploadFormData = new FormData();
             uploadFormData.append('dokumentasi[]', fileInput.files[0]);
@@ -2621,7 +2492,6 @@ async function simpanKeNotion(btn, id) {
             uploadedFilesPayload = uploadData.files.map(function(f){ return { id: f.id, name: f.name || f.original }; });
 
         } else if (hiddenFlyerEl && hiddenFlyerEl.value && hiddenFlyerEl.value.startsWith('http')) {
-            // Jalur 2: Flyer dari RSS (thumbnail YouTube) — kirim URL ke server untuk di-fetch & upload
             btn.textContent = 'Upload Thumbnail...';
             var urlFormData = new FormData();
             urlFormData.append('flyer_url', hiddenFlyerEl.value);
@@ -2630,7 +2500,6 @@ async function simpanKeNotion(btn, id) {
             var urlUploadData = await urlUploadRes.json();
 
             if (!urlUploadData.success) {
-                // Jika gagal upload thumbnail RSS, lanjutkan simpan tanpa flyer (tidak fatal)
                 console.warn('Gagal upload thumbnail RSS ke Notion:', urlUploadData.error);
             } else {
                 uploadedFilesPayload = urlUploadData.files.map(function(f){ return { id: f.id, name: f.name || f.original }; });
@@ -2654,7 +2523,6 @@ async function simpanKeNotion(btn, id) {
             btn.disabled = true;
             btn.style.cursor = 'not-allowed';
 
-            // Daftarkan video ID ke notionSavedVideoIds agar tarik RSS berikutnya ikut terdeteksi
             var savedId = extractYoutubeId(link);
             if (savedId) {
                 if (notionSavedVideoIds.indexOf(savedId) === -1) {
@@ -2679,7 +2547,6 @@ async function simpanKeNotion(btn, id) {
                 }
             }
 
-            // Sembunyikan tombol Hapus
             var deleteBtn = row.querySelector('button.btn[style*="background:#ef4444"]') || row.querySelector('button.btn-danger');
             if (deleteBtn) {
                 deleteBtn.style.display = 'none';
@@ -2721,9 +2588,6 @@ function simpanSemuaKeNotion() {
     }
 }
 
-// ==========================================
-// CUSTOM SINGLE SELECT DENGAN INPUT MANUAL
-// ==========================================
 function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, placeholderText) {
     var container = document.getElementById(containerId);
     if (!container) return;
@@ -2734,8 +2598,6 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
     var hiddenInput = document.getElementById(hiddenInputId);
     var selectedValue = hiddenInput.value || '';
 
-    // 1. Box Tampilan Utama
-    // 1. Box Tampilan Utama
     var selectBox = document.createElement('div');
     selectBox.style.cssText = 'width:100%; box-sizing:border-box; min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 8px; background:#fff; cursor:pointer; display:flex; align-items:center; position:relative; font-size:12px; font-weight:600; color:#334155;';
 
@@ -2751,7 +2613,6 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
     selectBox.appendChild(displayLabel);
     selectBox.appendChild(arrow);
 
-    // 2. Menu Dropdown & Search Input
     var dropdown = document.createElement('div');
     dropdown.className = 'custom-dropdown-menu';
     dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
@@ -2772,7 +2633,6 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
     container.appendChild(selectBox);
     container.appendChild(dropdown);
 
-    // Set nilai terpilih
     function setValue(val) {
         selectedValue = val;
         hiddenInput.value = val;
@@ -2780,14 +2640,12 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
         displayLabel.style.color = val ? '#334155' : '#94a3b8';
         dropdown.style.display = 'none';
         
-        // Triggers otomatis penyesuaian programa jika ini dropdown Acara
         if (containerId.startsWith('acara_container_')) {
             var index = containerId.replace('acara_container_', '');
             if (typeof updatePrograma === 'function') updatePrograma(index, val);
         }
     }
 
-    // Render List Items
     function renderList(filterText) {
         listDiv.innerHTML = '';
         var query = (filterText || '').toLowerCase().trim();
@@ -2818,7 +2676,6 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
             }
         });
 
-        // OPSI INPUT MANUAL: Jika yang diketik belum ada di daftar dropdown
         if (query !== '' && !exactMatch) {
             var manualOpt = document.createElement('div');
             manualOpt.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; background:#f0fdf4; color:#166534; font-weight:bold; border-top:1px solid #bbf7d0;';
@@ -2849,11 +2706,6 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
     searchInput.oninput = function(e) { renderList(e.target.value); };
 }
 
-// ==========================================
-// MULTI-SELECT + CREATABLE (chip multi-pilih, plus bisa ketik nama baru
-// yang belum ada di master data) -- dipakai untuk Pemandu/Host/Penyiar,
-// gabungan pola createRssMultiSelect (petugas) & createRssSingleSelect (acara)
-// ==========================================
 function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGrouped, placeholderText) {
     var container = document.getElementById(containerId);
     if (!container) return;
@@ -2964,7 +2816,6 @@ function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGroupe
             }
         });
 
-        // OPSI INPUT MANUAL: kalau yang diketik belum ada persis di daftar
         if (query !== '' && !exactMatch) {
             var manualOpt = document.createElement('div');
             manualOpt.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; background:#f0fdf4; color:#166534; font-weight:bold; border-top:1px solid #bbf7d0;';
@@ -2998,7 +2849,6 @@ function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGroupe
 
     searchInput.onclick = function(e) { e.stopPropagation(); };
     searchInput.oninput = function(e) { renderList(e.target.value); };
-    // Enter = tambah manual langsung tanpa perlu klik opsi "Tambah Manual"
     searchInput.onkeydown = function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -3013,20 +2863,6 @@ function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGroupe
 
     renderChips();
 }
-
-document.addEventListener('click', function(e) {
-    // Tutup dropdown jika yang diklik berada di luar menu kustom dan di luar kotak pilihan
-    if (!e.target.closest('.custom-dropdown-menu') && 
-        !e.target.closest('[id$="_container_"]') &&
-        !e.target.closest('[id^="pt_"]') &&
-        !e.target.closest('[id^="pa_"]') &&
-        !e.target.closest('#teknikContainer') &&
-        !e.target.closest('#paContainer')) {
-        document.querySelectorAll('.custom-dropdown-menu').forEach(function(d){ 
-            d.style.display = 'none'; 
-        });
-    }
-});
 
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
