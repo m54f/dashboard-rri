@@ -438,11 +438,38 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 
 
 /* ===== Sidebar Hide/Show Toggle ===== */
+body.preload .sidebar,
+body.preload .main,
+body.preload .sidebar * {
+  transition: none !important;
+}
+
 .sidebar, .main {
-  transition: transform 0.3s ease, margin-left 0.3s ease, width 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar {
   overflow-x: hidden;
+  will-change: width;
+}
+
+.sidebar-header, .menu-item, .sidebar-footer, .pkl-badge {
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              gap 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              justify-content 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.2s ease;
+}
+
+.sidebar-header h1,
+.sidebar-header > div > span,
+.menu-title,
+.menu-item span,
+.badge-text {
+  white-space: nowrap;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Tombol tutup di dalam sidebar */
@@ -493,42 +520,103 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 }
 
 /* Saat body memiliki class sidebar-hidden -> sidebar COLLAPSE jadi strip ikon
-   (bukan hilang total), logo & ikon menu tetap kelihatan, teks label disembunyikan.
-   Khusus layar besar (laptop/desktop) — di HP sidebar-nya default hilang total
-   dan cuma tampil sebagai overlay penuh saat di-tap (lihat media query mobile). */
+   (bukan hilang total), logo & ikon menu tetap kelihatan, teks label disembunyikan. */
 @media (min-width:769px){
   body.sidebar-hidden .sidebar {
     width: 72px;
   }
   body.sidebar-hidden .sidebar .sidebar-header {
     justify-content: center;
-    padding: 22px 0;
+    padding: 18px 0;
   }
-  body.sidebar-hidden .sidebar .sidebar-header h1,
-  body.sidebar-hidden .sidebar .sidebar-header > div > span,
+  body.sidebar-hidden .sidebar .sidebar-header > div:not(.logo-mark),
   body.sidebar-hidden .sidebar .menu-title,
   body.sidebar-hidden .sidebar .menu-item span,
   body.sidebar-hidden .sidebar .badge-text {
-    display: none;
+    display: none !important;
+  }
+  body.sidebar-hidden .sidebar .sidebar-header .logo-mark {
+    display: flex !important;
+    margin: 0 auto;
   }
   body.sidebar-hidden .sidebar .menu-item {
-    justify-content: center;
-    padding: 10px 0;
-    gap: 0;
-  }
-  body.sidebar-hidden .sidebar .sidebar-menu {
-    padding: 16px 8px;
-  }
-  body.sidebar-hidden .sidebar .pkl-badge {
     justify-content: center;
     padding: 12px 0;
     gap: 0;
   }
+  body.sidebar-hidden .sidebar .menu-item i {
+    font-size: 19px;
+    width: auto;
+    margin: 0;
+  }
+  body.sidebar-hidden .sidebar .sidebar-menu {
+    padding: 12px 8px;
+  }
+  body.sidebar-hidden .sidebar .menu-section {
+    margin-bottom: 8px;
+    padding-top: 10px;
+    margin-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  body.sidebar-hidden .sidebar .menu-section:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+  body.sidebar-hidden .sidebar .pkl-badge {
+    justify-content: center;
+    padding: 8px 0;
+    gap: 0;
+    background: transparent;
+    border: none;
+  }
+  body.sidebar-hidden .sidebar .pkl-info-icon {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 18px;
+    color: #94a3b8;
+  }
+  body.sidebar-hidden .sidebar .pkl-badge:hover .pkl-info-icon {
+    background: rgba(37, 99, 235, 0.25);
+    border-color: #3b82f6;
+    color: #ffffff;
+    transform: scale(1.1);
+  }
   body.sidebar-hidden .sidebar .sidebar-footer {
-    padding: 16px 8px;
+    padding: 12px 8px;
   }
   body.sidebar-hidden .main {
     margin-left: 72px !important;
+  }
+}
+
+/* ===== Tampilan Mobile / HP ===== */
+@media (max-width:768px){
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 264px !important;
+    transform: translateX(-100%);
+    z-index: 10000;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body.sidebar-mobile-expanded .sidebar {
+    transform: translateX(0);
+  }
+
+  .main {
+    margin-left: 0 !important;
+    padding: 16px 16px 40px !important;
   }
 }
 
@@ -851,6 +939,11 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
   background: rgba(15, 23, 42, 0.5); /* Sedikit lebih gelap dari sidebar */
 }
 
+.pkl-info-icon {
+  display: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .pkl-badge {
   display: flex;
   align-items: center;
@@ -900,10 +993,12 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 
 .badge-subtitle {
   font-size: 13px;
-  color: #e2e8f0;
+  color: #f8fafc;
   font-weight: 700;
   margin-top: 2px;
   background: linear-gradient(90deg, #e2e8f0, #ffffff);
+  -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

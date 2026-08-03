@@ -37,6 +37,19 @@ require_once __DIR__ . '/auth.php';
 
 
 <script>
+  // Terapkan status sidebar tersimpan dari localStorage & cegah flash animasi (FOUC)
+  (function() {
+    document.body.classList.add('preload');
+    if (window.innerWidth > 768 && localStorage.getItem('sidebarHidden') === 'true') {
+      document.body.classList.add('sidebar-hidden');
+    }
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        document.body.classList.remove('preload');
+      }, 50);
+    });
+  })();
+
   // Script untuk toggle sidebar
   function toggleSidebar() {
     if (window.innerWidth <= 768) {
@@ -45,7 +58,8 @@ require_once __DIR__ . '/auth.php';
       document.body.classList.toggle('sidebar-mobile-expanded');
     } else {
       // Di laptop/desktop: toggle collapse (strip ikon) <-> expanded biasa.
-      document.body.classList.toggle('sidebar-hidden');
+      const isHidden = document.body.classList.toggle('sidebar-hidden');
+      localStorage.setItem('sidebarHidden', isHidden ? 'true' : 'false');
     }
   }
 
