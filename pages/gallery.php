@@ -427,85 +427,7 @@ include __DIR__ . '/../includes/header.php';
 
 </div>
 
-<style>
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  .gallery-header-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .gallery-filter-group { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 
-  .filter-input-group {
-    display: inline-flex;
-    align-items: center;
-    background: #ffffff;
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 9px;
-    height: 40px;
-    width: 155px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    transition: all 0.2s ease;
-    overflow: hidden;
-  }
-  
-  .filter-prefix {
-    width: 48px;
-    min-width: 48px;
-    padding: 0 4px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    letter-spacing: 0.5px;
-    user-select: none;
-    flex-shrink: 0;
-    cursor: pointer;
-  }
-
-  .filter-prefix.prefix-set { background: #eff6ff; color: #1d4ed8; border-right: 1px solid #dbeafe; }
-  .filter-prefix.prefix-prod { background: #f5f3ff; color: #6d28d9; border-right: 1px solid #ddd6fe; }
-  .filter-prefix.prefix-penyiar { background: #ecfdf5; color: #047857; border-right: 1px solid #a7f3d0; }
-  .filter-prefix.prefix-pro { background: #fff7ed; color: #c2410c; border-right: 1px solid #fed7aa; }
-
-  .filter-input-group.filter-set:hover { border-color: #93c5fd; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.1); }
-  .filter-input-group.filter-prod:hover { border-color: #c4b5fd; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1); }
-  .filter-input-group.filter-penyiar:hover { border-color: #6ee7b7; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1); }
-  .filter-input-group.filter-pro:hover { border-color: #fde68a; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.1); }
-
-  .filter-input-group.filter-set:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
-  .filter-input-group.filter-prod:focus-within { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
-  .filter-input-group.filter-penyiar:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
-  .filter-input-group.filter-pro:focus-within { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
-
-  .header-filter-select {
-    height: 40px;
-    width: 100%;
-    flex: 1;
-    min-width: 0;
-    padding: 0 24px 0 8px;
-    border: none;
-    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 6px center;
-    background-size: 14px;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary, #0f172a);
-    cursor: pointer;
-    outline: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-
-  .video-thumb { width:64px; height:40px; object-fit:cover; border-radius:6px; display:block; }
-  .video-thumb-empty { display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; font-size:1.1rem; }
-  .video-row:hover { background:rgba(0,0,0,0.03); }
-  .icon-action.view { color:#0ea5e9; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; text-decoration:none; display:inline-flex; }
-  .icon-action.view:hover { background:rgba(14,165,233,0.12); }
-</style>
 
 <div id="imageModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center;" onclick="this.style.display='none'">
   <img id="imageModalSrc" src="" alt="Pop-up Flyer" style="max-width:90%; max-height:90%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); cursor:zoom-out;">
@@ -1528,6 +1450,57 @@ function jumpToMainPage(val, maxPage) {
     else { changeMainPage(1); }
 }
 
+function getPaginationRangeJS(current, total, delta = 1) {
+    let range = [];
+    let rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= total; i++) {
+        if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    return rangeWithDots;
+}
+
+function renderPaginationButtonsJS(currentPage, totalPages, onPageClickFn) {
+    if (totalPages <= 1) return '';
+
+    let html = '<div style="display:flex; gap:0.4rem; flex-wrap:wrap;">';
+    
+    const prevDisabled = currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '';
+    html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem; ${prevDisabled}" onclick="${onPageClickFn}(${Math.max(1, currentPage - 1)})">&laquo; Prev</button>`;
+
+    const pages = getPaginationRangeJS(currentPage, totalPages);
+    pages.forEach(p => {
+        if (p === '...') {
+            html += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
+        } else {
+            const btnClass = p === currentPage ? 'btn-primary' : 'btn-secondary';
+            html += `<button type="button" class="btn ${btnClass}" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;" onclick="${onPageClickFn}(${p})">${p}</button>`;
+        }
+    });
+
+    const nextDisabled = currentPage >= totalPages ? 'pointer-events:none; opacity:0.5;' : '';
+    html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem; ${nextDisabled}" onclick="${onPageClickFn}(${Math.min(totalPages, currentPage + 1)})">Next &raquo;</button>`;
+
+    html += '</div>';
+    return html;
+}
+
 function updateMainTablePagination() {
     const allRows = Array.from(document.querySelectorAll('.video-row'));
     const paginationWrap = document.getElementById('mainPaginationWrap');
@@ -1565,20 +1538,7 @@ function updateMainTablePagination() {
     } else {
         paginationWrap.style.display = 'flex';
         paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} video`;
-
-        let buttonsHTML = '';
-        const prevDisabled = mainCurrentPage === 1 ? 'disabled' : '';
-        const prevStyle = mainCurrentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
-        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changeMainPage(${mainCurrentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
-
-        buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${mainCurrentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToMainPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToMainPage(this.value, ${totalPages})">`;
-        buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
-
-        const nextDisabled = mainCurrentPage === totalPages ? 'disabled' : '';
-        const nextStyle = mainCurrentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
-        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changeMainPage(${mainCurrentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
-
-        paginationButtons.innerHTML = buttonsHTML;
+        paginationButtons.innerHTML = renderPaginationButtonsJS(mainCurrentPage, totalPages, 'changeMainPage');
     }
 }
 
@@ -1663,20 +1623,7 @@ function updateRssTablePagination() {
     } else {
         paginationWrap.style.display = 'flex';
         paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} baris`;
-
-        let buttonsHTML = '';
-        const prevDisabled = rssCurrentPage === 1 ? 'disabled' : '';
-        const prevStyle = rssCurrentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
-        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changeRssPage(${rssCurrentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
-
-        buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${rssCurrentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToRssPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToRssPage(this.value, ${totalPages})">`;
-        buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
-
-        const nextDisabled = rssCurrentPage === totalPages ? 'disabled' : '';
-        const nextStyle = rssCurrentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
-        buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changeRssPage(${rssCurrentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
-
-        paginationButtons.innerHTML = buttonsHTML;
+        paginationButtons.innerHTML = renderPaginationButtonsJS(rssCurrentPage, totalPages, 'changeRssPage');
     }
 }
 
