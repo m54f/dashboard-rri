@@ -59,6 +59,7 @@ function render_menu_group($items, $base, $activeMenu) {
 <!-- FOOTER / WATERMARK PREMIUM (Dapat Diklik) -->
 <div class="sidebar-footer">
   <div class="pkl-badge" onclick="openCopyrightModal()" style="cursor: pointer;" title="Klik untuk melihat tim pengembang">
+    <i class="ri-information-line pkl-info-icon"></i>
     <div class="badge-text">
       <span class="badge-title">Dikembangkan oleh</span>
       <span class="badge-subtitle">Tim PKL UIN Malang</span>
