@@ -47,7 +47,11 @@
         <span class="btn-text">Keluar</span>
       </a>
     <?php else: ?>
-      <a href="<?= $base ?>/pages/auth/login.php" class="topbar-btn btn-login" title="Masuk sebagai Admin">
+      <?php 
+        $currentUri = $_SERVER['REQUEST_URI'] ?? '';
+        $loginUrl = $base . '/pages/auth/login.php' . ($currentUri !== '' ? '?redirect=' . urlencode($currentUri) : '');
+      ?>
+      <a href="<?= htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') ?>" class="topbar-btn btn-login" title="Masuk sebagai Admin">
         <i class="ri-login-box-line"></i>
         <span class="btn-text">Masuk</span>
       </a>

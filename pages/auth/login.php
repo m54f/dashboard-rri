@@ -8,9 +8,19 @@ if (!file_exists($configFile)) {
 }
 require_once $configFile;
 
-// Jika admin sudah login, langsung arahkan ke dashboard
+// Ambil & validasi URL redirect asal halaman pengguna
+$redirectParam = $_REQUEST['redirect'] ?? '';
+$targetRedirect = '../dashboard.php';
+if ($redirectParam !== '') {
+    // Pastikan URL redirect aman (hanya path internal/relatif)
+    if ((strpos($redirectParam, '/') === 0 || strpos($redirectParam, '../') === 0) && strpos($redirectParam, '//') !== 0) {
+        $targetRedirect = $redirectParam;
+    }
+}
+
+// Jika admin sudah login, langsung arahkan ke halaman tujuan / dashboard
 if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true) {
-    header('Location: ../dashboard.php');
+    header('Location: ' . $targetRedirect);
     exit;
 }
 
@@ -31,8 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['admin_name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
             
-            // Redirect ke dashboard admin
-            header('Location: ../dashboard.php');
+            // Redirect ke halaman sebelum login / dashboard
+            header('Location: ' . $targetRedirect);
             exit;
         }
     }
@@ -377,6 +387,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form action="" method="POST" autocomplete="off">
+                <?php if ($redirectParam !== ''): ?>
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirectParam, ENT_QUOTES, 'UTF-8') ?>">
+                <?php endif; ?>
                 <div class="form-group">
                     <label for="username">Username</label>
                     <div class="input-icon-wrap">

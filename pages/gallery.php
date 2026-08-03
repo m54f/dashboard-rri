@@ -283,6 +283,9 @@ include __DIR__ . '/../includes/header.php';
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
   <div class="gallery-header-actions">
+    <!-- PENCARIAN & FILTER UNTUK DAFTAR VIDEO UTAMA -->
+    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; outline: none; width:200px;">
+    
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>
@@ -1744,6 +1747,67 @@ function resetFilters() {
     if(document.getElementById('mainSearchInput')) document.getElementById('mainSearchInput').value = '';
 
     filterTable();
+}
+
+async function filterTable() {
+    var ptSettingFilter = document.getElementById('filterPtSetting') ? document.getElementById('filterPtSetting').value : "";
+    var ptProduksiFilter = document.getElementById('filterPtProduksi') ? document.getElementById('filterPtProduksi').value : "";
+    var penyiarFilter = document.getElementById('filterPenyiar') ? document.getElementById('filterPenyiar').value : "";
+    var programFilter = document.getElementById('filterPrograma') ? document.getElementById('filterPrograma').value : "";
+
+    var tbody = document.querySelector('#videoTable tbody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="ri-loader-4-line spin" style="display:inline-block; animation: spin 1s linear infinite;"></i> Memuat data dari Notion...
+                </td>
+            </tr>
+        `;
+    }
+
+    if (currentFilterController) {
+        currentFilterController.abort();
+    }
+    currentFilterController = new AbortController();
+
+    try {
+        var params = new URLSearchParams();
+        if (ptSettingFilter) params.append('pt_setting', ptSettingFilter);
+        if (ptProduksiFilter) params.append('pt_produksi', ptProduksiFilter);
+        if (penyiarFilter) params.append('penyiar', penyiarFilter);
+        if (programFilter) params.append('programa', programFilter);
+
+        var res = await fetch('../api/filter-videos.php?' + params.toString(), {
+            signal: currentFilterController.signal
+        });
+        var data = await res.json();
+
+        if (data.success) {
+            renderVideoRows(data.data);
+        } else {
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align:center; padding: 2rem; color: #ef4444;">
+                            ⚠️ Gagal memuat data dari Notion: ${escapeHtml(data.error || 'Terjadi kesalahan')}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') return;
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" style="text-align:center; padding: 2rem; color: #ef4444;">
+                        ⚠️ Terjadi kesalahan jaringan saat memfilter data Notion.
+                    </td>
+                </tr>
+            `;
+        }
+    }
 }
 
 // ==========================================
