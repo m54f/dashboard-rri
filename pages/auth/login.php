@@ -60,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Login Admin - TMB RRI Malang</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="icon" href="../../assets/images/icon/logo-rri.png" type="image/png">
     <style>
         :root {
             --primary: #0f172a; /* Slate 900 - Lebih profesional daripada biru terang */
@@ -330,14 +331,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* --- RESPONSIVE --- */
         @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 1.5rem 1rem;
+                min-height: 100vh;
+                min-height: 100dvh;
+                background: linear-gradient(160deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.92) 100%), 
+                            url('https://rricoid-assets.obs.ap-southeast-4.myhuaweicloud.com/berita/Malang/o/1755923254787-IMG_6458/04zyr9j3l5v0l9o.jpeg') no-repeat center center / cover !important;
+                background-attachment: fixed !important;
+            }
             .brand-panel {
-                display: none; /* Sembunyikan panel kiri di mobile agar fokus ke form */
+                display: flex !important;
+                background: transparent !important;
+                padding: 1rem 0.5rem 0.5rem !important;
+                text-align: center;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                max-width: 440px;
+            }
+            .brand-content {
+                max-width: 100%;
+            }
+            .brand-logo {
+                justify-content: center;
+                margin-bottom: 0.75rem;
+                font-size: 1.15rem;
+            }
+            .brand-content h1 {
+                font-size: 1.65rem;
+                margin-bottom: 0.5rem;
+                line-height: 1.25;
+            }
+            .brand-content p {
+                font-size: 0.9rem;
+                opacity: 0.9;
+                line-height: 1.45;
+            }
+            .brand-features {
+                display: none;
             }
             .form-panel {
-                padding: 1.5rem;
+                background: transparent;
+                padding: 1rem 0 0 0;
+                width: 100%;
+                display: flex;
+                justify-content: center;
             }
             .login-card {
-                max-width: 100%;
+                max-width: 440px;
+                background: #ffffff;
+                padding: 2rem 1.5rem;
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             }
         }
     </style>

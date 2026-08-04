@@ -166,7 +166,7 @@ include __DIR__ . '/../includes/header.php';
   body { background: var(--bg); color: var(--text-primary); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   
   .dash-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-  .dash-header h2 { font-size: 1.75rem; font-weight: 800; margin: 0; color: var(--text-primary); letter-spacing: -0.025em; }
+  .dash-header h1, .dash-header h2 { font-size: 2.1rem; font-weight: 800; margin: 0; color: var(--text-primary); letter-spacing: -0.025em; }
   .dash-header p { color: var(--text-secondary); margin: 0.35rem 0 0; font-size: 1rem; }
   .date-badge { 
     background: var(--card-bg); border: 1px solid var(--border); padding: 0.6rem 1.2rem; border-radius: 99px; 
@@ -210,7 +210,7 @@ include __DIR__ . '/../includes/header.php';
   /* ===== Optimisasi Metric Cards: Disesuaikan dengan Style Card Lainnya ===== */
   @media (max-width: 768px) {
     .dash-header { margin-bottom: 1.25rem; gap: 0.75rem; }
-    .dash-header h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.025em; }
+    .dash-header h1, .dash-header h2 { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.025em; }
     .dash-header p { font-size: 0.88rem; margin-top: 0.2rem; color: var(--text-secondary); }
     .date-badge { padding: 0.5rem 1rem; font-size: 0.82rem; border-radius: 99px; }
 
@@ -402,7 +402,7 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="dash-header">
   <div>
-    <h2><?= htmlspecialchars($greeting) ?>, TMB Team! 👋</h2>
+    <h1><?= htmlspecialchars($greeting) ?>, TMB Team! 👋</h1>
     <p>Pantau ringkasan operasional dan pastikan semua perangkat siap siaran.</p>
   </div>
   <div class="date-badge">
