@@ -225,7 +225,7 @@ function renderTable() {
             <tr>
                 <td class="cell-title">${e.title}</td>
                 <td><span class="tag blue">${e.tag}</span></td>
-                <td><div style="display:flex; align-items:center; gap:8px;"><span class="avatar-sm">${picInitials}</span> <span>${e.op}</span></div></td>
+                <td><div style="display:flex; align-items:center; gap:8px;"><span>${e.op}</span></div></td>
                 <td><div class="doc-thumbnails">${docsHtml}</div></td>
                 <td>${linkHtml}</td>
                 <td style="font-weight:600; white-space:nowrap;">${e.date}</td>
