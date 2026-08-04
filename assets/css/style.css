@@ -245,7 +245,8 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 }
 .pagination-buttons {
   display: flex;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 .btn-page {

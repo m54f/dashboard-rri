@@ -172,6 +172,17 @@ include __DIR__ . '/../includes/header.php';
   .filter-tab:hover { background: #f1f5f9; color: var(--text-main); }
   .filter-tab.active { background: var(--primary); color: #fff; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
   
+  /* Hilangkan panah atas-bawah (spinner) pada input pagination */
+  .page-input-clean::-webkit-outer-spin-button,
+  .page-input-clean::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+  .page-input-clean {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+  }
+
   .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
   .data-table th { text-align: left; padding: 0.85rem 1rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid var(--border); background: #f8fafc; }
   .data-table th:first-child { border-top-left-radius: 8px; }
@@ -715,7 +726,13 @@ function renderReportTable() {
 
   // Render UI Paging
   paginationWrap.style.display = 'flex';
+  paginationWrap.style.alignItems = 'center';
+  paginationWrap.style.justifyContent = 'space-between';
   paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} laporan`;
+
+  paginationButtons.style.display = 'flex';
+  paginationButtons.style.alignItems = 'center';
+  paginationButtons.style.gap = '0.5rem';
 
   let buttonsHTML = '';
 
@@ -723,9 +740,9 @@ function renderReportTable() {
   const prevStyle = reportCurrentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
   buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changeReportPage(${reportCurrentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
 
-  buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${reportCurrentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToReportPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToReportPage(this.value, ${totalPages})">`;
+  buttonsHTML += `<input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="${reportCurrentPage}" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="jumpToReportPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToReportPage(this.value, ${totalPages})">`;
 
-  buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+  buttonsHTML += `<span style="font-size:0.9rem; color:#475569; display:inline-flex; align-items:center;">dari ${totalPages}</span>`;
 
   const nextDisabled = reportCurrentPage === totalPages ? 'disabled' : '';
   const nextStyle = reportCurrentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';

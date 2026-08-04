@@ -276,6 +276,20 @@ if (!is_array($videos)) {
 
 include __DIR__ . '/../includes/header.php';
 ?>
+
+<style>
+/* Hilangkan tombol panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+</style>
+
 <div id="galleryMainView">
 <div class="page-head">
   <div>
@@ -1864,20 +1878,14 @@ function getPaginationRangeJS(current, total, delta = 1) {
 function renderPaginationButtonsJS(currentPage, totalPages, onPageClickFn) {
     if (totalPages <= 1) return '';
 
-    let html = '<div style="display:flex; gap:0.4rem; flex-wrap:wrap;">';
+    let html = '<div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">';
     
     const prevDisabled = currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '';
     html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem; ${prevDisabled}" onclick="${onPageClickFn}(${Math.max(1, currentPage - 1)})">&laquo; Prev</button>`;
 
-    const pages = getPaginationRangeJS(currentPage, totalPages);
-    pages.forEach(p => {
-        if (p === '...') {
-            html += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
-        } else {
-            const btnClass = p === currentPage ? 'btn-primary' : 'btn-secondary';
-            html += `<button type="button" class="btn ${btnClass}" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;" onclick="${onPageClickFn}(${p})">${p}</button>`;
-        }
-    });
+    html += `<input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="${currentPage}" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="let p=parseInt(this.value, 10); if(!isNaN(p) && p>=1 && p<=${totalPages}) ${onPageClickFn}(p);" onkeydown="if(event.key === 'Enter'){ let p=parseInt(this.value, 10); if(!isNaN(p) && p>=1 && p<=${totalPages}) ${onPageClickFn}(p); }">`;
+
+    html += `<span style="font-size:0.9rem; color:#475569; display:inline-flex; align-items:center;">dari ${totalPages}</span>`;
 
     const nextDisabled = currentPage >= totalPages ? 'pointer-events:none; opacity:0.5;' : '';
     html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem; ${nextDisabled}" onclick="${onPageClickFn}(${Math.min(totalPages, currentPage + 1)})">Next &raquo;</button>`;

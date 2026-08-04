@@ -157,6 +157,16 @@ include __DIR__ . '/../includes/header.php';
     justify-content: center !important;
   }
 }
+/* Hilangkan panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
 </style>
 <div class="page-head">
   <div>
@@ -293,17 +303,11 @@ include __DIR__ . '/../includes/header.php';
       Menampilkan <?= $showingFrom ?>-<?= $showingTo ?> dari <?= $totalItems ?> agenda
     </div>
     <?php if ($totalPages > 1): ?>
-    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+    <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
       <a href="<?= htmlspecialchars(agendaPageUrl(max(1, $currentPage - 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
-      <?php foreach (paginationRange($currentPage, $totalPages) as $p): ?>
-        <?php if ($p === '...'): ?>
-        <span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>
-        <?php else: ?>
-        <a href="<?= htmlspecialchars(agendaPageUrl($p, $filterDate)) ?>"
-           class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;"><?= $p ?></a>
-        <?php endif; ?>
-      <?php endforeach; ?>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="<?= $currentPage ?>" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="let p=parseInt(this.value); if(!isNaN(p) && p>=1 && p<=<?= $totalPages ?>) location.href='<?= htmlspecialchars(agendaPageUrl(999999, $filterDate)) ?>'.replace('999999', p);" onkeydown="if(event.key === 'Enter'){ let p=parseInt(this.value); if(!isNaN(p) && p>=1 && p<=<?= $totalPages ?>) location.href='<?= htmlspecialchars(agendaPageUrl(999999, $filterDate)) ?>'.replace('999999', p); }">
+      <span style="font-size:0.9rem; color:#475569;">dari <?= $totalPages ?></span>
       <a href="<?= htmlspecialchars(agendaPageUrl(min($totalPages, $currentPage + 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
     </div>
