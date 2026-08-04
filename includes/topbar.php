@@ -20,6 +20,7 @@
     // Display role badge
     $role = getRole();
     $userLabel = getUserLabel();
+    $shortRoleLabel = ($role === 'admin') ? 'Admin' : 'Public';
     
     // Tentukan style badge berdasarkan role
     if ($role === 'admin') {
@@ -34,7 +35,8 @@
     <!-- Role Badge -->
     <div class="role-badge <?= $badgeClass ?>">
       <i class="<?= $badgeIcon ?>"></i>
-      <span><?= htmlspecialchars($userLabel) ?></span>
+      <span class="role-full-text"><?= htmlspecialchars($userLabel) ?></span>
+      <span class="role-short-text"><?= htmlspecialchars($shortRoleLabel) ?></span>
     </div>
 
     <!-- Divider Vertikal -->
@@ -57,10 +59,11 @@
       </a>
     <?php endif; ?>
     
-          <!-- Link ke Telegram (Hanya Teks) -->
-          <a href="https://t.me/CakraIT_bot" class="topbar-btn btn-telegram-text" title="Hubungi Tim Teknik" target="_blank" rel="noopener noreferrer">
-        <span class="btn-text">Cakra Bot </span>
-      </a>
+    <!-- Link ke Telegram Cakra Bot -->
+    <a href="https://t.me/CakraIT_bot" class="topbar-btn btn-telegram-text" title="Hubungi Tim Teknik (Cakra Bot)" target="_blank" rel="noopener noreferrer">
+      <i class="ri-telegram-line"></i>
+      <span class="btn-text">Cakra Bot</span>
+    </a>
 
   </div>
 </div>

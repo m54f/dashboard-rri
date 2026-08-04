@@ -81,11 +81,19 @@ include __DIR__ . '/../includes/header.php';
   <?php endforeach; ?>
 </div>
 
-<div class="filter-tabs">
-  <div class="filter-tab active" onclick="filterPinjam('Semua', this)">Semua</div>
-  <div class="filter-tab" onclick="filterPinjam('Dipinjam', this)">Dipinjam</div>
-  <div class="filter-tab" onclick="filterPinjam('Terlambat', this)">Terlambat</div>
-  <div class="filter-tab" onclick="filterPinjam('Dikembalikan', this)">Dikembalikan</div>
+<!-- Container Filter dan Search -->
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
+    <div class="filter-tabs" style="margin-bottom:0;">
+      <div class="filter-tab active" onclick="filterPinjam('Semua', this)">Semua</div>
+      <div class="filter-tab" onclick="filterPinjam('Dipinjam', this)">Dipinjam</div>
+      <div class="filter-tab" onclick="filterPinjam('Terlambat', this)">Terlambat</div>
+      <div class="filter-tab" onclick="filterPinjam('Dikembalikan', this)">Dikembalikan</div>
+    </div>
+    
+    <!-- Kotak Pencarian -->
+    <div style="flex:1; min-width:200px; display:flex; justify-content:flex-end;">
+        <input type="text" id="searchInput" placeholder="Cari kegiatan/PIC/alat..." oninput="handleSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0); font-size: 0.85rem; outline: none; width:100%; max-width: 300px;">
+    </div>
 </div>
 
 <div class="card">
@@ -133,6 +141,7 @@ include __DIR__ . '/../includes/header.php';
               <i class="ri-checkbox-circle-line"></i>
             </button>
             <?php endif; ?>
+<<<<<<< HEAD
             <?php if (getRole() === 'admin'): ?>
             <a href="peminjaman_form.php?id=<?= htmlspecialchars($it['page_id']) ?>" class="icon-action edit" title="Edit">
               <i class="ri-pencil-line"></i>
@@ -141,6 +150,10 @@ include __DIR__ . '/../includes/header.php';
                     onclick="deleteItem('<?= htmlspecialchars($it['page_id']) ?>', '<?= htmlspecialchars(addslashes($it['kegiatan'])) ?>')">
               <i class="ri-delete-bin-line"></i>
             </button>
+=======
+            <a href="peminjaman_form.php?id=<?= htmlspecialchars($it['page_id']) ?>" class="icon-action edit" title="Edit"><i class="ri-pencil-line"></i></a>
+            <button type="button" class="icon-action delete" title="Hapus" onclick="deleteItem('<?= htmlspecialchars($it['page_id']) ?>', '<?= htmlspecialchars(addslashes($it['kegiatan'])) ?>')"><i class="ri-delete-bin-line"></i></button>
+>>>>>>> 718bfd85edacb5d83799d7d660661ae0ce80bec8
             <?php endif; ?>
           </td>
         </tr>
@@ -148,6 +161,13 @@ include __DIR__ . '/../includes/header.php';
       </tbody>
     </table>
   </div>
+  
+  <!-- PAGING CONTAINER -->
+  <div class="pagination-wrap" id="paginationWrap" style="display: none; justify-content: space-between; align-items: center; padding: 1rem; border-top: 1px solid #e2e8f0; background: #fff; border-radius: 0 0 8px 8px;">
+    <div class="pagination-info" id="paginationInfo" style="font-size: 0.85rem; color: #64748b;">Menampilkan data</div>
+    <div class="pagination-buttons" id="paginationButtons" style="display: flex; gap: 8px; align-items: center;"></div>
+  </div>
+  
 </div>
 
 <style>
@@ -430,14 +450,27 @@ include __DIR__ . '/../includes/header.php';
 </style>
 
 <script>
+// Variabel State Pagination & Filter
+let currentPage = 1;
+const rowsPerPage = 10;
+let currentFilter = 'Semua';
+let searchQuery = '';
+
+function handleSearch() {
+  searchQuery = document.getElementById('searchInput').value.toLowerCase();
+  currentPage = 1;
+  updateTablePagination();
+}
+
 function filterPinjam(status, el){
   document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  document.querySelectorAll('#pinjamTable tbody tr').forEach(row => {
-    row.style.display = (status === 'Semua' || row.dataset.status === status) ? '' : 'none';
-  });
+  currentFilter = status;
+  currentPage = 1;
+  updateTablePagination();
 }
 
+<<<<<<< HEAD
 // ===== MODAL PENGEMBALIAN =====
 let _returnPageId = '';
 let _currentRow = null;
@@ -579,6 +612,89 @@ async function submitReturn(event) {
   submitLabel.hidden = true;
   submitLoading.hidden = false;
 
+=======
+function changePage(page) {
+  currentPage = page;
+  updateTablePagination();
+}
+
+function jumpToPage(val, maxPage) {
+  let p = parseInt(val, 10);
+  if (!isNaN(p) && p >= 1 && p <= maxPage) {
+    changePage(p);
+  } else if (p > maxPage) {
+    changePage(maxPage);
+  } else {
+    changePage(1); 
+  }
+}
+
+function updateTablePagination() {
+  const allRows = Array.from(document.querySelectorAll('#pinjamTable tbody tr'));
+  const paginationWrap = document.getElementById('paginationWrap');
+
+  // Abaikan baris pesan kosong
+  if (allRows.length === 1 && allRows[0].querySelector('td[colspan]')) {
+    if (paginationWrap) paginationWrap.style.display = 'none';
+    return;
+  }
+
+  // Filter gabungan: Tab Filter & Teks Pencarian
+  const filteredRows = allRows.filter(row => {
+    const statusMatch = currentFilter === 'Semua' || row.dataset.status === currentFilter;
+    const textContent = row.textContent.toLowerCase();
+    const searchMatch = !searchQuery || textContent.includes(searchQuery);
+    return statusMatch && searchMatch;
+  });
+
+  const totalRows = filteredRows.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  allRows.forEach(row => row.style.display = 'none');
+
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+  for (let i = startIndex; i < endIndex; i++) {
+    filteredRows[i].style.display = '';
+  }
+
+  const paginationInfo = document.getElementById('paginationInfo');
+  const paginationButtons = document.getElementById('paginationButtons');
+
+  if (totalRows === 0 || !paginationWrap) {
+    if (paginationWrap) paginationWrap.style.display = 'none';
+  } else {
+    paginationWrap.style.display = 'flex';
+    paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} peminjaman`;
+
+    let buttonsHTML = '';
+
+    const prevDisabled = currentPage === 1 ? 'disabled' : '';
+    const prevStyle = currentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changePage(${currentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+    buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${currentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})">`;
+
+    buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+
+    const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+    const nextStyle = currentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changePage(${currentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
+
+    paginationButtons.innerHTML = buttonsHTML;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateTablePagination();
+});
+
+async function markReturned(pageId, kegiatan) {
+  if (!confirm(`Tandai "${kegiatan}" sebagai sudah dikembalikan?`)) return;
+>>>>>>> 718bfd85edacb5d83799d7d660661ae0ce80bec8
   try {
     const res = await fetch('../api/mark-returned.php', {
       method: 'POST',

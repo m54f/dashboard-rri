@@ -207,6 +207,92 @@ include __DIR__ . '/../includes/header.php';
     .bottom-grid { grid-template-columns: 1fr; }
   }
 
+  /* ===== Optimisasi Metric Cards: Disesuaikan dengan Style Card Lainnya ===== */
+  @media (max-width: 768px) {
+    .dash-header { margin-bottom: 1.25rem; gap: 0.75rem; }
+    .dash-header h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.025em; }
+    .dash-header p { font-size: 0.88rem; margin-top: 0.2rem; color: var(--text-secondary); }
+    .date-badge { padding: 0.5rem 1rem; font-size: 0.82rem; border-radius: 99px; }
+
+    .metrics-grid {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .metric-card {
+      background: var(--card-bg) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius) !important;
+      padding: 14px 16px !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 14px !important;
+      box-shadow: var(--shadow-sm) !important;
+      min-height: auto !important;
+      box-sizing: border-box !important;
+    }
+
+    .metric-card::before {
+      display: block !important;
+    }
+
+    .metric-card:nth-child(3) {
+      grid-column: span 1 !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      padding: 14px 16px !important;
+    }
+
+    .metric-icon {
+      width: 44px !important;
+      height: 44px !important;
+      font-size: 1.25rem !important;
+      border-radius: 12px !important;
+      margin-bottom: 0 !important;
+      flex-shrink: 0 !important;
+    }
+
+    .metric-info {
+      flex: 1 !important;
+      width: auto !important;
+      text-align: left !important;
+    }
+
+    .metric-card:nth-child(3) .metric-info {
+      width: auto !important;
+      text-align: left !important;
+    }
+
+    .metric-info h3 {
+      font-size: 0.75rem !important;
+      font-weight: 700 !important;
+      color: var(--text-secondary) !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.03em !important;
+      margin-bottom: 3px !important;
+      white-space: normal !important;
+    }
+
+    .metric-info .value {
+      font-size: 1.5rem !important;
+      font-weight: 800 !important;
+      color: var(--text-primary) !important;
+      line-height: 1.1 !important;
+      letter-spacing: -0.025em !important;
+      margin-bottom: 2px !important;
+    }
+
+    .metric-info .sub {
+      font-size: 0.8rem !important;
+      color: var(--text-secondary) !important;
+      white-space: normal !important;
+    }
+  }
+
   .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.3s ease; }
   .card:hover { box-shadow: var(--shadow-md); }
   .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(248, 250, 252, 0.5); }
