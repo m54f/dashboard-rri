@@ -31,6 +31,84 @@ include __DIR__ . '/../includes/header.php';
 ?>
 
 <style>
+  /* ===== Petugas DP — kartu pilih responsif ===== */
+.petugas-head{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:.5rem; flex-wrap:wrap; margin-bottom:.5rem;
+}
+.petugas-head > label{ margin-bottom:0; }
+.petugas-hint{ color:var(--text-secondary); font-weight:400; font-size:.8rem; }
+.petugas-tools{ display:flex; align-items:center; gap:.5rem; }
+.petugas-count{
+  font-size:.72rem; font-weight:700; color:#2563eb; background:#eff6ff;
+  border:1px solid #bfdbfe; padding:.15rem .55rem; border-radius:999px;
+  transition:all .2s ease;
+}
+.petugas-count.has-selection{ background:#2563eb; border-color:#2563eb; color:#fff; }
+.petugas-toggle-all{
+  border:none; background:transparent; color:#2563eb; cursor:pointer;
+  font-size:.78rem; font-weight:600; padding:.2rem .45rem; border-radius:6px;
+}
+.petugas-toggle-all:hover{ background:#eff6ff; }
+
+.petugas-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(96px, 1fr));
+  gap:10px;
+}
+.petugas-option{ position:relative; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.petugas-option input{ position:absolute; opacity:0; pointer-events:none; }
+
+.petugas-card{
+  position:relative;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; min-height:88px; padding:12px 6px 10px;
+  background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px;
+  transition:border-color .18s, background .18s, box-shadow .18s, transform .12s;
+  user-select:none; text-align:center;
+}
+.petugas-option:hover .petugas-card{ border-color:#cbd5e1; background:#f1f5f9; }
+.petugas-option:active .petugas-card{ transform:scale(.96); }
+
+.petugas-avatar{
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:#e2e8f0; color:#475569; font-weight:700; font-size:.95rem;
+  transition:background .18s, color .18s;
+}
+.petugas-name{
+  font-size:.82rem; font-weight:600; color:var(--text-secondary);
+  max-width:100%; padding:0 4px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.petugas-check{
+  position:absolute; top:6px; right:6px; width:18px; height:18px;
+  border-radius:50%; background:#2563eb; color:#fff; font-size:12px;
+  display:flex; align-items:center; justify-content:center;
+  transform:scale(0); opacity:0;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), opacity .15s;
+}
+
+/* State terpilih */
+.petugas-option input:checked + .petugas-card{
+  border-color:#2563eb; background:#eff6ff;
+  box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+.petugas-option input:checked + .petugas-card .petugas-avatar{ background:#2563eb; color:#fff; }
+.petugas-option input:checked + .petugas-card .petugas-name{ color:#1d4ed8; }
+.petugas-option input:checked + .petugas-card .petugas-check{ transform:scale(1); opacity:1; }
+
+/* Aksesibilitas keyboard */
+.petugas-option input:focus-visible + .petugas-card{ outline:2px solid #2563eb; outline-offset:2px; }
+
+/* Layar kecil (HP) */
+@media (max-width:480px){
+  .petugas-grid{ grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .petugas-card{ min-height:80px; }
+  .petugas-avatar{ width:34px; height:34px; font-size:.9rem; }
+  .petugas-name{ font-size:.76rem; }
+}
+
 /* Hilangkan tombol panah atas-bawah (spinner) pada input pagination */
 .page-input-clean::-webkit-outer-spin-button,
 .page-input-clean::-webkit-inner-spin-button {
@@ -238,17 +316,30 @@ include __DIR__ . '/../includes/header.php';
         </div>
 
         <!-- Petugas DP -->
-        <div class="form-group">
-          <label>Petugas DP <span class="required-star">*</span> <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Pilih sebanyak yang Anda inginkan</span></label>
-          <div class="checkbox-grid" id="field_petugas">
-            <?php foreach ($petugasList as $nama): ?>
-            <label class="checkbox-option">
-              <input type="checkbox" name="petugas[]" value="<?= $nama ?>">
-              <span class="checkbox-label"><?= $nama ?></span>
-            </label>
-            <?php endforeach; ?>
-          </div>
+<div class="form-group">
+  <div class="petugas-head">
+    <label>Petugas DP <span class="required-star">*</span>
+      <span class="petugas-hint">— pilih satu atau lebih</span>
+    </label>
+    <div class="petugas-tools">
+      <span class="petugas-count" id="petugasCount">0 dipilih</span>
+      <button type="button" class="petugas-toggle-all" id="petugasToggleAll" onclick="toggleAllPetugas()">Pilih semua</button>
+    </div>
+  </div>
+                  <!-- Daftar Petugas DP -->
+        <div class="petugas-grid" id="field_petugas">
+          <?php foreach ($petugasList as $nama): ?>
+          <label class="petugas-option">
+            <input type="checkbox" name="petugas[]" value="<?= htmlspecialchars($nama) ?>">
+            <span class="petugas-card">
+              <span class="petugas-check"><i class="ri-check-line"></i></span>
+              
+              <span class="petugas-name"><?= htmlspecialchars($nama) ?></span>
+            </span>
+          </label>
+          <?php endforeach; ?>
         </div>
+      </div>
 
         <!-- Keterangan Checklist -->
         <div class="form-group">
@@ -266,6 +357,7 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
+
 function openModal(){ document.getElementById('checklistModal').classList.add('active'); }
 function closeModal(){ document.getElementById('checklistModal').classList.remove('active'); }
 
@@ -315,6 +407,7 @@ function openCreateModal(){
   document.getElementById('submitBtnLabel').textContent = 'Kirim';
   document.getElementById('field_tanggal').value = new Date().toISOString().split('T')[0];
   resetCheckItemVisuals(); // Reset warna kartu
+  updatePetugasCount();
   openModal();
 }
 
@@ -344,10 +437,30 @@ function openEditModal(btn){
     const cb = form.querySelector(`input[name="petugas[]"][value="${CSS.escape(nama)}"]`);
     if (cb) cb.checked = true;
   });
+  updatePetugasCount();
 
   document.getElementById('modalTitle').textContent = 'Edit Checklist';
   document.getElementById('submitBtnLabel').textContent = 'Simpan Perubahan';
   openModal();
+}
+
+// ===== Petugas DP: counter & pilih semua =====
+function updatePetugasCount(){
+  const boxes  = document.querySelectorAll('#field_petugas input[name="petugas[]"]');
+  const chosen = document.querySelectorAll('#field_petugas input[name="petugas[]"]:checked');
+  const count  = document.getElementById('petugasCount');
+  const btn    = document.getElementById('petugasToggleAll');
+  if (!count) return;
+  count.textContent = chosen.length + ' dipilih';
+  count.classList.toggle('has-selection', chosen.length > 0);
+  if (btn) btn.textContent = (boxes.length && chosen.length === boxes.length) ? 'Batal semua' : 'Pilih semua';
+}
+
+function toggleAllPetugas(){
+  const boxes = document.querySelectorAll('#field_petugas input[name="petugas[]"]');
+  const allChecked = [...boxes].every(b => b.checked);
+  boxes.forEach(b => { b.checked = !allChecked; });
+  updatePetugasCount();
 }
 
 // ===== STATE PAGINATION & FILTER =====
@@ -457,6 +570,8 @@ function jumpToPage(val, totalPages) {
 
 document.addEventListener('DOMContentLoaded', () => {
   updateTablePagination();
+  document.getElementById('field_petugas').addEventListener('change', updatePetugasCount);
+  updatePetugasCount();
 });
 
 // ===== Submit (Create/Update) =====
