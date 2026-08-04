@@ -20,128 +20,6 @@ $jenisKegiatanList = ['Acara Live / Dialog Luar','Podcast / Tapping','Troublesho
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- ===== STYLE MODERN MODAL & UI ===== -->
-<style>
-.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-.filter-tabs { display: flex; gap: 10px; }
-.filter-tab { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; }
-.filter-tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
-.search-box { position: relative; }
-.search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 16px; }
-.search-box input { padding: 10px 14px 10px 36px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; width: 280px; transition: 0.2s; }
-.search-box input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-
-.table-card { background: #fff; border-radius: 12px; border: 1px solid #f3f4f6; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 30px;}
-.table-header { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; margin-bottom: 25px; color: #111827; }
-.styled-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-.styled-table th { padding: 12px 15px; color: #6b7280; font-weight: 700; font-size: 12px; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; }
-.styled-table td { padding: 16px 15px; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
-.styled-table tbody tr:hover { background-color: #f8fafc; }
-
-.item-title { font-weight: 700; color: #111827; max-width: 250px; line-height: 1.4; }
-.badge-kategori { background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-.doc-thumbnails { display: flex; flex-wrap: wrap; gap: 4px; }
-.doc-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #e5e7eb; border: 1px solid #f3f4f6; cursor: pointer; transition: 0.2s; }
-.doc-thumb:hover { opacity: 0.8; }
-.doc-more { width: 36px; height: 36px; border-radius: 6px; background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; cursor: pointer; }
-
-.action-btns { display: flex; gap: 8px; }
-.btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; color: #9ca3af; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: 0.2s; }
-.btn-icon.edit { color: #2563eb; } .btn-icon.edit:hover { background: #eff6ff; border-color: #bfdbfe; }
-.btn-icon.delete { color: #dc2626; } .btn-icon.delete:hover { background: #fef2f2; border-color: #fecaca; }
-
-/* === STYLING PAGINATION RESPONSIVE === */
-.pagination-container { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-top: 25px; 
-  font-size: 14px; 
-  color: #6b7280; 
-  padding-top: 20px; 
-  border-top: 1px solid #f3f4f6; 
-  gap: 15px; 
-}
-.page-item { 
-  padding: 6px 12px; 
-  border: 1px solid #e5e7eb; 
-  border-radius: 6px; 
-  background: #fff; 
-  color: #374151; 
-  cursor: pointer; 
-  font-weight: 500; 
-  transition: 0.2s; 
-  font-size: 0.9rem;
-}
-.page-item:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Khusus Mobile Layout Pagination */
-@media screen and (max-width: 768px) {
-  .pagination-container {
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-}
-
-/* === STYLING MODAL SCROLLABLE === */
-.modal-overlay { 
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); 
-  display: flex; align-items: center; justify-content: center; z-index: 9999; 
-  opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 1rem; 
-}
-.modal-overlay.active { opacity: 1; visibility: visible; }
-
-.modal-content { 
-  background: #ffffff; border-radius: 16px; width: 100%; max-width: 680px; 
-  max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
-  transform: translateY(20px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-}
-.modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
-
-#jurnalForm { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-
-.modal-header { 
-  display: flex; justify-content: space-between; align-items: center; 
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #ffffff; flex-shrink: 0; 
-}
-.modal-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; }
-.modal-close { background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 8px; font-size: 1.5rem; line-height: 1; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.modal-close:hover { background: #e2e8f0; color: #0f172a; }
-
-.modal-body { padding: 1.5rem; flex: 1 1 auto; min-height: 0; overflow-y: auto; background: #ffffff; }
-.modal-body::-webkit-scrollbar { width: 6px; }
-.modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-
-.modal-footer { 
-  display: flex; justify-content: flex-end; gap: 0.75rem; 
-  padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; background: #ffffff; flex-shrink: 0; 
-}
-
-.form-group { margin-bottom: 1.25rem; }
-.form-label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
-.form-input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; color: #0f172a; background: #fff; outline: none; font-family: inherit; box-sizing: border-box;}
-.form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-
-.chip-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.chip-option { cursor: pointer; user-select: none; position: relative; }
-.chip-option input[type="checkbox"] { position: absolute; opacity: 0; }
-.chip-content { display: inline-block; padding: 0.5rem 1rem; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 0.85rem; font-weight: 600; border: 1.5px solid transparent; transition: all 0.2s ease; }
-.chip-option input[type="checkbox"]:checked + .chip-content { background: #2563eb; color: #fff; border-color: #1d4ed8; }
-
-.upload-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.5rem; text-align: center; background: #f8fafc; cursor: pointer; position: relative; }
-.preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.preview-item { position: relative; width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc; }
-.preview-item img { width: 100%; height: 100%; object-fit: cover; }
-.preview-item .remove-btn { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-.btn { padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 0.5rem; }
-.btn-secondary { background: #fff; color: #475569; border: 1.5px solid #cbd5e1; }
-.btn-primary { background: #2563eb; color: #fff; }
-</style>
-
 <div class="page-head">
   <div>
     <h2>Logbook Jurnal Kegiatan</h2>
@@ -163,16 +41,13 @@ include __DIR__ . '/../includes/header.php';
         <button class="filter-tab" onclick="setFilter('proses', this)">Proses</button>
         <button class="filter-tab" onclick="setFilter('selesai', this)">Selesai</button>
     </div>
-    <div class="search-box">
-        <i class="ri-search-line"></i>
-        <input type="text" id="searchInput" placeholder="Cari kegiatan atau petugas..." onkeyup="handleSearch(this.value)">
-    </div>
+    <input type="text" id="searchInput" placeholder="Cari kegiatan atau petugas..." onkeyup="handleSearch(this.value)" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0); font-size: 0.85rem; outline: none; width: 240px;">
 </div>
 
-<div class="table-card">
-  <div class="table-header"><i class="ri-list-check" style="color:#2563eb;"></i> Daftar Kegiatan</div>
-  <div style="overflow-x: auto;">
-    <table class="styled-table">
+<div class="card">
+  <div class="card-header"><div class="card-title"><i class="ri-list-check"></i> Daftar Kegiatan</div></div>
+  <div class="table-wrap">
+    <table class="data-table" id="jurnalTable">
       <thead>
         <tr><th>JUDUL</th><th>KATEGORI</th><th>PIC</th><th>DOKUMENTASI</th><th>LINK EVIDEN</th><th>TANGGAL</th><th>AKSI</th></tr>
       </thead>
@@ -180,9 +55,9 @@ include __DIR__ . '/../includes/header.php';
     </table>
   </div>
   
-  <div class="pagination-container">
-    <div id="pageInfo">Menampilkan 0-0 dari 0 Kegiatan</div>
-    <div id="paginationNav"></div>
+  <div class="pagination-wrap">
+    <div id="pageInfo" style="font-size:0.85rem; color:var(--text-secondary); font-weight:500;">Menampilkan 0-0 dari 0 Kegiatan</div>
+    <div id="paginationNav" style="display:flex; align-items:center; gap:0.35rem;"></div>
   </div>
 </div>
 
@@ -237,7 +112,7 @@ include __DIR__ . '/../includes/header.php';
           <div class="upload-zone" id="dropzone">
             <input type="file" id="field_eviden" name="eviden[]" multiple accept="image/*">
             <div style="font-size: 2rem; color: #64748b; margin-bottom: 0.5rem;"><i class="ri-image-add-line"></i></div>
-            <div style="font-size: 0.9rem; color: #334155; font-weight: 600;">Klik atau seret foto ke sini</div>
+            <div style="font-size: 0.9rem; color: var(--text-primary); font-weight: 600;">Klik atau seret foto ke sini</div>
           </div>
           <div class="preview-grid" id="filePreview" style="display: none;"></div>
           <div class="preview-grid" id="existingDocs" style="display: none;"></div>
@@ -321,26 +196,28 @@ function renderTable() {
                 jenis: e.tags_arr, petugas: e.ops_arr, docs: e.docs
             }));
 
-            let actionButtons = `<a href="${publicUrl}" target="_blank" class="btn-icon" title="Buka di Notion"><i class="ri-external-link-line"></i></a>`;
+            let actionButtons = `<a href="${publicUrl}" target="_blank" class="icon-action view" title="Buka di Notion"><i class="ri-external-link-line"></i></a>`;
             
             // Only show edit/delete buttons for admin role
             if (userRole === 'admin') {
                 actionButtons += `
-                    <button class="btn-icon edit" title="Edit" onclick="openEditModal(decodeURIComponent('${editPayload}'))"><i class="ri-pencil-line"></i></button>
-                    <button class="btn-icon delete" title="Hapus" onclick="deleteJurnal('${e.full_id}', '${e.title.replace(/'/g, "\\'")}')"><i class="ri-delete-bin-line"></i></button>
+                    <button class="icon-action edit" title="Edit" onclick="openEditModal(decodeURIComponent('${editPayload}'))"><i class="ri-pencil-line"></i></button>
+                    <button class="icon-action delete" title="Hapus" onclick="deleteJurnal('${e.full_id}', '${e.title.replace(/'/g, "\\'")}')"><i class="ri-delete-bin-line"></i></button>
                 `;
             }
 
+            let picInitials = e.op ? e.op.substring(0, 2).toUpperCase() : 'OP';
+
             tbody.innerHTML += `
             <tr>
-                <td class="item-title">${e.title}</td>
-                <td><span class="badge-kategori">${e.tag}</span></td>
-                <td style="max-width: 150px; line-height: 1.5;">${e.op}</td>
+                <td class="cell-title">${e.title}</td>
+                <td><span class="tag blue">${e.tag}</span></td>
+                <td><div style="display:flex; align-items:center; gap:8px;"><span class="avatar-sm">${picInitials}</span> <span>${e.op}</span></div></td>
                 <td><div class="doc-thumbnails">${docsHtml}</div></td>
                 <td>${linkHtml}</td>
-                <td>${e.date}</td>
-                <td>
-                    <div class="action-btns">${actionButtons}</div>
+                <td style="font-weight:600; white-space:nowrap;">${e.date}</td>
+                <td class="cell-actions">
+                    ${actionButtons}
                 </td>
             </tr>`;
         });
