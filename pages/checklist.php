@@ -155,93 +155,95 @@ include __DIR__ . '/../includes/header.php';
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <form id="checklistForm" onsubmit="handleChecklistSubmit(event)">
-      <input type="hidden" id="field_page_id" name="page_id" value="">
+      <div class="modal-body">
+        <input type="hidden" id="field_page_id" name="page_id" value="">
 
-      <div class="form-row">
-        <!-- Sesi Checklist -->
+        <div class="form-row">
+          <!-- Sesi Checklist -->
+          <div class="form-group">
+            <label>Sesi Checklist <span class="required-star">*</span></label>
+            <div class="radio-segment" id="field_checklist">
+              <input type="radio" name="checklist" value="Pagi" id="r_pagi" required>
+              <label for="r_pagi"><i class="ri-sun-line"></i> Pagi</label>
+              <input type="radio" name="checklist" value="Malam" id="r_malam">
+              <label for="r_malam"><i class="ri-moon-line"></i> Malam</label>
+            </div>
+          </div>
+
+          <!-- Tanggal Cek -->
+          <div class="form-group">
+            <label>Tanggal Cek <span class="required-star">*</span></label>
+            <input type="date" id="field_tanggal" name="tanggal" required>
+          </div>
+        </div>
+
         <div class="form-group">
-          <label>Sesi Checklist <span class="required-star">*</span></label>
-          <div class="radio-segment" id="field_checklist">
-            <input type="radio" name="checklist" value="Pagi" id="r_pagi" required>
-            <label for="r_pagi"><i class="ri-sun-line"></i> Pagi</label>
-            <input type="radio" name="checklist" value="Malam" id="r_malam">
-            <label for="r_malam"><i class="ri-moon-line"></i> Malam</label>
+          <label>Cek Perangkat <span style="font-weight:400; color:var(--text-secondary); font-size:11px;">(Klik kartu untuk menandai sudah dicek)</span></label>
+          
+          <div class="check-item" data-target="field_pro1" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Programa 1 <span class="required-star">*</span></h4>
+              <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Dias (App DIAS terhubung) - PC Streaming - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_pro1" name="pro1" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_pro2" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Programa 2 <span class="required-star">*</span></h4>
+              <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC Backup - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_pro2" name="pro2" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_pro4" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Programa 4 <span class="required-star">*</span></h4>
+              <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC WA - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_pro4" name="pro4" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_tetrack" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Te-track</h4>
+              <p>Monitoring log Pemancar melalui aplikasi Te-Track</p>
+            </div>
+            <div class="check-status">Belum Submit</div>
+            <input type="checkbox" id="field_tetrack" name="tetrack" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_mcr" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>MCR Depan <span class="required-star">*</span></h4>
+              <p>Cek Kondisi PC Streaming dan Logger - PC Logger Back Up - Backup Rekaman Logger Harian</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_mcr" name="mcr" hidden>
           </div>
         </div>
 
-        <!-- Tanggal Cek -->
+        <!-- Petugas DP -->
         <div class="form-group">
-          <label>Tanggal Cek <span class="required-star">*</span></label>
-          <input type="date" id="field_tanggal" name="tanggal" required>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Cek Perangkat <span style="font-weight:400; color:var(--text-secondary); font-size:11px;">(Klik kartu untuk menandai sudah dicek)</span></label>
-        
-        <div class="check-item" data-target="field_pro1" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Programa 1 <span class="required-star">*</span></h4>
-            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Dias (App DIAS terhubung) - PC Streaming - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+          <label>Petugas DP <span class="required-star">*</span> <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Pilih sebanyak yang Anda inginkan</span></label>
+          <div class="checkbox-grid" id="field_petugas">
+            <?php foreach ($petugasList as $nama): ?>
+            <label class="checkbox-option">
+              <input type="checkbox" name="petugas[]" value="<?= $nama ?>">
+              <span class="checkbox-label"><?= $nama ?></span>
+            </label>
+            <?php endforeach; ?>
           </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_pro1" name="pro1" hidden>
         </div>
 
-        <div class="check-item" data-target="field_pro2" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Programa 2 <span class="required-star">*</span></h4>
-            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC Backup - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
-          </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_pro2" name="pro2" hidden>
+        <!-- Keterangan Checklist -->
+        <div class="form-group">
+          <label>Keterangan Checklist</label>
+          <textarea id="field_keterangan" name="keterangan" rows="3" placeholder="Catatan tambahan bila ada kendala..."></textarea>
         </div>
-
-        <div class="check-item" data-target="field_pro4" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Programa 4 <span class="required-star">*</span></h4>
-            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC WA - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
-          </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_pro4" name="pro4" hidden>
-        </div>
-
-        <div class="check-item" data-target="field_tetrack" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Te-track</h4>
-            <p>Monitoring log Pemancar melalui aplikasi Te-Track</p>
-          </div>
-          <div class="check-status">Belum Submit</div>
-          <input type="checkbox" id="field_tetrack" name="tetrack" hidden>
-        </div>
-
-        <div class="check-item" data-target="field_mcr" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>MCR Depan <span class="required-star">*</span></h4>
-            <p>Cek Kondisi PC Streaming dan Logger - PC Logger Back Up - Backup Rekaman Logger Harian</p>
-          </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_mcr" name="mcr" hidden>
-        </div>
-      </div>
-
-      <!-- Petugas DP -->
-      <div class="form-group">
-        <label>Petugas DP <span class="required-star">*</span> <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Pilih sebanyak yang Anda inginkan</span></label>
-        <div class="checkbox-grid" id="field_petugas">
-          <?php foreach ($petugasList as $nama): ?>
-          <label class="checkbox-option">
-            <input type="checkbox" name="petugas[]" value="<?= $nama ?>">
-            <span class="checkbox-label"><?= $nama ?></span>
-          </label>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <!-- Keterangan Checklist -->
-      <div class="form-group">
-        <label>Keterangan Checklist</label>
-        <textarea id="field_keterangan" name="keterangan" rows="3" placeholder="Catatan tambahan bila ada kendala..."></textarea>
       </div>
 
       <div class="modal-footer">

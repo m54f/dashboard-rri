@@ -308,37 +308,39 @@ include __DIR__ . '/../includes/header.php';
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <form id="agendaForm" onsubmit="handleAgendaForm(event)">
-      <div class="form-group"><label>Judul Kegiatan</label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
-      <div class="form-row">
-        <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required></div>
-        <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
-      </div>
-      <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
-      <div class="form-group">
-        <label>Kategori</label>
-        <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
-        <datalist id="kategoriList">
-          <?php foreach ($categories as $cat): ?>
-          <option value="<?= htmlspecialchars($cat) ?>"></option>
-          <?php endforeach; ?>
-        </datalist>
-      </div>
-      <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
-      <div class="form-group">
-        <label>Surat Tugas / Dokumen / Foto (opsional)</label>
-        <input type="file" id="dokumenInput" name="dokumen[]" multiple accept=".pdf,.doc,.docx,image/*" style="display:none;">
-        <div style="display:flex; gap:0.5rem;">
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('dokumenInput').click()"><i class="ri-attachment-2"></i> Pilih File</button>
-          <button type="button" class="btn btn-secondary" onclick="clearSelectedFiles()" title="Batalkan semua file yang dipilih">&times; Batalkan</button>
+      <div class="modal-body">
+        <div class="form-group"><label>Judul Kegiatan</label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
+        <div class="form-row">
+          <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required></div>
+          <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
         </div>
-        <div id="selectedFilesList" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.5rem;"></div>
-        <small style="color:#6b7280; display:block; margin-top:0.25rem;">Bisa pilih lebih dari satu file sekaligus (tahan Ctrl/Cmd waktu memilih di dialog), atau klik "Pilih File" berkali-kali untuk menambah satu-satu. Maks 5MB per file.</small>
-        <small id="editFileNote" style="color:#9ca3af; display:none; margin-top:0.25rem;">Upload file baru di sini akan MENGGANTI dokumen lama pada agenda ini. Kosongkan kalau tidak mau mengubah dokumen yang sudah ada.</small>
+        <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
+        <div class="form-group">
+          <label>Kategori</label>
+          <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
+          <datalist id="kategoriList">
+            <?php foreach ($categories as $cat): ?>
+            <option value="<?= htmlspecialchars($cat) ?>"></option>
+            <?php endforeach; ?>
+          </datalist>
+        </div>
+        <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
+        <div class="form-group">
+          <label>Surat Tugas / Dokumen / Foto (opsional)</label>
+          <input type="file" id="dokumenInput" name="dokumen[]" multiple accept=".pdf,.doc,.docx,image/*" style="display:none;">
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('dokumenInput').click()"><i class="ri-attachment-2"></i> Pilih File</button>
+            <button type="button" class="btn btn-secondary" onclick="clearSelectedFiles()" title="Batalkan semua file yang dipilih">&times; Batalkan</button>
+          </div>
+          <div id="selectedFilesList" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.5rem;"></div>
+          <small style="color:#6b7280; display:block; margin-top:0.25rem;">Bisa pilih lebih dari satu file sekaligus (tahan Ctrl/Cmd waktu memilih di dialog), atau klik "Pilih File" berkali-kali untuk menambah satu-satu. Maks 5MB per file.</small>
+          <small id="editFileNote" style="color:#9ca3af; display:none; margin-top:0.25rem;">Upload file baru di sini akan MENGGANTI dokumen lama pada agenda ini. Kosongkan kalau tidak mau mengubah dokumen yang sudah ada.</small>
+        </div>
+        <input type="hidden" name="page_id" value="">
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="remove_existing_files" value="0">
+        <input type="hidden" name="status" value="Belum">
       </div>
-      <input type="hidden" name="page_id" value="">
-      <input type="hidden" name="action" value="create">
-      <input type="hidden" name="remove_existing_files" value="0">
-      <input type="hidden" name="status" value="Belum">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>

@@ -44,18 +44,26 @@ include __DIR__ . '/../includes/header.php';
   .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
 
   /* Stats Row */
-  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
-  .stat-card { background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow-card); border: 1px solid var(--border); display: flex; align-items: center; gap: 1.25rem; transition: all 0.3s ease; position: relative; overflow: hidden; }
+/* Stats Row - Diperbarui untuk PC & Mobile */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
+  .stat-card { background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-start; gap: 1.25rem; transition: all 0.3s ease; position: relative; overflow: hidden; }
   .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: #c7d2fe; }
-  .stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; z-index: 1; }
+  .stat-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; flex-shrink: 0; z-index: 1; }
   .stat-icon.blue { background: #eff6ff; color: #3b82f6; }
   .stat-icon.green { background: #f0fdf4; color: #22c55e; }
   .stat-icon.orange { background: #fff7ed; color: #f97316; }
-  .stat-info { z-index: 1; }
-  .stat-info h3 { margin: 0; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  .stat-value { font-size: 2rem; font-weight: 800; color: var(--text-main); margin: 0.25rem 0; line-height: 1; letter-spacing: -0.03em; }
-  .stat-sub { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+  .stat-info { z-index: 1; flex: 1; text-align: left !important; }
+  .stat-info h3 { margin: 0; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 1.6rem !important; font-weight: 800; color: var(--text-main); margin: 0.3rem 0; line-height: 1.2; letter-spacing: -0.02em; }
+  .stat-sub { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; line-height: 1.3; }
 
+  @media (max-width: 640px) {
+    .stats-row { grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { padding: 1.25rem; gap: 1rem; }
+    .stat-icon { width: 48px; height: 48px; font-size: 1.5rem; border-radius: 12px; }
+    .stat-value { font-size: 1.35rem !important; }
+    .stat-sub { font-size: 0.8rem; }
+  }
   /* Staff Grid */
   .staff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
   
@@ -97,7 +105,7 @@ include __DIR__ . '/../includes/header.php';
 
   .card-body { padding: 1.5rem; position: relative; z-index: 1; flex-grow: 1; }
   
-  .staff-role-badge { 
+  .role-badge { 
     display: inline-block;
     font-size: 0.75rem; 
     color: var(--primary); 
@@ -276,7 +284,7 @@ include __DIR__ . '/../includes/header.php';
         <div class="bg-initial"><?= $initial ?></div>
         
         <div class="card-body">
-          <span class="staff-role-badge"><?= htmlspecialchars($p['role']) ?></span>
+          <span class="role-badge"><?= htmlspecialchars($p['role']) ?></span>
           <h3 class="staff-name"><?= htmlspecialchars($p['name']) ?></h3>
           
           <div class="detail-row">
@@ -781,27 +789,21 @@ async function handlePetugasSubmit(event) {
 }
 
 async function deletePetugas(pageId, name) {
-  customConfirm(
-    'Hapus Petugas',
-    `Hapus data petugas "${name}"? Data akan dipindahkan ke Trash di Notion.`,
-    async () => {
-      try {
-        const res = await fetch('../api/delete-petugas.php', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast('🗑️ Data berhasil dihapus!', 'success');
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-        }
-      } catch (err) {
-        showToast('❌ Error: ' + err.message, 'error');
-      }
-    },
-    'Hapus'
-  );
+  if (!confirm(`Hapus data petugas "${name}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
+  try {
+    const res = await fetch('../api/delete-petugas.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId })
+    });
+    const data = await res.json();
+    if (data.success) { 
+      showToast('🗑️ Data berhasil dihapus!', 'success');
+      setTimeout(() => location.reload(), 1000);
+    } else { 
+      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error'); 
+    }
+  } catch (err) { 
+    showToast('❌ Error: ' + err.message, 'error'); 
+  }
 }
 
 async function exportToExcel() {
