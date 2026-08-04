@@ -141,7 +141,6 @@ include __DIR__ . '/../includes/header.php';
               <i class="ri-checkbox-circle-line"></i>
             </button>
             <?php endif; ?>
-<<<<<<< HEAD
             <?php if (getRole() === 'admin'): ?>
             <a href="peminjaman_form.php?id=<?= htmlspecialchars($it['page_id']) ?>" class="icon-action edit" title="Edit">
               <i class="ri-pencil-line"></i>
@@ -150,10 +149,6 @@ include __DIR__ . '/../includes/header.php';
                     onclick="deleteItem('<?= htmlspecialchars($it['page_id']) ?>', '<?= htmlspecialchars(addslashes($it['kegiatan'])) ?>')">
               <i class="ri-delete-bin-line"></i>
             </button>
-=======
-            <a href="peminjaman_form.php?id=<?= htmlspecialchars($it['page_id']) ?>" class="icon-action edit" title="Edit"><i class="ri-pencil-line"></i></a>
-            <button type="button" class="icon-action delete" title="Hapus" onclick="deleteItem('<?= htmlspecialchars($it['page_id']) ?>', '<?= htmlspecialchars(addslashes($it['kegiatan'])) ?>')"><i class="ri-delete-bin-line"></i></button>
->>>>>>> 718bfd85edacb5d83799d7d660661ae0ce80bec8
             <?php endif; ?>
           </td>
         </tr>
@@ -470,7 +465,81 @@ function filterPinjam(status, el){
   updateTablePagination();
 }
 
-<<<<<<< HEAD
+function changePage(page) {
+  currentPage = page;
+  updateTablePagination();
+}
+
+function jumpToPage(val, maxPage) {
+  let p = parseInt(val, 10);
+  if (!isNaN(p) && p >= 1 && p <= maxPage) {
+    changePage(p);
+  } else if (p > maxPage) {
+    changePage(maxPage);
+  } else {
+    changePage(1); 
+  }
+}
+
+function updateTablePagination() {
+  const allRows = Array.from(document.querySelectorAll('#pinjamTable tbody tr'));
+  const paginationWrap = document.getElementById('paginationWrap');
+
+  // Abaikan baris pesan kosong
+  if (allRows.length === 1 && allRows[0].querySelector('td[colspan]')) {
+    if (paginationWrap) paginationWrap.style.display = 'none';
+    return;
+  }
+
+  // Filter gabungan: Tab Filter & Teks Pencarian
+  const filteredRows = allRows.filter(row => {
+    const statusMatch = currentFilter === 'Semua' || row.dataset.status === currentFilter;
+    const textContent = row.textContent.toLowerCase();
+    const searchMatch = !searchQuery || textContent.includes(searchQuery);
+    return statusMatch && searchMatch;
+  });
+
+  const totalRows = filteredRows.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  allRows.forEach(row => row.style.display = 'none');
+
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+  for (let i = startIndex; i < endIndex; i++) {
+    filteredRows[i].style.display = '';
+  }
+
+  const paginationInfo = document.getElementById('paginationInfo');
+  const paginationButtons = document.getElementById('paginationButtons');
+
+  if (totalRows === 0 || !paginationWrap) {
+    if (paginationWrap) paginationWrap.style.display = 'none';
+  } else {
+    paginationWrap.style.display = 'flex';
+    paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} peminjaman`;
+
+    let buttonsHTML = '';
+
+    const prevDisabled = currentPage === 1 ? 'disabled' : '';
+    const prevStyle = currentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changePage(${currentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+    buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${currentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})">`;
+
+    buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+
+    const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+    const nextStyle = currentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changePage(${currentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
+
+    paginationButtons.innerHTML = buttonsHTML;
+  }
+}
+
 // ===== MODAL PENGEMBALIAN =====
 let _returnPageId = '';
 let _currentRow = null;
@@ -563,6 +632,9 @@ function handleEscKey(e) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Init pagination
+  updateTablePagination();
+  
   // Close saat klik overlay
   document.getElementById('returnModal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeReturnModal();
@@ -612,89 +684,6 @@ async function submitReturn(event) {
   submitLabel.hidden = true;
   submitLoading.hidden = false;
 
-=======
-function changePage(page) {
-  currentPage = page;
-  updateTablePagination();
-}
-
-function jumpToPage(val, maxPage) {
-  let p = parseInt(val, 10);
-  if (!isNaN(p) && p >= 1 && p <= maxPage) {
-    changePage(p);
-  } else if (p > maxPage) {
-    changePage(maxPage);
-  } else {
-    changePage(1); 
-  }
-}
-
-function updateTablePagination() {
-  const allRows = Array.from(document.querySelectorAll('#pinjamTable tbody tr'));
-  const paginationWrap = document.getElementById('paginationWrap');
-
-  // Abaikan baris pesan kosong
-  if (allRows.length === 1 && allRows[0].querySelector('td[colspan]')) {
-    if (paginationWrap) paginationWrap.style.display = 'none';
-    return;
-  }
-
-  // Filter gabungan: Tab Filter & Teks Pencarian
-  const filteredRows = allRows.filter(row => {
-    const statusMatch = currentFilter === 'Semua' || row.dataset.status === currentFilter;
-    const textContent = row.textContent.toLowerCase();
-    const searchMatch = !searchQuery || textContent.includes(searchQuery);
-    return statusMatch && searchMatch;
-  });
-
-  const totalRows = filteredRows.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
-
-  if (currentPage > totalPages) currentPage = totalPages;
-  if (currentPage < 1) currentPage = 1;
-
-  allRows.forEach(row => row.style.display = 'none');
-
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
-  for (let i = startIndex; i < endIndex; i++) {
-    filteredRows[i].style.display = '';
-  }
-
-  const paginationInfo = document.getElementById('paginationInfo');
-  const paginationButtons = document.getElementById('paginationButtons');
-
-  if (totalRows === 0 || !paginationWrap) {
-    if (paginationWrap) paginationWrap.style.display = 'none';
-  } else {
-    paginationWrap.style.display = 'flex';
-    paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} peminjaman`;
-
-    let buttonsHTML = '';
-
-    const prevDisabled = currentPage === 1 ? 'disabled' : '';
-    const prevStyle = currentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
-    buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${prevStyle}" onclick="changePage(${currentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
-
-    buttonsHTML += `<input type="number" min="1" max="${totalPages}" value="${currentPage}" style="width:55px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#3b82f6; outline:none; font-weight:600;" onchange="jumpToPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})">`;
-
-    buttonsHTML += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
-
-    const nextDisabled = currentPage === totalPages ? 'disabled' : '';
-    const nextStyle = currentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
-    buttonsHTML += `<button type="button" style="padding:0.4rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-size:0.9rem; transition:0.2s; ${nextStyle}" onclick="changePage(${currentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
-
-    paginationButtons.innerHTML = buttonsHTML;
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  updateTablePagination();
-});
-
-async function markReturned(pageId, kegiatan) {
-  if (!confirm(`Tandai "${kegiatan}" sebagai sudah dikembalikan?`)) return;
->>>>>>> 718bfd85edacb5d83799d7d660661ae0ce80bec8
   try {
     const res = await fetch('../api/mark-returned.php', {
       method: 'POST',
