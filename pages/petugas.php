@@ -97,7 +97,7 @@ include __DIR__ . '/../includes/header.php';
 
   .card-body { padding: 1.5rem; position: relative; z-index: 1; flex-grow: 1; }
   
-  .role-badge { 
+  .staff-role-badge { 
     display: inline-block;
     font-size: 0.75rem; 
     color: var(--primary); 
@@ -276,7 +276,7 @@ include __DIR__ . '/../includes/header.php';
         <div class="bg-initial"><?= $initial ?></div>
         
         <div class="card-body">
-          <span class="role-badge"><?= htmlspecialchars($p['role']) ?></span>
+          <span class="staff-role-badge"><?= htmlspecialchars($p['role']) ?></span>
           <h3 class="staff-name"><?= htmlspecialchars($p['name']) ?></h3>
           
           <div class="detail-row">

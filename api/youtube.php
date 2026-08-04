@@ -38,16 +38,8 @@ function getYoutubeVideos($filters = [])
         ];
     }
 
-    if (!empty($filters['penyiar'])) {
-        $pen = trim($filters['penyiar']);
-        $andConditions[] = [
-            'or' => [
-                ['property' => 'Penyiar Pro 1', 'multi_select' => ['contains' => $pen]],
-                ['property' => 'Penyiar Pro 2', 'multi_select' => ['contains' => $pen]],
-                ['property' => 'Penyiar Pro 4', 'multi_select' => ['contains' => $pen]]
-            ]
-        ];
-    }
+    // Note: Filter penyiar/host dilakukan secara presisi di tingkat PHP (sebelum return)
+    // untuk menghindari HTTP 400 Validation Error dari Notion API akibat perbedaan opsi multi_select antar kolom.
 
     if (!empty($andConditions)) {
         if (count($andConditions) === 1) {
@@ -281,6 +273,14 @@ function getYoutubeVideos($filters = [])
             'teknik'         => $teknik,
             'pa'             => $pa,
         ];
+    }
+
+    if (!empty($filters['penyiar'])) {
+        $penFilter = strtolower(trim($filters['penyiar']));
+        $videos = array_values(array_filter($videos, function($v) use ($penFilter) {
+            $penyiarVal = is_array($v['penyiar']) ? implode(', ', $v['penyiar']) : ($v['penyiar'] ?? '');
+            return strpos(strtolower($penyiarVal), $penFilter) !== false;
+        }));
     }
 
     return $videos;

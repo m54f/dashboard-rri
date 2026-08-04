@@ -138,14 +138,11 @@ $appSlides = array_chunk($apps, 3);
 
 
     .panel-grid {
-
         display: grid;
-
-        grid-template-columns:
-            repeat(3, 1fr);
-
-        gap: 1.5rem;
-
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.75rem;
+        row-gap: 2rem;
+        margin-bottom: 2rem;
     }
 
     .panel-card {

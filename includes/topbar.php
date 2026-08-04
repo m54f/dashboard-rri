@@ -39,6 +39,11 @@
       <span class="role-short-text"><?= htmlspecialchars($shortRoleLabel) ?></span>
     </div>
 
+    <!-- Tombol Mode Gelap/Terang -->
+    <button type="button" class="topbar-btn btn-theme-toggle" onclick="toggleDarkMode()" title="Ganti Mode Terang/Gelap">
+      <i class="ri-moon-line" id="themeToggleIcon"></i>
+    </button>
+
     <!-- Divider Vertikal -->
     <div class="topbar-divider"></div>
 

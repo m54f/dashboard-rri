@@ -26,6 +26,14 @@ require_once __DIR__ . '/auth.php';
 <link href="<?= $base ?>/assets/css/style.css?v=<?= $cssVersion ?>" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="<?= $base ?>/assets/css/js/sonner.js"></script>
+<script>
+  // Cegah flash putih saat buka halaman jika mode gelap aktif
+  (function() {
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.classList.add('dark-mode');
+    }
+  })();
+</script>
 </head>
 <body>
 <div class="layout">
@@ -41,6 +49,9 @@ require_once __DIR__ . '/auth.php';
   // Terapkan status sidebar tersimpan dari localStorage & cegah flash animasi (FOUC)
   (function() {
     document.body.classList.add('preload');
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
     if (window.innerWidth > 768 && localStorage.getItem('sidebarHidden') === 'true') {
       document.body.classList.add('sidebar-hidden');
     }
@@ -50,6 +61,33 @@ require_once __DIR__ . '/auth.php';
       }, 50);
     });
   })();
+
+  // Handle Dark Mode Manual Toggle
+  function toggleDarkMode() {
+    const isDark = document.documentElement.classList.toggle('dark-mode');
+    if (document.body) {
+      document.body.classList.toggle('dark-mode', isDark);
+    }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateThemeIcons(isDark);
+  }
+
+  function updateThemeIcons(isDark) {
+    const icon = document.getElementById('themeToggleIcon');
+    if (icon) {
+      icon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
+    }
+  }
+
+  // Sync DOM & Icon on Load
+  window.addEventListener('DOMContentLoaded', function() {
+    const isDark = localStorage.getItem('theme') === 'dark';
+    if (isDark) {
+      document.documentElement.classList.add('dark-mode');
+      if (document.body) document.body.classList.add('dark-mode');
+    }
+    updateThemeIcons(isDark);
+  });
 
   // Script untuk toggle sidebar
   function toggleSidebar() {
