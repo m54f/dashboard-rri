@@ -282,10 +282,19 @@ include __DIR__ . '/../includes/header.php';
     <h2>Rekap Youtube</h2>
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
-  <div class="gallery-header-actions">
-    <!-- PENCARIAN & FILTER UNTUK DAFTAR VIDEO UTAMA -->
-    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; outline: none; width:200px;">
-    
+  <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
+</div>
+
+<!-- ACTION BAR: SEARCHBAR RATA KIRI, FILTER RATA KANAN -->
+<div class="gallery-header-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+  <!-- Searchbar (Rata Kiri) -->
+  <div class="search-box" style="max-width: 280px; margin: 0; background: var(--card-bg, #fff);">
+    <i class="ri-search-line"></i>
+    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+  </div>
+
+  <!-- Filter Groups & Action Buttons (Rata Kanan) -->
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;">
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>
@@ -316,7 +325,6 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter" style="height:40px; padding:0 12px; font-weight:600;"><i class="ri-refresh-line"></i> Reset Filter</button>
     </div>
-    <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
   </div>
 </div>
 
@@ -550,6 +558,54 @@ include __DIR__ . '/../includes/header.php';
   .video-row:hover { background:rgba(0,0,0,0.03); }
   .icon-action.view { color:#0ea5e9; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; text-decoration:none; display:inline-flex; }
   .icon-action.view:hover { background:rgba(14,165,233,0.12); }
+
+  /* Desktop RSS Card Header Layout (Default) */
+  .rss-card-header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .rss-channel-group { flex: 2; min-width: 250px; margin-bottom: 0; }
+  .rss-date-group { flex: 1; min-width: 150px; margin-bottom: 0; }
+  .rss-btn-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .rss-btn { height: 40px; white-space: nowrap; }
+  .rss-btn-save { background: #16a34a; }
+
+  /* Mobile RSS Card Header Layout (<= 768px) */
+  @media (max-width: 768px) {
+    .rss-card-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .rss-channel-group, .rss-date-group {
+      width: 100%;
+      min-width: 0;
+      flex: none;
+    }
+    .rss-btn-group {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .rss-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px;
+      min-height: 40px;
+      height: auto;
+      justify-content: center;
+      text-align: center;
+      white-space: normal;
+      line-height: 1.15;
+      font-size: 12.5px;
+    }
+  }
 </style>
 </div>
 
@@ -572,19 +628,19 @@ include __DIR__ . '/../includes/header.php';
   </div>
 
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-header" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
-      <div class="form-group" style="flex:2; min-width:250px; margin-bottom:0;">
+    <div class="card-header rss-card-header">
+      <div class="form-group rss-channel-group">
         <label>ID Channel Youtube</label>
         <input type="text" id="rssChannelId" placeholder="Misal: UCPX... (cari di link channel)" value="UCa45qWSDXbdgLBjrGfQ7tmA">
       </div>
-      <div class="form-group" style="flex:1; min-width:150px; margin-bottom:0;">
+      <div class="form-group rss-date-group">
         <label>Pilih Tanggal</label>
         <input type="date" id="rssTargetDate" value="<?= date('Y-m-d') ?>">
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn btn-primary" onclick="tarikRss()"><i class="ri-refresh-line"></i> Tarik Data</button>
-        <button type="button" class="btn btn-secondary" onclick="bersihkanTabel()"><i class="ri-eraser-line"></i> Clear Tabel</button>
-        <button type="button" class="btn btn-primary" style="background:#16a34a;" onclick="simpanSemuaKeNotion()"><i class="ri-save-3-line"></i> Simpan Semua</button>
+      <div class="rss-btn-group">
+        <button type="button" class="btn btn-primary rss-btn" onclick="tarikRss()"><i class="ri-refresh-line"></i> <span>Tarik Data</span></button>
+        <button type="button" class="btn btn-secondary rss-btn" onclick="bersihkanTabel()"><i class="ri-eraser-line"></i> <span>Clear Tabel</span></button>
+        <button type="button" class="btn btn-primary rss-btn rss-btn-save" onclick="simpanSemuaKeNotion()"><i class="ri-save-3-line"></i> <span>Simpan Semua</span></button>
       </div>
       <div id="rssLoadingStatus" style="display:none; color:var(--primary); font-weight:600; align-self:center; font-size:13px;">Menghubungi Youtube &amp; mengekstrak data...</div>
     </div>

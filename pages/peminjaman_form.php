@@ -109,7 +109,8 @@ include __DIR__ . '/../includes/header.php';
       <span>Informasi Kegiatan</span>
     </div>
     <div class="section-body">
-      <div class="form-grid cols-2">
+      <!-- Baris 1: Kegiatan, PIC PT, Lokasi -->
+      <div class="form-grid cols-3">
         <div class="form-group">
           <label>Nama Kegiatan <span class="req">*</span></label>
           <select id="field_kegiatan" required>
@@ -133,7 +134,13 @@ include __DIR__ . '/../includes/header.php';
             <?php endforeach; ?>
           </select>
         </div>
+        <div class="form-group">
+          <label>Lokasi</label>
+          <input type="text" id="field_lokasi" placeholder="Contoh: Auditorium">
+        </div>
       </div>
+
+      <!-- Baris 2: Tgl Kegiatan, Tgl Pinjam, Durasi -->
       <div class="form-grid cols-3">
         <div class="form-group">
           <label>Tanggal Kegiatan</label>
@@ -148,15 +155,11 @@ include __DIR__ . '/../includes/header.php';
           <input type="number" id="field_durasi" min="0" step="0.5" placeholder="Contoh: 3">
         </div>
       </div>
-      <div class="form-grid cols-2">
-        <div class="form-group">
-          <label>Lokasi</label>
-          <input type="text" id="field_lokasi" placeholder="Contoh: Auditorium">
-        </div>
-        <div class="form-group">
-          <label>Keterangan</label>
-          <input type="text" id="field_keterangan" placeholder="Catatan tambahan">
-        </div>
+
+      <!-- Baris 3: Keterangan (Lebar Penuh) -->
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Keterangan</label>
+        <textarea id="field_keterangan" rows="2" placeholder="Catatan tambahan (bebas isi banyak karakter)..." style="width:100%; resize:vertical;"></textarea>
       </div>
     </div>
   </div>
@@ -251,7 +254,18 @@ include __DIR__ . '/../includes/header.php';
   
   .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-primary, #374151); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.03em; }
   .req { color: var(--danger); }
-  .form-group input, .form-group select { width: 100%; padding: 0.7rem 0.9rem; border-radius: 8px; border: 1px solid var(--border-color, #d1d5db); font-size: 0.9rem; transition: all 0.2s; box-sizing: border-box; background-color: var(--input-bg, #fff); color: var(--text-primary, #0f172a); }
+  .form-group input, .form-group select { width: 100%; height: 42px; min-height: 42px; padding: 0 0.9rem; border-radius: 8px; border: 1px solid var(--border-color, #d1d5db); font-size: 0.9rem; transition: all 0.2s; box-sizing: border-box; background-color: var(--input-bg, #fff); color: var(--text-primary, #0f172a); }
+  .form-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 1rem;
+    cursor: pointer;
+  }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 
   /* Select2 Styling */
