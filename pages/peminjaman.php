@@ -191,30 +191,29 @@ include __DIR__ . '/../includes/header.php';
 .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
 .modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(to bottom, #ffffff, #fafafa);
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
   flex-shrink: 0;
 }
-.modal-header-info { display: flex; align-items: center; gap: 0.875rem; }
+.modal-header-info { display: flex; align-items: center; gap: 1rem; }
 .modal-icon-wrapper {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-  color: #15803d;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.1);
 }
 .modal-title {
-  font-size: 1.05rem; font-weight: 700; color: #0f172a;
+  font-size: 1.1rem; font-weight: 700; color: #111827;
   margin: 0; line-height: 1.3;
 }
 .modal-subtitle {
-  font-size: 0.8rem; color: #64748b;
-  margin: 0.125rem 0 0; font-weight: 500;
+  font-size: 0.8rem; color: #6b7280;
+  margin: 0.2rem 0 0; font-weight: 400;
 }
 .modal-close {
   background: transparent; border: none;
@@ -244,64 +243,48 @@ include __DIR__ . '/../includes/header.php';
 .modal-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 .return-info-banner {
-  background: linear-gradient(to right, #f0fdf4, #f0fdfa);
-  border: 1px solid #bbf7d0;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 1rem 1.125rem;
+  padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
-  display: flex; align-items: flex-start; gap: 0.875rem;
-  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.05);
 }
-.info-banner-icon {
-  width: 36px; height: 36px;
-  border-radius: 8px;
-  background: #dcfce7;
-  color: #16a34a;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-.info-banner-content { flex: 1; min-width: 0; }
 .info-banner-label {
   display: block;
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #15803d;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.4rem;
 }
 .info-banner-title {
   display: block;
-  font-size: 0.95rem;
-  color: #064e3b;
+  font-size: 1rem;
+  color: #111827;
   font-weight: 700;
   line-height: 1.4;
   word-break: break-word;
+  margin-bottom: 0.5rem;
 }
 .info-banner-meta {
-  display: flex; flex-wrap: wrap; gap: 0.5rem;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: #475569;
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 .info-banner-meta span {
-  display: inline-flex; align-items: center; gap: 0.25rem;
-  padding: 0.2rem 0.5rem;
-  background: rgba(255,255,255,0.7);
-  border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 0.3rem;
 }
-.info-banner-meta i { font-size: 0.85rem; color: #64748b; }
+.info-banner-meta i { font-size: 0.875rem; }
 
-.r-form-group { margin-bottom: 1.375rem; }
+.r-form-group { margin-bottom: 1.25rem; }
 .r-form-group:last-child { margin-bottom: 0; }
 
 .r-form-label {
   display: inline-flex; align-items: center; gap: 0.375rem;
-  font-size: 0.875rem; font-weight: 600; color: #334155;
-  margin-bottom: 0.5rem;
+  font-size: 0.875rem; font-weight: 600; color: #111827;
+  margin-bottom: 0.45rem;
 }
-.r-form-label i { font-size: 1rem; color: #64748b; }
 .r-form-label-row {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 0.5rem;
@@ -386,15 +369,14 @@ include __DIR__ . '/../includes/header.php';
 .r-form-error i { font-size: 1rem; }
 
 .modal-footer {
-  display: flex; justify-content: flex-end; gap: 0.625rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #fafafa;
+  display: flex; align-items: center; gap: 0.625rem;
+  padding: 1rem 1.5rem 1.5rem;
   flex-shrink: 0;
+  flex-wrap: nowrap;
+  border-top: 1px solid #f1f5f9;
 }
-.btn-modal-cancel,
-.btn-modal-submit {
-  padding: 0.7rem 1.25rem;
+.btn-modal-cancel {
+  padding: 0.72rem 1.5rem;
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.9rem;
@@ -402,34 +384,39 @@ include __DIR__ . '/../includes/header.php';
   transition: all 0.2s;
   display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
   font-family: inherit;
-  min-width: 110px;
+  background: #fff; color: #374151;
+  border: 1.5px solid #d1d5db;
+  white-space: nowrap;
 }
-.btn-modal-cancel {
-  background: #fff; color: #475569;
-  border: 1.5px solid #e2e8f0;
-}
-.btn-modal-cancel:hover {
-  background: #f8fafc; border-color: #cbd5e1; color: #0f172a;
-}
-.btn-modal-cancel:focus-visible { outline: 2px solid #64748b; outline-offset: 2px; }
+.btn-modal-cancel:hover { background: #f9fafb; border-color: #9ca3af; }
+.btn-modal-cancel:focus-visible { outline: 2px solid #6b7280; outline-offset: 2px; }
 
 .btn-modal-submit {
-  background: linear-gradient(to bottom, #16a34a, #15803d);
+  flex: 1;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-family: inherit;
+  background: linear-gradient(135deg, #34d399, #10b981);
   color: #fff;
   border: none;
-  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25), 0 1px 2px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
 }
 .btn-modal-submit:hover:not(:disabled) {
-  background: linear-gradient(to bottom, #15803d, #166534);
+  background: linear-gradient(135deg, #10b981, #059669);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
 }
 .btn-modal-submit:active:not(:disabled) { transform: translateY(0); }
 .btn-modal-submit:disabled {
-  background: #bbf7d0; cursor: not-allowed;
-  box-shadow: none; transform: none; color: rgba(255,255,255,0.8);
+  opacity: 0.6; cursor: not-allowed;
+  box-shadow: none; transform: none;
 }
-.btn-modal-submit:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+.btn-modal-submit:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
 
 .btn-loading { display: inline-flex; align-items: center; gap: 0.4rem; }
 
@@ -439,9 +426,6 @@ include __DIR__ . '/../includes/header.php';
 @media (max-width: 480px) {
   .modal-content { border-radius: 16px; max-height: 95vh; }
   .modal-header, .modal-body, .modal-footer { padding-left: 1.125rem; padding-right: 1.125rem; }
-  .modal-footer { flex-direction: column-reverse; }
-  .btn-modal-cancel, .btn-modal-submit { width: 100%; }
-  .modal-subtitle { display: none; }
 }
 </style>
 
@@ -472,10 +456,8 @@ function markReturned(pageId, kegiatan, btnElement) {
   document.getElementById('returnKegiatanLabel').textContent = kegiatan;
   
   // Set meta info
-  document.getElementById('returnMetaInfo').innerHTML = `
-    <span><i class="ri-box-3-line"></i> ${jumlahAlat} alat</span>
-    <span><i class="ri-calendar-line"></i> Pinjam: ${tglPinjam}</span>
-  `;
+  document.getElementById('metaAlat').textContent = jumlahAlat + ' alat';
+  document.getElementById('metaTanggal').textContent = tglPinjam;
   
   // Reset form
   const form = document.getElementById('returnForm');
@@ -656,7 +638,7 @@ async function deleteItem(pageId, kegiatan) {
     <div class="modal-header">
       <div class="modal-header-info">
         <div class="modal-icon-wrapper">
-          <i class="ri-arrow-go-back-line"></i>
+          <i class="ri-loop-left-line"></i>
         </div>
         <div>
           <h3 class="modal-title" id="returnModalTitle">Konfirmasi Pengembalian</h3>
@@ -671,81 +653,68 @@ async function deleteItem(pageId, kegiatan) {
     <form id="returnForm" onsubmit="submitReturn(event)" novalidate>
       <div class="modal-body">
 
-        <!-- Info banner kegiatan -->
+        <!-- Info card kegiatan -->
         <div class="return-info-banner" role="status">
-          <div class="info-banner-icon">
-            <i class="ri-calendar-event-fill"></i>
-          </div>
-          <div class="info-banner-content">
-            <span class="info-banner-label">Kegiatan</span>
-            <strong id="returnKegiatanLabel" class="info-banner-title">—</strong>
-            <div class="info-banner-meta" id="returnMetaInfo">
-              <!-- Diisi oleh JS -->
-            </div>
+          <span class="info-banner-label">KEGIATAN</span>
+          <strong id="returnKegiatanLabel" class="info-banner-title">—</strong>
+          <div class="info-banner-meta" id="returnMetaInfo">
+            <span><i class="ri-tools-line"></i> <span id="metaAlat">—</span></span>
+            <span><i class="ri-calendar-line"></i> <span id="metaTanggal">—</span></span>
           </div>
         </div>
 
         <!-- PIC Pengembali (wajib) -->
         <div class="r-form-group">
           <label class="r-form-label" for="fieldPic">
-            <i class="ri-user-received-line"></i>
             Nama PIC Pengembali
             <span class="r-required" aria-hidden="true">*</span>
           </label>
           <div class="select-wrapper">
             <select id="fieldPic" name="nama_pic_pengembali" class="r-form-input r-form-select" required
                     aria-describedby="picHelp">
-              <option value="" disabled selected>— Pilih petugas yang menerima —</option>
+              <option value="" disabled selected>Pilih PIC Pengembali</option>
             </select>
             <i class="ri-arrow-down-s-line select-icon" aria-hidden="true"></i>
           </div>
-          <span class="r-form-help" id="picHelp">Petugas yang menerima pengembalian alat</span>
+          <span class="r-form-help" id="picHelp" style="color:#6b7280;">Petugas yang menerima pengembalian alat</span>
           <span class="r-form-error" id="picError" role="alert">
             <i class="ri-error-warning-line"></i> PIC pengembali wajib dipilih
           </span>
         </div>
 
-        <!-- Kondisi Alat Saat Kembali -->
+        <!-- Kondisi Alat -->
         <div class="r-form-group">
-          <label class="r-form-label" for="fieldKondisi">
-            <i class="ri-tools-line"></i>
-            Kondisi Alat Saat Kembali
-          </label>
+          <label class="r-form-label" for="fieldKondisi">Kondisi Alat</label>
           <div class="select-wrapper">
             <select id="fieldKondisi" name="kondisi_alat" class="r-form-input r-form-select">
-              <option value="" selected>— Pilih kondisi (opsional) —</option>
-              <option value="Baik">✓ Baik — Tidak ada masalah</option>
-              <option value="Rusak Ringan">⚠ Rusak Ringan — Masih bisa dipakai</option>
-              <option value="Rusak Berat">✕ Rusak Berat — Perlu perbaikan</option>
-              <option value="Hilang">⊘ Hilang — Tidak kembali</option>
+              <option value="" selected>Pilih kondisi (opsional)</option>
+              <option value="Baik">Baik</option>
+              <option value="Rusak Ringan">Rusak Ringan</option>
+              <option value="Rusak Berat">Rusak Berat</option>
+              <option value="Hilang">Hilang</option>
             </select>
             <i class="ri-arrow-down-s-line select-icon" aria-hidden="true"></i>
           </div>
         </div>
 
-        <!-- Catatan Pengembalian -->
+        <!-- Catatan -->
         <div class="r-form-group">
           <div class="r-form-label-row">
-            <label class="r-form-label" for="fieldCatatan">
-              <i class="ri-sticky-note-line"></i>
-              Catatan Pengembalian
-            </label>
-            <span class="char-counter" id="catatanCounter">0 / 300</span>
+            <label class="r-form-label" for="fieldCatatan">Catatan</label>
+            <span class="char-counter" id="catatanCounter">0/300</span>
           </div>
           <textarea id="fieldCatatan" name="catatan_pengembalian" class="r-form-input r-form-textarea"
             rows="3" maxlength="300"
-            placeholder="Tuliskan kondisi spesifik, nomor seri, atau catatan tambahan lainnya..."
+            placeholder="Kondisi spesifik, nomor seri, atau catatan tambahan..."
             style="resize:vertical; min-height:80px;"></textarea>
         </div>
 
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn-modal-cancel" onclick="closeReturnModal()">
-          <i class="ri-close-line"></i> Batal
-        </button>
+        <button type="button" class="btn-modal-cancel" onclick="closeReturnModal()">Batal</button>
         <button type="submit" class="btn-modal-submit" id="returnSubmitBtn">
-          <span class="btn-label" id="returnSubmitLabel">
+          <span id="returnSubmitLabel">
             <i class="ri-checkbox-circle-line"></i> Konfirmasi Pengembalian
           </span>
           <span class="btn-loading" id="returnSubmitLoading" hidden>
