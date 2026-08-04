@@ -669,18 +669,25 @@ body.preload .sidebar * {
   }
 
   .topbar {
-    height: 56px;
-    padding: 0 12px !important;
+    height: 56px !important;
+    padding: 0 14px !important;
     border-radius: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
   }
 
   .topbar-left {
-    gap: 8px;
+    gap: 8px !important;
   }
 
   .topbar-right {
-    gap: 6px;
+    gap: 6px !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
   .role-full-text {
@@ -692,17 +699,24 @@ body.preload .sidebar * {
   }
 
   .role-badge, .role-badge-open, .role-badge-admin {
-    height: 32px;
-    padding: 0 8px;
-    font-size: 11.5px;
-    gap: 5px;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11.5px !important;
+    gap: 5px !important;
+    border-radius: 999px !important;
   }
 
   .topbar-btn {
-    height: 34px;
-    padding: 0 8px;
-    min-width: 34px;
-    justify-content: center;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    min-width: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
   }
 
   .topbar-btn .btn-text {
@@ -710,13 +724,14 @@ body.preload .sidebar * {
   }
 
   .topbar-btn i {
-    font-size: 1.15rem;
-    margin: 0;
+    font-size: 1.1rem !important;
+    margin: 0 !important;
   }
 
   .topbar-divider {
-    height: 18px;
-    margin: 0 2px;
+    height: 18px !important;
+    margin: 0 4px !important;
+    flex-shrink: 0 !important;
   }
 
   /* ===== Optimisasi Card & Grid di HP (Style Seragam dengan Card Lainnya) ===== */
@@ -1840,4 +1855,793 @@ body.preload .sidebar * {
   border-radius: 6px;
   font-family: monospace;
   color: #0f172a;
+}
+
+/* =========================================
+   DARK MODE - SLEEK OBSIDIAN / LINEAR STYLE PALETTE
+   ========================================= */
+html.dark-mode, body.dark-mode {
+  --bg: #0f172a;
+  --bg-page: #0f172a;
+  --bg-card: #161f30;
+  --card-bg: #161f30;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --border-color: #2b3952;
+  --border: #2b3952;
+  --bg-hover: #212e46;
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  color-scheme: dark;
+}
+
+/* Sidebar: Deep Obsidian Black */
+body.dark-mode .sidebar {
+  background: #0b101d !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+body.dark-mode .sidebar-header {
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+body.dark-mode .menu-title {
+  color: #64748b !important;
+}
+
+body.dark-mode .menu-item {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .menu-item:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .menu-item.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Topbar: Obsidian Glassmorphism */
+body.dark-mode .topbar {
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+body.dark-mode .btn-theme-toggle {
+  color: #f59e0b !important;
+}
+
+body.dark-mode .btn-theme-toggle:hover {
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Kartu, Header Halaman, Filter Bar & Modal */
+body.dark-mode .page-head {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .stat-card,
+body.dark-mode .metric-card,
+body.dark-mode .staff-card,
+body.dark-mode .filter-bar,
+body.dark-mode .search-box,
+body.dark-mode .date-badge,
+body.dark-mode .date-chip,
+body.dark-mode .modal-content,
+body.dark-mode .filter-input-group {
+  background: #161f30 !important;
+  border: 1px solid #2b3952 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.dark-mode .modal-header {
+  background: #0f172a !important;
+  border-bottom-color: #2b3952 !important;
+}
+
+body.dark-mode .modal-close {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .modal-close:hover {
+  background: #212e46 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+body.dark-mode h4, body.dark-mode .card-title, body.dark-mode .staff-name {
+  color: #f8fafc !important;
+}
+
+body.dark-mode p, body.dark-mode .stat-sub, body.dark-mode .detail-row,
+body.dark-mode .user-meta span {
+  color: #94a3b8 !important;
+}
+
+/* Tabel Kontras Linear Style */
+body.dark-mode table th, body.dark-mode .data-table th {
+  background: #131c2d !important;
+  color: #94a3b8 !important;
+  border-bottom: 2px solid #2b3952 !important;
+}
+
+body.dark-mode table td, body.dark-mode .data-table td {
+  background: #161f30 !important;
+  color: #f8fafc !important;
+  border-bottom: 1px solid #233045 !important;
+}
+
+body.dark-mode table tbody tr:hover td, 
+body.dark-mode .data-table tbody tr:hover td {
+  background: #212e46 !important;
+}
+
+/* Controls, Inputs & Selects */
+body.dark-mode input[type="text"],
+body.dark-mode input[type="search"],
+body.dark-mode input[type="date"],
+body.dark-mode input[type="time"],
+body.dark-mode input[type="url"],
+body.dark-mode select,
+body.dark-mode textarea,
+body.dark-mode .header-filter-select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .filter-input-group {
+  background: #0f172a !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .filter-prefix.prefix-penyiar { 
+  background: rgba(16, 185, 129, 0.18) !important; 
+  color: #34d399 !important; 
+  border-right: 1px solid #2b3952 !important; 
+}
+body.dark-mode .filter-prefix.prefix-set { 
+  background: rgba(59, 130, 246, 0.18) !important; 
+  color: #60a5fa !important; 
+  border-right: 1px solid #2b3952 !important; 
+}
+body.dark-mode .filter-prefix.prefix-prod { 
+  background: rgba(139, 92, 246, 0.18) !important; 
+  color: #a78bfa !important; 
+  border-right: 1px solid #2b3952 !important; 
+}
+body.dark-mode .filter-prefix.prefix-pro { 
+  background: rgba(245, 158, 11, 0.18) !important; 
+  color: #fbbf24 !important; 
+  border-right: 1px solid #2b3952 !important; 
+}
+
+body.dark-mode .btn-secondary {
+  background: #212e46 !important;
+  color: #f8fafc !important;
+  border-color: #33435e !important;
+}
+
+body.dark-mode .btn-secondary:hover {
+  background: #33435e !important;
+}
+
+/* ===== Dark Mode Topbar Controls & Buttons ===== */
+body.dark-mode .menu-toggle {
+  background: #161f30 !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .menu-toggle:hover {
+  background: #212e46 !important;
+  border-color: #33435e !important;
+}
+
+body.dark-mode .badge-guest {
+  background: rgba(241, 245, 249, 0.1) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .badge-admin {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .btn-login {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .btn-login:hover {
+  background: rgba(37, 99, 235, 0.3) !important;
+  color: #93c5fd !important;
+}
+
+body.dark-mode .btn-logout {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .btn-logout:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  color: #fecaca !important;
+}
+
+body.dark-mode .btn-telegram-text {
+  background: rgba(2, 132, 199, 0.2) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+body.dark-mode .btn-telegram-text:hover {
+  background: rgba(2, 132, 199, 0.3) !important;
+  color: #7dd3fc !important;
+}
+
+body.dark-mode .topbar-divider {
+  background-color: #2b3952 !important;
+}
+
+/* ===== Dark Mode Dashboard Components (Metric Icons, Card Headers, Tags) ===== */
+body.dark-mode .metric-icon.blue,
+body.dark-mode .stat-icon.blue {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .metric-icon.green,
+body.dark-mode .stat-icon.green {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+body.dark-mode .metric-icon.orange,
+body.dark-mode .stat-icon.orange {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
+body.dark-mode .metric-icon.red,
+body.dark-mode .stat-icon.red {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .metric-icon.purple,
+body.dark-mode .stat-icon.purple {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: #c084fc !important;
+}
+
+body.dark-mode .metric-icon.yellow,
+body.dark-mode .stat-icon.yellow {
+  background: rgba(234, 179, 8, 0.2) !important;
+  color: #fde047 !important;
+}
+
+body.dark-mode .metric-icon.gray,
+body.dark-mode .stat-icon.gray {
+  background: rgba(241, 245, 249, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .card-header {
+  background: #131c2d !important;
+  border-bottom: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .link-btn {
+  color: #60a5fa !important;
+  background: rgba(37, 99, 235, 0.15) !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+}
+
+body.dark-mode .link-btn:hover {
+  background: rgba(37, 99, 235, 0.25) !important;
+}
+
+body.dark-mode .tag.blue {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .tag.green {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+body.dark-mode .tag.red {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .tag.orange {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+body.dark-mode .tag.yellow {
+  background: rgba(234, 179, 8, 0.2) !important;
+  color: #fde047 !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+}
+
+body.dark-mode .tag.purple {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+}
+
+body.dark-mode .tag.gray {
+  background: rgba(241, 245, 249, 0.1) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .timeline-item::before {
+  background: #161f30 !important;
+  border-color: #2563eb !important;
+}
+
+body.dark-mode .timeline-list::before {
+  background: #2b3952 !important;
+}
+
+/* ===== Dark Mode Filter Tabs, Status Selects, & Document Icons ===== */
+body.dark-mode .filter-tab {
+  background: #161f30 !important;
+  color: #94a3b8 !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .filter-tab:hover {
+  background: #212e46 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .filter-tab.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+body.dark-mode .status-select {
+  background-color: #161f30 !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .status-select-arrow {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode #dateFilter,
+body.dark-mode input[type="date"] {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .doc-icon-link {
+  background: #212e46 !important;
+  border-color: #33435e !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .doc-icon-link i {
+  color: #60a5fa !important;
+}
+
+body.dark-mode .alert-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* ===== Dark Mode Action Icons, Avatars, Chips & Upload Zones ===== */
+body.dark-mode .icon-action {
+  background: #212e46 !important;
+  color: #94a3b8 !important;
+  border-color: #33435e !important;
+}
+
+body.dark-mode .icon-action.edit,
+body.dark-mode .icon-action.report {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .icon-action.delete {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .icon-action.view {
+  background: rgba(241, 245, 249, 0.1) !important;
+  color: #cbd5e1 !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .icon-action.edit:hover,
+body.dark-mode .icon-action.report:hover {
+  background: rgba(37, 99, 235, 0.35) !important;
+  color: #93c5fd !important;
+}
+
+body.dark-mode .icon-action.delete:hover {
+  background: rgba(239, 68, 68, 0.35) !important;
+  color: #fecaca !important;
+}
+
+body.dark-mode .icon-action.view:hover {
+  background: rgba(241, 245, 249, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .avatar-sm {
+  background: rgba(37, 99, 235, 0.25) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .card-footer {
+  background: #131c2d !important;
+  border-top-color: #2b3952 !important;
+}
+
+body.dark-mode .selection-card {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .selection-card:hover {
+  background: #212e46 !important;
+  border-color: #33435e !important;
+}
+
+body.dark-mode .chip-content,
+body.dark-mode .chip-option {
+  background: #212e46 !important;
+  color: #cbd5e1 !important;
+  border-color: #33435e !important;
+}
+
+body.dark-mode .upload-zone,
+body.dark-mode .dropzone-mini {
+  background: #0f172a !important;
+  border-color: #2b3952 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .upload-zone:hover,
+body.dark-mode .dropzone-mini:hover {
+  background: #161f30 !important;
+  border-color: #2563eb !important;
+}
+
+body.dark-mode .bg-initial {
+  color: rgba(255, 255, 255, 0.03) !important;
+}
+
+body.dark-mode .staff-card:hover .bg-initial {
+  color: rgba(37, 99, 235, 0.08) !important;
+}
+
+/* ===== Dark Mode Status Tags (Peminjaman, Troubleshoot, Inventaris, Checklist) ===== */
+body.dark-mode .status-tag.selesai,
+body.dark-mode .status-tag.baik,
+body.dark-mode .status-tag.dikembalikan,
+body.dark-mode .status-tag.hadir,
+body.dark-mode .status-tag.tersedia {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+body.dark-mode .status-tag.proses,
+body.dark-mode .status-tag.dipinjam,
+body.dark-mode .status-tag.perbaikan {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+body.dark-mode .status-tag.belum,
+body.dark-mode .status-tag.rusak,
+body.dark-mode .status-tag.terlambat,
+body.dark-mode .status-tag.hilang {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .status-dot.belum {
+  background: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+body.dark-mode .status-dot.proses {
+  background: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+}
+
+body.dark-mode .status-dot.selesai,
+body.dark-mode .status-dot.baik {
+  background: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* ===== Dark Mode Dashboard Mini Checklist Items & Progress Bar ===== */
+body.dark-mode .check-mini-item {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .check-mini-item:hover {
+  background: #212e46 !important;
+  border-color: #33435e !important;
+}
+
+body.dark-mode .check-mini-item.ok {
+  color: #34d399 !important;
+}
+
+body.dark-mode .check-mini-item.not-ok {
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .progress-bar {
+  background: #161f30 !important;
+}
+
+body.dark-mode .btn-action {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .btn-action:hover {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: #2563eb !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .tag.gray {
+  background: rgba(241, 245, 249, 0.1) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #2b3952 !important;
+}
+
+/* ===== Dark Mode Calendar Recap ===== */
+body.dark-mode .cal-cell {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .cal-cell.other-month {
+  background: #0f172a !important;
+  border-color: rgba(43, 57, 82, 0.4) !important;
+  opacity: 0.35 !important;
+}
+
+body.dark-mode .cal-cell.today {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3) !important;
+  background: #19253b !important;
+}
+
+body.dark-mode .cal-daynum {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .cal-event {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .cal-event.live {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .cal-event.event {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+body.dark-mode select[name="month"],
+body.dark-mode select[name="year"] {
+  background-color: #161f30 !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+/* ===== Dark Mode Aplikasi RRI (.panel-card) ===== */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+  row-gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.panel-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-image {
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+body.dark-mode .panel-card {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .panel-image {
+  background: #0f172a !important;
+  border-bottom: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .panel-content h5 {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .panel-content p {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .panel-header h2 {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .panel-header p {
+  color: #94a3b8 !important;
+}
+
+/* ===== Dark Mode Jadwal Shift (.shift-card) ===== */
+.shift-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.shift-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.shift-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.shift-image {
+  height: 320px;
+  background: #f8fafc;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.shift-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.shift-footer {
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.shift-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.btn-view-shift {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-view-shift:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+body.dark-mode .shift-card {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .shift-image {
+  background: #0f172a !important;
+}
+
+body.dark-mode .shift-footer {
+  background: #131c2d !important;
+  border-top-color: #2b3952 !important;
+}
+
+body.dark-mode .shift-name {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .btn-view-shift {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .btn-view-shift:hover {
+  background: rgba(37, 99, 235, 0.35) !important;
+  color: #93c5fd !important;
 }
