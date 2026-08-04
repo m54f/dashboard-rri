@@ -763,23 +763,29 @@ async function handleNewTicket(event) {
 }
 
 async function deleteTicket(pageId, title) {
-  if (!confirm(`Hapus laporan "${title}"?\n\nLaporan akan dipindahkan ke Trash di Notion.`)) return;
-  try {
-    const res = await fetch('../api/delete-troubleshoot.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page_id: pageId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('✅ ' + data.message, 'success');
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-    }
-  } catch (err) {
-    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
-  }
+  customConfirm(
+    'Hapus Laporan',
+    `Hapus laporan "${title}"? Laporan akan dipindahkan ke Trash di Notion.`,
+    async () => {
+      try {
+        const res = await fetch('../api/delete-troubleshoot.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_id: pageId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ ' + data.message, 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+      }
+    },
+    'Hapus'
+  );
 }
 
 // showToast() is provided globally by /assets/css/js/sonner.js

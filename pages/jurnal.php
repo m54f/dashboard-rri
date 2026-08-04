@@ -585,29 +585,34 @@ async function handleJurnalSubmit(event) {
 }
 
 async function deleteJurnal(pageId, title) {
-    if (!confirm(`Hapus jurnal "${title}"?\n\nData akan diarsipkan di Notion.`)) return;
-    try {
-        const res = await fetch('../api/delete-jurnal.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ page_id: pageId })
-        });
-        
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-            const data = await res.json();
-            if (data.success) {
-                showToast('✅ ' + data.message, 'success');
-                setTimeout(() => location.reload(), 1000);
+    customConfirm(
+      'Hapus Jurnal',
+      `Hapus jurnal "${title}"? Data akan diarsipkan di Notion.`,
+      async () => {
+        try {
+            const res = await fetch('../api/delete-jurnal.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page_id: pageId })
+            });
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const data = await res.json();
+                if (data.success) {
+                    showToast('✅ ' + data.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                }
             } else {
-                showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                showToast('❌ Error Server: Cek Console (F12).', 'error');
             }
-        } else {
-            showToast('❌ Error Server: Cek Console (F12).', 'error');
+        } catch (err) {
+            showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
         }
-    } catch (err) {
-        showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
-    }
+      },
+      'Hapus'
+    );
 }
 
 // showToast() is provided globally by /assets/css/js/sonner.js
