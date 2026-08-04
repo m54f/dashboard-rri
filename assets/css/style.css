@@ -2359,12 +2359,431 @@ body.dark-mode .btn-primary:hover {
   background: #1d4ed8 !important;
 }
 
+/* Pagination Dark Mode Styling */
+body.dark-mode .pagination-wrap,
+body.dark-mode .pagination-container,
+body.dark-mode #mainPaginationWrap {
+  background: transparent !important;
+  border-top: 1px solid #2b3952 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .pagination-info,
+body.dark-mode #mainPaginationInfo {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .page-item,
+body.dark-mode .pagination-buttons button,
+body.dark-mode #mainPaginationButtons button {
+  background: #212e46 !important;
+  color: #f8fafc !important;
+  border: 1px solid #33435e !important;
+}
+
+body.dark-mode .page-item.active,
+body.dark-mode .pagination-buttons button.active,
+body.dark-mode .pagination-buttons button.btn-primary,
+body.dark-mode #mainPaginationButtons button.active,
+body.dark-mode #mainPaginationButtons button.btn-primary {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* RSS Saved Rows Styling */
+.rss-saved-row {
+  background: #f8fafc;
+  opacity: 0.85;
+}
+
+body.dark-mode .rss-saved-row {
+  background: rgba(30, 41, 59, 0.45) !important;
+  color: #cbd5e1 !important;
+  opacity: 0.85 !important;
+}
+
+body.dark-mode .rss-saved-row td {
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .rss-saved-row .badge-tersimpan {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .rss-saved-row .btn-tersimpan {
+  background: #212e46 !important;
+  color: #94a3b8 !important;
+  border: 1px solid #33435e !important;
+}
+
+/* RSS Table Form Controls & Custom Select Dark Mode */
+body.dark-mode #rssTableBody input[type="text"],
+body.dark-mode #rssTableBody input[type="search"],
+body.dark-mode #rssTableBody input[type="date"],
+body.dark-mode #rssTableBody input[type="time"],
+body.dark-mode #rssTableBody input[type="url"],
+body.dark-mode #rssTableBody select,
+body.dark-mode #rssTableBody textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #2b3952 !important;
+  color-scheme: dark !important;
+}
+
+body.dark-mode .custom-dropdown-menu {
+  background-color: #161f30 !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .custom-dropdown-menu input {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .custom-dropdown-menu div {
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode div[id*="acara_container_"] > div,
+body.dark-mode div[id*="pemandu_container_"] > div,
+body.dark-mode div[id*="pt_"] > div,
+body.dark-mode div[id*="pa_"] > div {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode div[id*="acara_container_"] span,
+body.dark-mode div[id*="pemandu_container_"] span,
+body.dark-mode div[id*="pt_"] span,
+body.dark-mode div[id*="pa_"] span {
+  color: #f8fafc !important;
+}
+
+.select-chip {
+  background: #e2e8f0;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+body.dark-mode .select-chip {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+body.dark-mode .select-chip span {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .select-chip span:hover {
+  color: #f8fafc !important;
+}
+
+/* Select2 Global Rules & Inner Box Fix */
+.select2-container--default .select2-search--inline .select2-search__field,
+.select2-search--inline input,
+.select2-search__field {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+body.dark-mode .select2-container--default .select2-selection--single,
+body.dark-mode .select2-container--default .select2-selection--multiple {
+  background-color: #0f172a !important;
+  border-color: #2b3952 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+body.dark-mode .select2-dropdown {
+  background-color: #161f30 !important;
+  border-color: #2b3952 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+}
+
+body.dark-mode .select2-container--default .select2-search--inline .select2-search__field,
+body.dark-mode .select2-search--inline input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .select2-container--default .select2-search--dropdown .select2-search__field {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .select2-container--default .select2-results__option {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .select2-container--default .select2-results__option[aria-selected="true"] {
+  background-color: #212e46 !important;
+  color: #f8fafc !important;
+}
+
+/* Checklist Modal Dark Mode Rules */
+body.dark-mode .radio-segment {
+  background: #0f172a !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .radio-segment label {
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+
+body.dark-mode .radio-segment input:checked + label {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4) !important;
+}
+
+body.dark-mode .check-item {
+  background: #0f172a !important;
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .check-item:hover {
+  background: #1e293b !important;
+  border-color: #3b82f6 !important;
+}
+
+body.dark-mode .check-item .check-item-text h4,
+body.dark-mode .check-item-text h4 {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .check-item .check-item-text p,
+body.dark-mode .check-item-text p {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .check-item .check-status,
+body.dark-mode .check-status {
+  background: #212e46 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .check-item.checked {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: #10b981 !important;
+}
+
+body.dark-mode .check-item.checked .check-item-text h4 {
+  color: #34d399 !important;
+  opacity: 0.95;
+}
+
+body.dark-mode .check-item.checked .check-status {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
 body.dark-mode .upload-zone,
 body.dark-mode .dropzone-mini {
   background: #0f172a !important;
   border: 2px dashed #334155 !important;
   color: #94a3b8 !important;
   border-radius: 12px !important;
+}
+
+/* ==========================================================================
+   FORM PEMINJAMAN ALAT SYSTEM (Global Base & Dark Mode)
+   ========================================================================== */
+.section-card {
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: var(--card-bg);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.section-header i {
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+.section-badge {
+  margin-left: auto;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.section-body {
+  padding: 1.5rem;
+  background: var(--card-bg);
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.form-grid:last-child {
+  margin-bottom: 0;
+}
+.form-grid.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.form-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.alat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.alat-table-wrapper {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.alat-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alat-table thead th {
+  background: var(--bg-color);
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.alat-table tbody td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.alat-table tbody tr:hover td {
+  background: var(--bg-color);
+}
+
+.alat-table tbody tr.selected-row td {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.submit-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Dark Mode Overrides untuk Peminjaman Form */
+body.dark-mode .section-card {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.dark-mode .section-header {
+  background: #1a263d !important;
+  border-bottom: 1px solid #2b3952 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .section-body {
+  background: #161f30 !important;
+}
+
+body.dark-mode .alat-table-wrapper {
+  border-color: #2b3952 !important;
+}
+
+body.dark-mode .alat-table thead th {
+  background: #1a263d !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .alat-table tbody td {
+  background: #161f30 !important;
+  color: #f8fafc !important;
+  border-bottom: 1px solid #2b3952 !important;
+}
+
+body.dark-mode .alat-table tbody tr:hover td {
+  background: #1e293b !important;
+}
+
+body.dark-mode .alat-table tbody tr.selected-row td {
+  background: rgba(37, 99, 235, 0.18) !important;
+}
+
+body.dark-mode .submit-bar {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
 }
 
 body.dark-mode .upload-zone div,
