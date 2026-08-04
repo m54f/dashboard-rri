@@ -12,4 +12,11 @@ setup/setup_database_petugas.php
 # Credential files - DO NOT COMMIT
 config/auth.php
 config/notion.php
+config/supabase.php
 REVIEW-INVENTARIS-PEMINJAMAN.md
+
+# Debug / test files - hapus sebelum commit
+test-supabase.php
+debug-supabase.php
+_explore_db.php
+_test_*.php
