@@ -5,12 +5,12 @@
  * DATABASE_URL  : Connection Pooler (Transaction, port 6543) — untuk query normal
  * DIRECT_URL    : Direct/Session pooler (port 5432) — untuk migrasi / DDL
  *
- * Password sudah di-URL-encode (%23 = '#')
+ * sslmode=require wajib untuk Supabase di semua environment.
  */
 
 // ── Transaction Pooler (pakai ini untuk SELECT / INSERT / UPDATE / DELETE biasa) ──
-define('SUPABASE_DSN', 'pgsql:host=aws-0-ap-northeast-1.pooler.supabase.com;port=6543;dbname=postgres');
-define('SUPABASE_DSN_DIRECT', 'pgsql:host=aws-0-ap-northeast-1.pooler.supabase.com;port=5432;dbname=postgres');
+define('SUPABASE_DSN', 'pgsql:host=aws-0-ap-northeast-1.pooler.supabase.com;port=6543;dbname=postgres;sslmode=require');
+define('SUPABASE_DSN_DIRECT', 'pgsql:host=aws-0-ap-northeast-1.pooler.supabase.com;port=5432;dbname=postgres;sslmode=require');
 
 define('SUPABASE_USER', 'postgres.bunpjuqkajoxsiudklqz');
 define('SUPABASE_PASS', '55t#u5Gszq9rgkM');  // '%23' di-decode menjadi '#'
