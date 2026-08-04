@@ -171,6 +171,9 @@ include __DIR__ . '/../includes/header.php';
   .filter-tab { padding: 0.4rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border: 1px solid transparent; background: transparent; transition: 0.2s; }
   .filter-tab:hover { background: #f1f5f9; color: var(--text-main); }
   .filter-tab.active { background: var(--primary); color: #fff; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
+  .filter-tab.cakrabot { background: #f5f3ff; color: #6366f1; border-color: #c4b5fd; }
+  .filter-tab.cakrabot:hover { background: #ede9fe; }
+  .filter-tab.cakrabot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-color: transparent; box-shadow: 0 2px 4px rgba(99,102,241,0.35); }
   
   /* Hilangkan panah atas-bawah (spinner) pada input pagination */
   .page-input-clean::-webkit-outer-spin-button,
@@ -388,6 +391,7 @@ include __DIR__ . '/../includes/header.php';
           <div class="filter-tab" onclick="filterReport('Jurnal Kegiatan', this)">Jurnal</div>
           <div class="filter-tab" onclick="filterReport('Rekap Youtube', this)">Youtube</div>
           <div class="filter-tab" onclick="filterReport('Peminjaman Alat', this)">Peminjaman</div>
+          <div class="filter-tab cakrabot" onclick="filterReport('Tiket CakraBot', this)" id="tabCakrabot">🤖 CakraBot</div>
         </div>
       </div>
       

@@ -86,7 +86,7 @@ function extractFotoUrl($dataArray, $keysToCheck) {
 
 $riwayat = [];
 $totalDurasiMenit = 0;
-$statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0, 'Rekap Youtube' => 0, 'Peminjaman Alat' => 0];
+$statistik = ['Pemadaman Listrik' => 0, 'Troubleshoot' => 0, 'Checklist' => 0, 'Jurnal Kegiatan' => 0, 'Rekap Youtube' => 0, 'Peminjaman Alat' => 0, 'Tiket CakraBot' => 0];
 $debugLog = [];
 
 // ==========================================
@@ -341,6 +341,22 @@ if (function_exists('getPeminjaman')) {
         }
     } catch (Exception $e) {
         $debugLog[] = 'Peminjaman Exception: ' . $e->getMessage();
+    }
+}
+
+// ==========================================
+// 7. DARI TIKET CAKRABOT (Supabase)
+// ==========================================
+if (file_exists(__DIR__ . '/supabase-tickets.php')) {
+    require_once __DIR__ . '/supabase-tickets.php';
+    try {
+        $tikets = getTicketsForLaporan($namaInput);
+        foreach ($tikets as $tk) {
+            $statistik['Tiket CakraBot']++;
+            $riwayat[] = $tk;
+        }
+    } catch (Throwable $e) {
+        $debugLog[] = 'Tiket CakraBot Exception: ' . $e->getMessage();
     }
 }
 
