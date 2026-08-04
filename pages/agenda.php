@@ -219,7 +219,18 @@ include __DIR__ . '/../includes/header.php';
       <tbody>
         <?php foreach ($agendaPage as $a): ?>
         <tr data-tag="<?= htmlspecialchars($a['tag'], ENT_QUOTES) ?>" data-id="<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>" data-date="<?= htmlspecialchars($a['date'], ENT_QUOTES) ?>" data-time="<?= htmlspecialchars($a['time'], ENT_QUOTES) ?>">
-          <td style="font-weight:600; white-space:nowrap;"><?= htmlspecialchars($a['date'] ? date('d M Y', strtotime($a['date'])) : '-') ?></td>
+          <td style="font-weight:600; white-space:nowrap;">
+            <?php
+              $dateDisplay = '-';
+              if (!empty($a['date'])) {
+                $dateDisplay = date('d M Y', strtotime($a['date']));
+                if (!empty($a['date_end']) && $a['date_end'] !== $a['date']) {
+                  $dateDisplay .= ' s/d ' . date('d M Y', strtotime($a['date_end']));
+                }
+              }
+              echo htmlspecialchars($dateDisplay);
+            ?>
+          </td>
           <td style="font-weight:700;"><?= htmlspecialchars($a['time']) ?></td>
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
           <td><span class="tag <?= $a['tone'] ?>"><?= htmlspecialchars($a['tag']) ?></span></td>
@@ -309,10 +320,20 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <form id="agendaForm" onsubmit="handleAgendaForm(event)">
       <div class="modal-body">
-        <div class="form-group"><label>Judul Kegiatan</label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
+        <div class="form-group"><label>Judul Kegiatan <span class="required-star">*</span></label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
         <div class="form-row">
-          <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required></div>
-          <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
+          <div class="form-group">
+            <label>Tanggal Mulai <span class="required-star">*</span></label>
+            <input type="date" name="tanggal" required>
+          </div>
+          <div class="form-group">
+            <label>Tanggal Selesai <span style="font-weight:400; color:#6b7280; font-size:11px;">(Opsional, jika > 1 hari)</span></label>
+            <input type="date" name="tanggal_selesai">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Waktu Kegiatan <span class="required-star">*</span></label>
+          <input type="time" name="waktu" required>
         </div>
         <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
         <div class="form-group">
@@ -357,15 +378,16 @@ const USER_ROLE = '<?= getRole() ?>'; // Pass role to JavaScript
 // Data agenda yang lagi tampil di halaman ini (buat isi form Edit)
 const AGENDA_DATA = <?= json_encode(array_map(function ($a) {
     return [
-        'id'       => $a['page_id'],
-        'title'    => $a['title'],
-        'date'     => $a['date'],
-        'time'     => $a['time'],
-        'lokasi'   => $a['pic'],
-        'kategori' => $a['tag'],
-        'status'   => $a['status'],
-    'catatan'  => $a['notes'],
-    'dokumentasi' => $a['dokumentasi'] ?? [],
+        'id'          => $a['page_id'],
+        'title'       => $a['title'],
+        'date'        => $a['date'],
+        'date_end'    => $a['date_end'] ?? '',
+        'time'        => $a['time'],
+        'lokasi'      => $a['pic'],
+        'kategori'    => $a['tag'],
+        'status'      => $a['status'],
+        'catatan'     => $a['notes'],
+        'dokumentasi' => $a['dokumentasi'] ?? [],
     ];
 }, $agendaPage)) ?>;
 
@@ -424,6 +446,7 @@ function openModal(mode){
     const form = document.getElementById('agendaForm');
     form.reset();
     form.page_id.value = '';
+    if (form.tanggal_selesai) form.tanggal_selesai.value = '';
     form.elements['action'].value = 'create';
     form.elements['remove_existing_files'].value = '0';
     document.getElementById('modalTitle').textContent = 'Tambah Agenda';
@@ -466,6 +489,7 @@ function openEditModal(id){
   form.reset();
   form.kegiatan.value = entry.title;
   form.tanggal.value = entry.date;
+  if (form.tanggal_selesai) form.tanggal_selesai.value = entry.date_end || '';
   form.waktu.value = entry.time;
   form.lokasi_kegiatan.value = entry.lokasi;
   form.kategori.value = entry.kategori;
@@ -658,15 +682,23 @@ function escapeHtml(str){
   div.textContent = str ?? '';
   return div.innerHTML;
 }
-function formatDateID(ymd){
+function formatDateID(ymd, ymdEnd){
   if (!ymd) return '-';
-  const parts = ymd.split('-');
-  if (parts.length !== 3) return ymd;
-  const [y, m, d] = parts;
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const mi = parseInt(m, 10) - 1;
-  if (isNaN(mi) || mi < 0 || mi > 11) return ymd;
-  return `${d} ${months[mi]} ${y}`;
+  const formatSingle = (str) => {
+    const parts = str.split('-');
+    if (parts.length !== 3) return str;
+    const [y, m, d] = parts;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const mi = parseInt(m, 10) - 1;
+    if (isNaN(mi) || mi < 0 || mi > 11) return str;
+    return `${d} ${months[mi]} ${y}`;
+  };
+
+  let res = formatSingle(ymd);
+  if (ymdEnd && ymdEnd !== ymd) {
+    res += ' s/d ' + formatSingle(ymdEnd);
+  }
+  return res;
 }
 
 function renderDokumenCell(docs){
@@ -729,7 +761,7 @@ function addRowToTable(entry, pageId, dokumentasi){
   }
   
   tr.innerHTML = `
-    <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal))}</td>
+    <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal, entry.tanggal_selesai))}</td>
     <td style="font-weight:700;">${escapeHtml(entry.waktu)}</td>
     <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
     <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
@@ -779,8 +811,14 @@ async function handleAgendaForm(event){
   const form = event.target;
   const isUpdate = form.elements['action'].value === 'update';
 
-  // FormData (bukan URLSearchParams) supaya file ikut terkirim sebagai multipart/form-data
   const formData = new FormData(form);
+
+  const tMulai = formData.get('tanggal');
+  const tSelesai = formData.get('tanggal_selesai');
+  if (tSelesai && tSelesai < tMulai) {
+    alert('Tanggal Selesai tidak boleh lebih awal dari Tanggal Mulai.');
+    return;
+  }
 
   const submitBtn = form.querySelector('button[type=submit]');
   const origText = submitBtn.textContent;
@@ -800,24 +838,26 @@ async function handleAgendaForm(event){
       alert('PERHATIAN: Agenda tersimpan, TAPI file gagal diupload ke Notion:\n\n' + data.file_warnings.join('\n') + '\n\nDetail lengkap ada di Console (F12).');
     }
 
+    const entry = {
+      kegiatan:        formData.get('kegiatan'),
+      tanggal:         formData.get('tanggal'),
+      tanggal_selesai: formData.get('tanggal_selesai') || '',
+      waktu:           formData.get('waktu'),
+      lokasi:          formData.get('lokasi_kegiatan'),
+      kategori:        formData.get('kategori'),
+      status:          formData.get('status'),
+      catatan:         formData.get('catatan'),
+    };
+    const dokumentasi = data.dokumentasi || [];
+
     if (isUpdate) {
       const pageId = formData.get('page_id');
-      const entry = {
-        kegiatan: formData.get('kegiatan'),
-        tanggal:  formData.get('tanggal'),
-        waktu:    formData.get('waktu'),
-        lokasi:   formData.get('lokasi_kegiatan'),
-        kategori: formData.get('kategori'),
-        status:   formData.get('status'),
-        catatan:  formData.get('catatan'),
-      };
-      const dokumentasi = data.dokumentasi || [];
       updateRowInTable(pageId, entry, dokumentasi);
 
       // Sinkronkan juga ke AGENDA_DATA supaya kalau dibuka Edit lagi datanya sudah yang terbaru
       const idx = AGENDA_DATA.findIndex(a => a.id === pageId);
       const updatedRecord = {
-        id: pageId, title: entry.kegiatan, date: entry.tanggal, time: entry.waktu,
+        id: pageId, title: entry.kegiatan, date: entry.tanggal, date_end: entry.tanggal_selesai, time: entry.waktu,
         lokasi: entry.lokasi, kategori: entry.kategori, status: entry.status,
         catatan: entry.catatan, dokumentasi: dokumentasi,
       };
@@ -831,21 +871,12 @@ async function handleAgendaForm(event){
       return;
     }
 
-    const entry = {
-      kegiatan: formData.get('kegiatan'),
-      tanggal:  formData.get('tanggal'),
-      waktu:    formData.get('waktu'),
-      lokasi:   formData.get('lokasi_kegiatan'),
-      kategori: formData.get('kategori'),
-      status:   formData.get('status'),
-      catatan:  formData.get('catatan'),
-    };
-    const dokumentasi = data.dokumentasi || [];
     addRowToTable(entry, data.id, dokumentasi);
     AGENDA_DATA.push({
       id: data.id,
       title: entry.kegiatan,
       date: entry.tanggal,
+      date_end: entry.tanggal_selesai,
       time: entry.waktu,
       lokasi: entry.lokasi,
       kategori: entry.kategori,
