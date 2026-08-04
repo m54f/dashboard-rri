@@ -539,35 +539,32 @@ function openEditModal(id){
 }
 
 async function deleteAgendaRow(id, btn){
-  console.log('[deleteAgendaRow] diklik untuk id:', id);
-  const ok = confirm('Yakin mau hapus agenda ini? Data akan dipindah ke Trash Notion.');
-  console.log('[deleteAgendaRow] hasil confirm():', ok);
-  if (!ok) { console.log('[deleteAgendaRow] dibatalkan (confirm() false / dialog diblokir browser)'); return; }
-
-  const row = btn.closest('tr');
-  const formData = new FormData();
-  formData.append('action', 'delete');
-  formData.append('page_id', id);
-
-  btn.disabled = true;
-  try {
-    console.log('[deleteAgendaRow] mengirim request ke', `${BASE}/api/agenda.php`);
-    const res = await fetch(`${BASE}/api/agenda.php`, { method: 'POST', body: formData });
-    console.log('[deleteAgendaRow] status response:', res.status);
-    const data = await res.json();
-    console.log('[deleteAgendaRow] isi response:', data);
-    if (!res.ok || data.error) {
-      alert('Gagal menghapus agenda: ' + JSON.stringify(data));
-      return;
-    }
-    row.remove();
-    console.log('[deleteAgendaRow] baris berhasil dihapus dari tabel');
-  } catch (err) {
-    console.error('[deleteAgendaRow] exception:', err);
-    alert('Gagal menghapus agenda: ' + err.message);
-  } finally {
-    btn.disabled = false;
-  }
+  customConfirm(
+    'Hapus Agenda',
+    'Hapus agenda ini? Data akan dipindahkan ke Trash Notion.',
+    async () => {
+      const row = btn.closest('tr');
+      const formData = new FormData();
+      formData.append('action', 'delete');
+      formData.append('page_id', id);
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${BASE}/api/agenda.php`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          showToast('❌ Gagal menghapus agenda: ' + JSON.stringify(data), 'error');
+          return;
+        }
+        row.remove();
+        showToast('🗑️ Agenda berhasil dihapus', 'success');
+      } catch (err) {
+        showToast('❌ Gagal menghapus agenda: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    },
+    'Hapus'
+  );
 }
 
 function filterAgenda(tag, el){

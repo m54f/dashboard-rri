@@ -495,23 +495,29 @@ async function handleChecklistSubmit(event) {
 }
 
 async function deleteChecklist(pageId, label) {
-  if (!confirm(`Hapus checklist "${label}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
-  try {
-    const res = await fetch('../api/delete-checklist.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page_id: pageId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('✅ ' + data.message, 'success');
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-    }
-  } catch (err) {
-    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
-  }
+  customConfirm(
+    'Hapus Checklist',
+    `Hapus checklist "${label}"? Data akan dipindahkan ke Trash di Notion.`,
+    async () => {
+      try {
+        const res = await fetch('../api/delete-checklist.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_id: pageId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ ' + data.message, 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+      }
+    },
+    'Hapus'
+  );
 }
 
 // showToast() is provided globally by /assets/css/js/sonner.js

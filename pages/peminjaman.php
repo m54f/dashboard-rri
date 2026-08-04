@@ -176,9 +176,7 @@ include __DIR__ . '/../includes/header.php';
   .icon-action.edit { color:#3b82f6; }
   .icon-action.return { color:#22c55e; }
   .icon-action.delete { color:#ef4444; }
-  .icon-action:hover { background:rgba(0,0,0,0.05); transform: scale(1.1); }
-
-/* ===== MODAL PENGEMBALIAN (UX-Enhanced) ===== */
+  .icon-action:hover { background:rgba(0,0,0,0.05); transform: scale(1.1); }/* ===== MODAL PENGEMBALIAN — Figma Vibe Design ===== */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(15, 23, 42, 0.55);
@@ -192,256 +190,310 @@ include __DIR__ . '/../includes/header.php';
 }
 .modal-overlay.active { opacity: 1; visibility: visible; }
 
+/* Modal card: 480px, border-radius 16px, shadow Large */
 .modal-content {
   background: #ffffff;
-  border-radius: 18px;
-  width: 100%; max-width: 520px; max-height: 90vh;
-  display: flex; flex-direction: column; overflow: hidden;
-  box-shadow:
-    0 25px 50px -12px rgba(0,0,0,0.25),
-    0 0 0 1px rgba(15, 23, 42, 0.04);
+  border-radius: 16px;
+  width: 480px; max-width: calc(100vw - 32px);
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  /* align-items default = stretch: semua child otomatis penuh lebar */
+  overflow: hidden;
+  box-shadow: 0px 15px 50px rgba(0, 0, 0, 0.3);
   transform: translateY(24px) scale(0.96);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
+/* Header: flex-column, padding 32px 32px 24px, gap 4px */
 .modal-header {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  padding: 1.5rem 1.5rem 1.25rem;
-  border-bottom: 1px solid #f1f5f9;
-  background: #ffffff;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  padding: 32px 32px 24px;
+  gap: 4px;
+  align-self: stretch;
+  position: relative;
   flex-shrink: 0;
-}
-.modal-header-info { display: flex; align-items: center; gap: 1rem; }
-.modal-icon-wrapper {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: #dcfce7;
-  color: #16a34a;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-.modal-title {
-  font-size: 1.1rem; font-weight: 700; color: #111827;
-  margin: 0; line-height: 1.3;
-}
-.modal-subtitle {
-  font-size: 0.8rem; color: #6b7280;
-  margin: 0.2rem 0 0; font-weight: 400;
-}
-.modal-close {
-  background: transparent; border: none;
-  width: 36px; height: 36px;
-  border-radius: 8px;
-  color: #64748b;
-  font-size: 1.25rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center;
-}
-.modal-close:hover { background: #f1f5f9; color: #0f172a; }
-.modal-close:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
 }
 
+/* Title: Poppins 24px/600, #323338 */
+.modal-title {
+  font-family: 'Poppins', 'Figtree', sans-serif;
+  font-style: normal; font-weight: 600;
+  font-size: 24px; line-height: 30px;
+  letter-spacing: -0.1px;
+  color: #323338;
+  margin: 0; align-self: stretch;
+}
+
+/* Subtitle: Figtree 16px/400, #323338 */
+.modal-subtitle {
+  font-family: 'Figtree', sans-serif;
+  font-style: normal; font-weight: 400;
+  font-size: 16px; line-height: 22px;
+  color: #323338;
+  margin: 0; align-self: stretch;
+}
+
+/* Close button: absolute 32×32, top 24px right 24px */
+.modal-close {
+  position: absolute; top: 24px; right: 24px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; gap: 8px;
+  width: 32px; height: 32px;
+  border-radius: 4px; border: none;
+  background: transparent; color: #676879;
+  font-size: 1.25rem; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-close:hover { background: #f0f0f0; color: #323338; }
+.modal-close:focus-visible { outline: 2px solid #0073EA; outline-offset: 2px; }
+
+/* Body: padding 0 32px 32px */
 .modal-body {
-  padding: 1.5rem;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  background: #fff;
+  padding: 0 32px 32px;
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; background: #fff;
+  align-self: stretch;
 }
 .modal-body::-webkit-scrollbar { width: 6px; }
 .modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-.modal-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 .return-info-banner {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
 }
 .info-banner-label {
-  display: block;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #9ca3af;
-  font-weight: 600;
-  margin-bottom: 0.4rem;
+  display: block; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: #9ca3af; font-weight: 600; margin-bottom: 0.4rem;
 }
 .info-banner-title {
-  display: block;
-  font-size: 1rem;
-  color: #111827;
-  font-weight: 700;
-  line-height: 1.4;
-  word-break: break-word;
-  margin-bottom: 0.5rem;
+  display: block; font-size: 1rem; color: #111827;
+  font-weight: 700; line-height: 1.4; word-break: break-word; margin-bottom: 0.5rem;
 }
-.info-banner-meta {
-  display: flex; flex-wrap: wrap; gap: 0.75rem;
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-.info-banner-meta span {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-}
+.info-banner-meta { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.8rem; color: #6b7280; }
+.info-banner-meta span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .info-banner-meta i { font-size: 0.875rem; }
 
 .r-form-group { margin-bottom: 1.25rem; }
 .r-form-group:last-child { margin-bottom: 0; }
-
 .r-form-label {
   display: inline-flex; align-items: center; gap: 0.375rem;
-  font-size: 0.875rem; font-weight: 600; color: #111827;
-  margin-bottom: 0.45rem;
+  font-size: 0.875rem; font-weight: 600; color: #111827; margin-bottom: 0.45rem;
 }
-.r-form-label-row {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 0.5rem;
-}
+.r-form-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .r-form-label-row .r-form-label { margin-bottom: 0; }
-
 .r-required { color: #ef4444; font-weight: 700; }
-
-.char-counter {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
+.char-counter { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
 .char-counter.warn { color: #f59e0b; }
 .char-counter.danger { color: #ef4444; }
-
 .r-form-input {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.925rem;
-  color: #0f172a;
-  background: #fff;
+  width: 100%; padding: 0.7rem 1rem;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 0.925rem; color: #0f172a; background: #fff;
   transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-  font-family: inherit;
-  box-sizing: border-box;
+  outline: none; font-family: inherit; box-sizing: border-box;
 }
-.r-form-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-.r-form-input.input-error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
+.r-form-input:focus { border-color: #0073EA; box-shadow: 0 0 0 3px rgba(0,115,234,0.12); }
+.r-form-input.input-error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
 .select-wrapper { position: relative; }
-.r-form-select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 2.5rem;
-  cursor: pointer;
-  background-color: #fff;
-}
+.r-form-select { appearance: none; -webkit-appearance: none; padding-right: 2.5rem; cursor: pointer; background-color: #fff; }
 .select-icon {
-  position: absolute;
-  right: 0.875rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.25rem;
-  color: #64748b;
-  pointer-events: none;
-  transition: transform 0.2s;
+  position: absolute; right: 0.875rem; top: 50%; transform: translateY(-50%);
+  font-size: 1.25rem; color: #64748b; pointer-events: none; transition: color 0.2s;
 }
-.r-form-select:focus + .select-icon { color: #2563eb; }
+.r-form-select:focus + .select-icon { color: #0073EA; }
 .r-form-select option:disabled { color: #94a3b8; font-style: italic; }
-
-.r-form-textarea {
-  resize: vertical;
-  min-height: 84px;
-  line-height: 1.5;
-}
-
-.r-form-help {
-  display: block;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.375rem;
-}
-.r-form-error {
-  display: none;
-  align-items: center; gap: 0.3rem;
-  font-size: 0.8rem;
-  color: #dc2626;
-  margin-top: 0.375rem;
-  font-weight: 500;
-}
+.r-form-textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+.r-form-help { display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.375rem; }
+.r-form-error { display: none; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: #dc2626; margin-top: 0.375rem; font-weight: 500; }
 .r-form-error.visible { display: flex; }
 .r-form-error i { font-size: 1rem; }
 
+/* Form: flex-column, isi sisa ruang modal, body bisa scroll */
+#returnForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Footer: flex-row, padding 20px 24px, bg #fff */
 .modal-footer {
-  display: flex; align-items: center; gap: 0.625rem;
-  padding: 1rem 1.5rem 1.5rem;
-  flex-shrink: 0;
-  flex-wrap: nowrap;
-  border-top: 1px solid #f1f5f9;
+  display: flex; flex-direction: row;
+  justify-content: space-between; align-items: center;
+  padding: 20px 24px;
+  min-height: 80px; background: #ffffff;
+  align-self: stretch; flex-shrink: 0;
 }
+
+/* Footer right buttons container: gap 8px */
+.modal-footer-right {
+  display: flex; flex-direction: row;
+  justify-content: flex-end; align-items: center;
+  gap: 8px; margin-left: auto;
+}
+
+/* Secondary button: Figtree 16px/400, #323338, no border, 40px */
 .btn-modal-cancel {
-  padding: 0.72rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-  font-family: inherit;
-  background: #fff; color: #374151;
-  border: 1.5px solid #d1d5db;
-  white-space: nowrap;
+  box-sizing: border-box;
+  display: flex; flex-direction: row;
+  justify-content: center; align-items: center;
+  padding: 0 16px; gap: 8px;
+  height: 40px; min-height: 40px; max-height: 40px;
+  border-radius: 4px; border: none;
+  background: transparent; color: #323338;
+  font-family: 'Figtree', inherit;
+  font-weight: 400; font-size: 16px; line-height: 22px;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.15s;
 }
-.btn-modal-cancel:hover { background: #f9fafb; border-color: #9ca3af; }
-.btn-modal-cancel:focus-visible { outline: 2px solid #6b7280; outline-offset: 2px; }
+.btn-modal-cancel:hover { background: #f0f0f0; }
+.btn-modal-cancel:focus-visible { outline: 2px solid #0073EA; outline-offset: 2px; }
 
+/* Primary button: bg #0073EA, white text, Figtree 16px/400, 40px */
 .btn-modal-submit {
-  flex: 1;
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-  font-family: inherit;
-  background: linear-gradient(135deg, #34d399, #10b981);
-  color: #fff;
-  border: none;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  box-sizing: border-box;
+  display: flex; flex-direction: row;
+  justify-content: center; align-items: center;
+  padding: 0 16px; gap: 8px;
+  height: 40px; min-height: 40px; max-height: 40px;
+  background: #0073EA; border-radius: 4px; border: none;
+  font-family: 'Figtree', inherit;
+  font-weight: 400; font-size: 16px; line-height: 22px;
+  color: #ffffff; cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
 }
-.btn-modal-submit:hover:not(:disabled) {
-  background: linear-gradient(135deg, #10b981, #059669);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-}
-.btn-modal-submit:active:not(:disabled) { transform: translateY(0); }
-.btn-modal-submit:disabled {
-  opacity: 0.6; cursor: not-allowed;
-  box-shadow: none; transform: none;
-}
-.btn-modal-submit:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+.btn-modal-submit:hover:not(:disabled) { background: #0060c0; }
+.btn-modal-submit:active:not(:disabled) { background: #0052a3; }
+.btn-modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-modal-submit:focus-visible { outline: 2px solid #0073EA; outline-offset: 2px; }
 
-.btn-loading { display: inline-flex; align-items: center; gap: 0.4rem; }
-
+/* hidden attribute harus override CSS display — prinsip HTML spec */
+[hidden] { display: none !important; }
+.btn-loading { align-items: center; gap: 0.4rem; }
 @keyframes ri-spin { to { transform: rotate(360deg); } }
 .ri-spin { animation: ri-spin 0.8s linear infinite; }
 
-@media (max-width: 480px) {
-  .modal-content { border-radius: 16px; max-height: 95vh; }
-  .modal-header, .modal-body, .modal-footer { padding-left: 1.125rem; padding-right: 1.125rem; }
+@media (max-width: 500px) {
+  .modal-content { min-width: unset; border-radius: 12px; }
+  .modal-header { padding: 24px 20px 16px; }
+  .modal-body { padding: 0 20px 24px; }
+  .modal-footer { padding: 0 20px; height: 72px; }
+  .modal-title { font-size: 20px; }
 }
+
+/* ===== TIPSEEN — Custom Confirm Dialog (Figma Vibe) =====
+   288px, dark #323338, border-radius 8px, shadow medium
+*/
+.tipseen-overlay {
+  position: fixed; inset: 0;
+  z-index: 99998;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.35);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.tipseen-overlay.active { opacity: 1; visibility: visible; }
+
+/* Tipseen card */
+.tipseen {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0;
+  width: 288px;
+  background: #323338;
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  isolation: isolate;
+  transform: scale(0.88);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tipseen-overlay.active .tipseen { transform: scale(1); }
+
+/* Content wrapper: padding 0 20px 24px */
+.tipseen-content {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 0 20px 24px;
+  width: 100%; box-sizing: border-box;
+  border-radius: 8px;
+}
+
+/* Text block: padding 16px 0 20px, gap 4px */
+.tipseen-text {
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  padding: 16px 0 20px; gap: 4px;
+  align-self: stretch;
+}
+
+/* Title: Figtree 16px/700, white */
+.tipseen-title {
+  font-family: 'Figtree', sans-serif;
+  font-style: normal; font-weight: 700;
+  font-size: 16px; line-height: 22px;
+  color: #ffffff;
+  align-self: stretch;
+}
+
+/* Message: Figtree 14px/400, white */
+.tipseen-message {
+  font-family: 'Figtree', sans-serif;
+  font-style: normal; font-weight: 400;
+  font-size: 14px; line-height: 20px;
+  color: #ffffff;
+  align-self: stretch;
+}
+
+/* Footer: flex-row, justify-end, gap 8px */
+.tipseen-footer {
+  display: flex; flex-direction: row;
+  justify-content: flex-end; align-items: center;
+  gap: 8px;
+  align-self: stretch;
+}
+
+/* Back/Batal — low emphasis on dark bg */
+.tipseen-btn-back {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 8px;
+  height: 32px; min-height: 32px; max-height: 32px;
+  border-radius: 4px; border: none;
+  background: transparent; color: #ffffff;
+  font-family: 'Figtree', inherit;
+  font-weight: 400; font-size: 14px; line-height: 20px;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.15s;
+}
+.tipseen-btn-back:hover { background: rgba(255,255,255,0.12); }
+
+/* Confirm — high emphasis on dark bg: white bg, dark text */
+.tipseen-btn-confirm {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 8px;
+  height: 32px; min-height: 32px; max-height: 32px;
+  background: #ffffff; border-radius: 4px; border: none;
+  font-family: 'Figtree', inherit;
+  font-weight: 400; font-size: 14px; line-height: 20px;
+  color: #323338;
+  cursor: pointer; white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.tipseen-btn-confirm:hover { opacity: 0.88; }
+
+/* Close: absolute, top 8px right 8px, 20×20 */
+.tipseen-close {
+  position: absolute; top: 8px; right: 8px;
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 4px; border: none;
+  background: transparent; color: #676879;
+  cursor: pointer; padding: 0;
+  transition: color 0.15s;
+  z-index: 1;
+}
+.tipseen-close:hover { color: #ffffff; }
 </style>
 
 <script>
@@ -715,23 +767,68 @@ async function submitReturn(event) {
 }
 
 async function deleteItem(pageId, kegiatan) {
-  if (!confirm(`Hapus data peminjaman "${kegiatan}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
-  try {
-    const res = await fetch('../api/delete-peminjaman.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page_id: pageId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('✅ ' + data.message, 'success');
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-    }
-  } catch (err) {
-    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+  customConfirm(
+    'Hapus Peminjaman',
+    `Hapus data "${kegiatan}"? Data akan dipindahkan ke Trash di Notion.`,
+    async () => {
+      try {
+        const res = await fetch('../api/delete-peminjaman.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_id: pageId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ ' + data.message, 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+      }
+    },
+    'Hapus'
+  );
+}
+
+/**
+ * customConfirm — mengganti browser confirm() dengan Tipseen Figma component
+ * @param {string} title - Judul popup
+ * @param {string} message - Pesan popup
+ * @param {Function} onConfirm - Callback jika dikonfirmasi
+ * @param {string} confirmLabel - Label tombol konfirmasi
+ */
+function customConfirm(title, message, onConfirm, confirmLabel = 'OK') {
+  const overlay  = document.getElementById('tipseenOverlay');
+  const elTitle  = document.getElementById('tipseenTitle');
+  const elMsg    = document.getElementById('tipseenMessage');
+  const btnOk    = document.getElementById('tipseenBtnConfirm');
+  const btnCancel= document.getElementById('tipseenBtnBack');
+  const btnClose = document.getElementById('tipseenClose');
+
+  elTitle.textContent  = title;
+  elMsg.textContent    = message;
+  btnOk.textContent    = confirmLabel;
+
+  overlay.classList.add('active');
+  setTimeout(() => btnOk.focus(), 50);
+
+  function close() {
+    overlay.classList.remove('active');
+    btnOk.onclick     = null;
+    btnCancel.onclick = null;
+    btnClose.onclick  = null;
+    overlay.onclick   = null;
+    document.removeEventListener('keydown', onKey);
   }
+  function onKey(e) { if (e.key === 'Escape') close(); }
+
+  btnOk.onclick     = () => { close(); onConfirm(); };
+  btnCancel.onclick = close;
+  btnClose.onclick  = close;
+  overlay.onclick   = (e) => { if (e.target === overlay) close(); };
+  document.addEventListener('keydown', onKey);
 }
 </script>
 
@@ -741,15 +838,8 @@ async function deleteItem(pageId, kegiatan) {
 <div class="modal-overlay" id="returnModal" role="dialog" aria-modal="true" aria-labelledby="returnModalTitle">
   <div class="modal-content">
     <div class="modal-header">
-      <div class="modal-header-info">
-        <div class="modal-icon-wrapper">
-          <i class="ri-loop-left-line"></i>
-        </div>
-        <div>
-          <h3 class="modal-title" id="returnModalTitle">Konfirmasi Pengembalian</h3>
-          <p class="modal-subtitle">Tandai alat sebagai sudah kembali</p>
-        </div>
-      </div>
+      <h3 class="modal-title" id="returnModalTitle">Konfirmasi Pengembalian</h3>
+      <p class="modal-subtitle">Tandai alat sebagai sudah kembali</p>
       <button class="modal-close" onclick="closeReturnModal()" aria-label="Tutup modal" title="Tutup (Esc)">
         <i class="ri-close-line"></i>
       </button>
@@ -817,16 +907,45 @@ async function deleteItem(pageId, kegiatan) {
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn-modal-cancel" onclick="closeReturnModal()">Batal</button>
-        <button type="submit" class="btn-modal-submit" id="returnSubmitBtn">
-          <span id="returnSubmitLabel">
-            <i class="ri-checkbox-circle-line"></i> Konfirmasi Pengembalian
-          </span>
-          <span class="btn-loading" id="returnSubmitLoading" hidden>
-            <i class="ri-loader-4-line ri-spin"></i> Memproses...
-          </span>
-        </button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-modal-cancel" onclick="closeReturnModal()">Batal</button>
+          <button type="submit" class="btn-modal-submit" id="returnSubmitBtn">
+            <span id="returnSubmitLabel">Konfirmasi</span>
+            <span class="btn-loading" id="returnSubmitLoading" hidden>
+              <i class="ri-loader-4-line ri-spin"></i> Memproses...
+            </span>
+          </button>
+        </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ===== TIPSEEN CONFIRM DIALOG ===== -->
+<div class="tipseen-overlay" id="tipseenOverlay" role="alertdialog" aria-modal="true"
+     aria-labelledby="tipseenTitle" aria-describedby="tipseenMessage">
+  <div class="tipseen" id="tipseenBox">
+    <!-- Close: absolute top-right 8px -->
+    <button class="tipseen-close" id="tipseenClose" aria-label="Tutup">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+    <!-- Content: padding 0 20px 24px -->
+    <div class="tipseen-content">
+      <!-- Text: padding 16px 0 20px, gap 4px -->
+      <div class="tipseen-text">
+        <div class="tipseen-title" id="tipseenTitle">Konfirmasi</div>
+        <div class="tipseen-message" id="tipseenMessage">Apakah Anda yakin?</div>
+      </div>
+      <!-- Footer: justify-end, gap 8px -->
+      <div class="tipseen-footer">
+        <!-- Batal: low emphasis on dark -->
+        <button class="tipseen-btn-back" id="tipseenBtnBack">Batal</button>
+        <!-- Confirm: high emphasis on dark (white bg) -->
+        <button class="tipseen-btn-confirm" id="tipseenBtnConfirm">OK</button>
+      </div>
+    </div>
   </div>
 </div>
