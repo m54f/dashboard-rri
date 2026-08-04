@@ -107,6 +107,17 @@ include __DIR__ . '/../includes/header.php';
 }
 .modal-close:hover { background: #e2e8f0; color: #0f172a; }
 
+/* Hilangkan panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
 /* Modal Body (Hanya bagian ini yang di-scroll) */
 .modal-body { 
   padding: 1.5rem; 
@@ -265,7 +276,6 @@ include __DIR__ . '/../includes/header.php';
     <table class="data-table" id="ticketTable">
       <thead>
         <tr>
-          <th>ID</th>
           <th>Judul Kendala</th>
           <th>Kategori</th>
           <th>PIC</th>
@@ -278,7 +288,7 @@ include __DIR__ . '/../includes/header.php';
       <tbody>
         <?php if (empty($tickets)): ?>
           <tr>
-            <td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+            <td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
               Tidak ada data kendala ditemukan.
             </td>
           </tr>
@@ -295,7 +305,6 @@ include __DIR__ . '/../includes/header.php';
             ]), ENT_QUOTES, 'UTF-8');
           ?>
           <tr data-status="<?= htmlspecialchars($t['status']) ?>">
-            <td style="font-weight:700; color:var(--text-secondary);"><?= htmlspecialchars($t['id']) ?></td>
             <td class="cell-title"><?= htmlspecialchars($t['title']) ?></td>
             <td><span class="tag gray"><?= htmlspecialchars($t['cat']) ?></span></td>
             <td><?= htmlspecialchars($t['pic']) ?></td>
@@ -678,20 +687,36 @@ function updateTablePagination() {
     if (paginationWrap) paginationWrap.style.display = 'none';
   } else {
     paginationWrap.style.display = 'flex';
+    paginationWrap.style.alignItems = 'center';
+    paginationWrap.style.justifyContent = 'space-between';
     paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} kendala`;
 
+    paginationButtons.style.display = 'flex';
+    paginationButtons.style.alignItems = 'center';
+    paginationButtons.style.gap = '0.5rem';
+
     let buttonsHTML = '';
-    buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
-    getPaginationRange(currentPage, totalPages).forEach(p => {
-      if (p === '...') {
-        buttonsHTML += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
-      } else {
-        buttonsHTML += `<button type="button" class="btn-page ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
-      }
-    });
-    buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+    const prevDisabled = currentPage === 1 ? 'disabled' : '';
+    const prevStyle = currentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" class="btn-page" style="${prevStyle}" onclick="changePage(${currentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+    buttonsHTML += `<input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="${currentPage}" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="jumpToPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})">`;
+
+    buttonsHTML += `<span style="font-size:0.9rem; color:#475569; display:inline-flex; align-items:center;">dari ${totalPages}</span>`;
+
+    const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+    const nextStyle = currentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" class="btn-page" style="${nextStyle}" onclick="changePage(${currentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
     paginationButtons.innerHTML = buttonsHTML;
   }
+}
+
+function jumpToPage(val, totalPages) {
+  let page = parseInt(val, 10);
+  if (isNaN(page)) { updateTablePagination(); return; }
+  if (page < 1) page = 1;
+  if (page > totalPages) page = totalPages;
+  changePage(page);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

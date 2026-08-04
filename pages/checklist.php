@@ -30,6 +30,19 @@ $petugasList = ['Alfian','Alif','Saiful','Winsa','Yayang','Yhanuar','Yuda'];
 include __DIR__ . '/../includes/header.php';
 ?>
 
+<style>
+/* Hilangkan tombol panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+</style>
+
 <div class="page-head">
   <div>
     <h2>Checklist Pagi Malam</h2>
@@ -72,7 +85,6 @@ include __DIR__ . '/../includes/header.php';
     <table class="data-table" id="checklistTable">
       <thead>
         <tr>
-          <th>ID</th>
           <th>Tanggal</th>
           <th>Sesi</th>
           <th>Kelengkapan</th>
@@ -85,7 +97,7 @@ include __DIR__ . '/../includes/header.php';
       <tbody>
         <?php if (empty($checklist)): ?>
           <tr>
-            <td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+            <td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">
               Tidak ada data checklist ditemukan.
             </td>
           </tr>
@@ -105,7 +117,6 @@ include __DIR__ . '/../includes/header.php';
             ]), ENT_QUOTES, 'UTF-8');
           ?>
           <tr data-status="<?= htmlspecialchars($c['checklist_type']) ?>" data-complete="<?= $c['is_complete'] ? '1' : '0' ?>">
-            <td style="font-weight:700; color:var(--text-secondary);"><?= htmlspecialchars($c['id']) ?></td>
             <td class="cell-sub"><?= htmlspecialchars($c['tanggal']) ?></td>
             <td><span class="tag gray"><i class="<?= $c['checklist_type'] === 'Pagi' ? 'ri-sun-line' : 'ri-moon-line' ?>"></i> <?= htmlspecialchars($c['checklist_type']) ?></span></td>
             <td>
@@ -155,93 +166,95 @@ include __DIR__ . '/../includes/header.php';
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <form id="checklistForm" onsubmit="handleChecklistSubmit(event)">
-      <input type="hidden" id="field_page_id" name="page_id" value="">
+      <div class="modal-body">
+        <input type="hidden" id="field_page_id" name="page_id" value="">
 
-      <div class="form-row">
-        <!-- Sesi Checklist -->
+        <div class="form-row">
+          <!-- Sesi Checklist -->
+          <div class="form-group">
+            <label>Sesi Checklist <span class="required-star">*</span></label>
+            <div class="radio-segment" id="field_checklist">
+              <input type="radio" name="checklist" value="Pagi" id="r_pagi" required>
+              <label for="r_pagi"><i class="ri-sun-line"></i> Pagi</label>
+              <input type="radio" name="checklist" value="Malam" id="r_malam">
+              <label for="r_malam"><i class="ri-moon-line"></i> Malam</label>
+            </div>
+          </div>
+
+          <!-- Tanggal Cek -->
+          <div class="form-group">
+            <label>Tanggal Cek <span class="required-star">*</span></label>
+            <input type="date" id="field_tanggal" name="tanggal" required>
+          </div>
+        </div>
+
         <div class="form-group">
-          <label>Sesi Checklist <span class="required-star">*</span></label>
-          <div class="radio-segment" id="field_checklist">
-            <input type="radio" name="checklist" value="Pagi" id="r_pagi" required>
-            <label for="r_pagi"><i class="ri-sun-line"></i> Pagi</label>
-            <input type="radio" name="checklist" value="Malam" id="r_malam">
-            <label for="r_malam"><i class="ri-moon-line"></i> Malam</label>
+          <label>Cek Perangkat <span style="font-weight:400; color:var(--text-secondary); font-size:11px;">(Klik kartu untuk menandai sudah dicek)</span></label>
+          
+          <div class="check-item" data-target="field_pro1" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Programa 1 <span class="required-star">*</span></h4>
+              <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Dias (App DIAS terhubung) - PC Streaming - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_pro1" name="pro1" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_pro2" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Programa 2 <span class="required-star">*</span></h4>
+              <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC Backup - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_pro2" name="pro2" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_pro4" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Programa 4 <span class="required-star">*</span></h4>
+              <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC WA - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_pro4" name="pro4" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_tetrack" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>Te-track</h4>
+              <p>Monitoring log Pemancar melalui aplikasi Te-Track</p>
+            </div>
+            <div class="check-status">Belum Submit</div>
+            <input type="checkbox" id="field_tetrack" name="tetrack" hidden>
+          </div>
+
+          <div class="check-item" data-target="field_mcr" onclick="toggleCheckItem(this)">
+            <div class="check-item-text">
+              <h4>MCR Depan <span class="required-star">*</span></h4>
+              <p>Cek Kondisi PC Streaming dan Logger - PC Logger Back Up - Backup Rekaman Logger Harian</p>
+            </div>
+            <div class="check-status">Belum Cek</div>
+            <input type="checkbox" id="field_mcr" name="mcr" hidden>
           </div>
         </div>
 
-        <!-- Tanggal Cek -->
+        <!-- Petugas DP -->
         <div class="form-group">
-          <label>Tanggal Cek <span class="required-star">*</span></label>
-          <input type="date" id="field_tanggal" name="tanggal" required>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Cek Perangkat <span style="font-weight:400; color:var(--text-secondary); font-size:11px;">(Klik kartu untuk menandai sudah dicek)</span></label>
-        
-        <div class="check-item" data-target="field_pro1" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Programa 1 <span class="required-star">*</span></h4>
-            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Dias (App DIAS terhubung) - PC Streaming - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
+          <label>Petugas DP <span class="required-star">*</span> <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Pilih sebanyak yang Anda inginkan</span></label>
+          <div class="checkbox-grid" id="field_petugas">
+            <?php foreach ($petugasList as $nama): ?>
+            <label class="checkbox-option">
+              <input type="checkbox" name="petugas[]" value="<?= $nama ?>">
+              <span class="checkbox-label"><?= $nama ?></span>
+            </label>
+            <?php endforeach; ?>
           </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_pro1" name="pro1" hidden>
         </div>
 
-        <div class="check-item" data-target="field_pro2" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Programa 2 <span class="required-star">*</span></h4>
-            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC Backup - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
-          </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_pro2" name="pro2" hidden>
+        <!-- Keterangan Checklist -->
+        <div class="form-group">
+          <label>Keterangan Checklist</label>
+          <textarea id="field_keterangan" name="keterangan" rows="3" placeholder="Catatan tambahan bila ada kendala..."></textarea>
         </div>
-
-        <div class="check-item" data-target="field_pro4" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Programa 4 <span class="required-star">*</span></h4>
-            <p>Cek Kondisi Mixer - PC Aircast (App Aircast bisa dibuka) - PC Streaming - PC WA - Telepon (WA dan Line pastikan terhubung) - AC | Jika Malam, Pastikan Perangkat Programa Sudah Off</p>
-          </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_pro4" name="pro4" hidden>
-        </div>
-
-        <div class="check-item" data-target="field_tetrack" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>Te-track</h4>
-            <p>Monitoring log Pemancar melalui aplikasi Te-Track</p>
-          </div>
-          <div class="check-status">Belum Submit</div>
-          <input type="checkbox" id="field_tetrack" name="tetrack" hidden>
-        </div>
-
-        <div class="check-item" data-target="field_mcr" onclick="toggleCheckItem(this)">
-          <div class="check-item-text">
-            <h4>MCR Depan <span class="required-star">*</span></h4>
-            <p>Cek Kondisi PC Streaming dan Logger - PC Logger Back Up - Backup Rekaman Logger Harian</p>
-          </div>
-          <div class="check-status">Belum Cek</div>
-          <input type="checkbox" id="field_mcr" name="mcr" hidden>
-        </div>
-      </div>
-
-      <!-- Petugas DP -->
-      <div class="form-group">
-        <label>Petugas DP <span class="required-star">*</span> <span style="color:var(--text-secondary); font-weight:400; font-size:0.85rem;">— Pilih sebanyak yang Anda inginkan</span></label>
-        <div class="checkbox-grid" id="field_petugas">
-          <?php foreach ($petugasList as $nama): ?>
-          <label class="checkbox-option">
-            <input type="checkbox" name="petugas[]" value="<?= $nama ?>">
-            <span class="checkbox-label"><?= $nama ?></span>
-          </label>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <!-- Keterangan Checklist -->
-      <div class="form-group">
-        <label>Keterangan Checklist</label>
-        <textarea id="field_keterangan" name="keterangan" rows="3" placeholder="Catatan tambahan bila ada kendala..."></textarea>
       </div>
 
       <div class="modal-footer">
@@ -410,20 +423,36 @@ function updateTablePagination() {
     if (paginationWrap) paginationWrap.style.display = 'none';
   } else {
     paginationWrap.style.display = 'flex';
+    paginationWrap.style.alignItems = 'center';
+    paginationWrap.style.justifyContent = 'space-between';
     paginationInfo.textContent = `Menampilkan ${startIndex + 1}-${endIndex} dari ${totalRows} checklist`;
 
+    paginationButtons.style.display = 'flex';
+    paginationButtons.style.alignItems = 'center';
+    paginationButtons.style.gap = '0.5rem';
+
     let buttonsHTML = '';
-    buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
-    getPaginationRange(currentPage, totalPages).forEach(p => {
-      if (p === '...') {
-        buttonsHTML += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
-      } else {
-        buttonsHTML += `<button type="button" class="btn-page ${p === currentPage ? 'active' : ''}" onclick="changePage(${p})">${p}</button>`;
-      }
-    });
-    buttonsHTML += `<button type="button" class="btn-page" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+    const prevDisabled = currentPage === 1 ? 'disabled' : '';
+    const prevStyle = currentPage === 1 ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" class="btn-page" style="${prevStyle}" onclick="changePage(${currentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+
+    buttonsHTML += `<input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="${currentPage}" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="jumpToPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})">`;
+
+    buttonsHTML += `<span style="font-size:0.9rem; color:#475569; display:inline-flex; align-items:center;">dari ${totalPages}</span>`;
+
+    const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+    const nextStyle = currentPage === totalPages ? 'color:#9ca3af; cursor:not-allowed;' : 'color:#475569; cursor:pointer;';
+    buttonsHTML += `<button type="button" class="btn-page" style="${nextStyle}" onclick="changePage(${currentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
     paginationButtons.innerHTML = buttonsHTML;
   }
+}
+
+function jumpToPage(val, totalPages) {
+  let page = parseInt(val, 10);
+  if (isNaN(page)) { updateTablePagination(); return; }
+  if (page < 1) page = 1;
+  if (page > totalPages) page = totalPages;
+  changePage(page);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

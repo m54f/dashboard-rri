@@ -157,6 +157,16 @@ include __DIR__ . '/../includes/header.php';
     justify-content: center !important;
   }
 }
+/* Hilangkan panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
 </style>
 <div class="page-head">
   <div>
@@ -219,7 +229,18 @@ include __DIR__ . '/../includes/header.php';
       <tbody>
         <?php foreach ($agendaPage as $a): ?>
         <tr data-tag="<?= htmlspecialchars($a['tag'], ENT_QUOTES) ?>" data-id="<?= htmlspecialchars($a['page_id'], ENT_QUOTES) ?>" data-date="<?= htmlspecialchars($a['date'], ENT_QUOTES) ?>" data-time="<?= htmlspecialchars($a['time'], ENT_QUOTES) ?>">
-          <td style="font-weight:600; white-space:nowrap;"><?= htmlspecialchars($a['date'] ? date('d M Y', strtotime($a['date'])) : '-') ?></td>
+          <td style="font-weight:600; white-space:nowrap;">
+            <?php
+              $dateDisplay = '-';
+              if (!empty($a['date'])) {
+                $dateDisplay = date('d M Y', strtotime($a['date']));
+                if (!empty($a['date_end']) && $a['date_end'] !== $a['date']) {
+                  $dateDisplay .= ' s/d ' . date('d M Y', strtotime($a['date_end']));
+                }
+              }
+              echo htmlspecialchars($dateDisplay);
+            ?>
+          </td>
           <td style="font-weight:700;"><?= htmlspecialchars($a['time']) ?></td>
           <td class="cell-title"><?= htmlspecialchars($a['title']) ?></td>
           <td><span class="tag <?= $a['tone'] ?>"><?= htmlspecialchars($a['tag']) ?></span></td>
@@ -282,17 +303,11 @@ include __DIR__ . '/../includes/header.php';
       Menampilkan <?= $showingFrom ?>-<?= $showingTo ?> dari <?= $totalItems ?> agenda
     </div>
     <?php if ($totalPages > 1): ?>
-    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+    <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
       <a href="<?= htmlspecialchars(agendaPageUrl(max(1, $currentPage - 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
-      <?php foreach (paginationRange($currentPage, $totalPages) as $p): ?>
-        <?php if ($p === '...'): ?>
-        <span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>
-        <?php else: ?>
-        <a href="<?= htmlspecialchars(agendaPageUrl($p, $filterDate)) ?>"
-           class="btn <?= $p === $currentPage ? 'btn-primary' : 'btn-secondary' ?>" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;"><?= $p ?></a>
-        <?php endif; ?>
-      <?php endforeach; ?>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="<?= $currentPage ?>" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="let p=parseInt(this.value); if(!isNaN(p) && p>=1 && p<=<?= $totalPages ?>) location.href='<?= htmlspecialchars(agendaPageUrl(999999, $filterDate)) ?>'.replace('999999', p);" onkeydown="if(event.key === 'Enter'){ let p=parseInt(this.value); if(!isNaN(p) && p>=1 && p<=<?= $totalPages ?>) location.href='<?= htmlspecialchars(agendaPageUrl(999999, $filterDate)) ?>'.replace('999999', p); }">
+      <span style="font-size:0.9rem; color:#475569;">dari <?= $totalPages ?></span>
       <a href="<?= htmlspecialchars(agendaPageUrl(min($totalPages, $currentPage + 1), $filterDate)) ?>"
          class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
     </div>
@@ -308,37 +323,49 @@ include __DIR__ . '/../includes/header.php';
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <form id="agendaForm" onsubmit="handleAgendaForm(event)">
-      <div class="form-group"><label>Judul Kegiatan</label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
-      <div class="form-row">
-        <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required></div>
-        <div class="form-group"><label>Waktu</label><input type="time" name="waktu" required></div>
-      </div>
-      <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
-      <div class="form-group">
-        <label>Kategori</label>
-        <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
-        <datalist id="kategoriList">
-          <?php foreach ($categories as $cat): ?>
-          <option value="<?= htmlspecialchars($cat) ?>"></option>
-          <?php endforeach; ?>
-        </datalist>
-      </div>
-      <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
-      <div class="form-group">
-        <label>Surat Tugas / Dokumen / Foto (opsional)</label>
-        <input type="file" id="dokumenInput" name="dokumen[]" multiple accept=".pdf,.doc,.docx,image/*" style="display:none;">
-        <div style="display:flex; gap:0.5rem;">
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('dokumenInput').click()"><i class="ri-attachment-2"></i> Pilih File</button>
-          <button type="button" class="btn btn-secondary" onclick="clearSelectedFiles()" title="Batalkan semua file yang dipilih">&times; Batalkan</button>
+      <div class="modal-body">
+        <div class="form-group"><label>Judul Kegiatan <span class="required-star">*</span></label><input type="text" name="kegiatan" placeholder="Contoh: Podcast Luar Studio" required></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tanggal Mulai <span class="required-star">*</span></label>
+            <input type="date" name="tanggal" required>
+          </div>
+          <div class="form-group">
+            <label>Tanggal Selesai <span style="font-weight:400; color:#6b7280; font-size:11px;">(Opsional, jika > 1 hari)</span></label>
+            <input type="date" name="tanggal_selesai">
+          </div>
         </div>
-        <div id="selectedFilesList" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.5rem;"></div>
-        <small style="color:#6b7280; display:block; margin-top:0.25rem;">Bisa pilih lebih dari satu file sekaligus (tahan Ctrl/Cmd waktu memilih di dialog), atau klik "Pilih File" berkali-kali untuk menambah satu-satu. Maks 5MB per file.</small>
-        <small id="editFileNote" style="color:#9ca3af; display:none; margin-top:0.25rem;">Upload file baru di sini akan MENGGANTI dokumen lama pada agenda ini. Kosongkan kalau tidak mau mengubah dokumen yang sudah ada.</small>
+        <div class="form-group">
+          <label>Waktu Kegiatan <span class="required-star">*</span></label>
+          <input type="time" name="waktu" required>
+        </div>
+        <div class="form-group"><label>Lokasi Kegiatan</label><input type="text" name="lokasi_kegiatan" placeholder="Nama Tempat" required></div>
+        <div class="form-group">
+          <label>Kategori</label>
+          <input type="text" name="kategori" list="kategoriList" placeholder="Pilih dari saran atau ketik kategori baru" required>
+          <datalist id="kategoriList">
+            <?php foreach ($categories as $cat): ?>
+            <option value="<?= htmlspecialchars($cat) ?>"></option>
+            <?php endforeach; ?>
+          </datalist>
+        </div>
+        <div class="form-group"><label>Catatan</label><textarea name="catatan" rows="3" placeholder="Detail lokasi, peralatan, dll..."></textarea></div>
+        <div class="form-group">
+          <label>Surat Tugas / Dokumen / Foto (opsional)</label>
+          <input type="file" id="dokumenInput" name="dokumen[]" multiple accept=".pdf,.doc,.docx,image/*" style="display:none;">
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('dokumenInput').click()"><i class="ri-attachment-2"></i> Pilih File</button>
+            <button type="button" class="btn btn-secondary" onclick="clearSelectedFiles()" title="Batalkan semua file yang dipilih">&times; Batalkan</button>
+          </div>
+          <div id="selectedFilesList" style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.5rem;"></div>
+          <small style="color:#6b7280; display:block; margin-top:0.25rem;">Bisa pilih lebih dari satu file sekaligus (tahan Ctrl/Cmd waktu memilih di dialog), atau klik "Pilih File" berkali-kali untuk menambah satu-satu. Maks 5MB per file.</small>
+          <small id="editFileNote" style="color:#9ca3af; display:none; margin-top:0.25rem;">Upload file baru di sini akan MENGGANTI dokumen lama pada agenda ini. Kosongkan kalau tidak mau mengubah dokumen yang sudah ada.</small>
+        </div>
+        <input type="hidden" name="page_id" value="">
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="remove_existing_files" value="0">
+        <input type="hidden" name="status" value="Belum">
       </div>
-      <input type="hidden" name="page_id" value="">
-      <input type="hidden" name="action" value="create">
-      <input type="hidden" name="remove_existing_files" value="0">
-      <input type="hidden" name="status" value="Belum">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Agenda</button>
@@ -355,15 +382,16 @@ const USER_ROLE = '<?= getRole() ?>'; // Pass role to JavaScript
 // Data agenda yang lagi tampil di halaman ini (buat isi form Edit)
 const AGENDA_DATA = <?= json_encode(array_map(function ($a) {
     return [
-        'id'       => $a['page_id'],
-        'title'    => $a['title'],
-        'date'     => $a['date'],
-        'time'     => $a['time'],
-        'lokasi'   => $a['pic'],
-        'kategori' => $a['tag'],
-        'status'   => $a['status'],
-    'catatan'  => $a['notes'],
-    'dokumentasi' => $a['dokumentasi'] ?? [],
+        'id'          => $a['page_id'],
+        'title'       => $a['title'],
+        'date'        => $a['date'],
+        'date_end'    => $a['date_end'] ?? '',
+        'time'        => $a['time'],
+        'lokasi'      => $a['pic'],
+        'kategori'    => $a['tag'],
+        'status'      => $a['status'],
+        'catatan'     => $a['notes'],
+        'dokumentasi' => $a['dokumentasi'] ?? [],
     ];
 }, $agendaPage)) ?>;
 
@@ -422,6 +450,7 @@ function openModal(mode){
     const form = document.getElementById('agendaForm');
     form.reset();
     form.page_id.value = '';
+    if (form.tanggal_selesai) form.tanggal_selesai.value = '';
     form.elements['action'].value = 'create';
     form.elements['remove_existing_files'].value = '0';
     document.getElementById('modalTitle').textContent = 'Tambah Agenda';
@@ -464,6 +493,7 @@ function openEditModal(id){
   form.reset();
   form.kegiatan.value = entry.title;
   form.tanggal.value = entry.date;
+  if (form.tanggal_selesai) form.tanggal_selesai.value = entry.date_end || '';
   form.waktu.value = entry.time;
   form.lokasi_kegiatan.value = entry.lokasi;
   form.kategori.value = entry.kategori;
@@ -656,15 +686,23 @@ function escapeHtml(str){
   div.textContent = str ?? '';
   return div.innerHTML;
 }
-function formatDateID(ymd){
+function formatDateID(ymd, ymdEnd){
   if (!ymd) return '-';
-  const parts = ymd.split('-');
-  if (parts.length !== 3) return ymd;
-  const [y, m, d] = parts;
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const mi = parseInt(m, 10) - 1;
-  if (isNaN(mi) || mi < 0 || mi > 11) return ymd;
-  return `${d} ${months[mi]} ${y}`;
+  const formatSingle = (str) => {
+    const parts = str.split('-');
+    if (parts.length !== 3) return str;
+    const [y, m, d] = parts;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const mi = parseInt(m, 10) - 1;
+    if (isNaN(mi) || mi < 0 || mi > 11) return str;
+    return `${d} ${months[mi]} ${y}`;
+  };
+
+  let res = formatSingle(ymd);
+  if (ymdEnd && ymdEnd !== ymd) {
+    res += ' s/d ' + formatSingle(ymdEnd);
+  }
+  return res;
 }
 
 function renderDokumenCell(docs){
@@ -727,7 +765,7 @@ function addRowToTable(entry, pageId, dokumentasi){
   }
   
   tr.innerHTML = `
-    <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal))}</td>
+    <td style="font-weight:600; white-space:nowrap;">${escapeHtml(formatDateID(entry.tanggal, entry.tanggal_selesai))}</td>
     <td style="font-weight:700;">${escapeHtml(entry.waktu)}</td>
     <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
     <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
@@ -777,8 +815,14 @@ async function handleAgendaForm(event){
   const form = event.target;
   const isUpdate = form.elements['action'].value === 'update';
 
-  // FormData (bukan URLSearchParams) supaya file ikut terkirim sebagai multipart/form-data
   const formData = new FormData(form);
+
+  const tMulai = formData.get('tanggal');
+  const tSelesai = formData.get('tanggal_selesai');
+  if (tSelesai && tSelesai < tMulai) {
+    alert('Tanggal Selesai tidak boleh lebih awal dari Tanggal Mulai.');
+    return;
+  }
 
   const submitBtn = form.querySelector('button[type=submit]');
   const origText = submitBtn.textContent;
@@ -798,24 +842,26 @@ async function handleAgendaForm(event){
       alert('PERHATIAN: Agenda tersimpan, TAPI file gagal diupload ke Notion:\n\n' + data.file_warnings.join('\n') + '\n\nDetail lengkap ada di Console (F12).');
     }
 
+    const entry = {
+      kegiatan:        formData.get('kegiatan'),
+      tanggal:         formData.get('tanggal'),
+      tanggal_selesai: formData.get('tanggal_selesai') || '',
+      waktu:           formData.get('waktu'),
+      lokasi:          formData.get('lokasi_kegiatan'),
+      kategori:        formData.get('kategori'),
+      status:          formData.get('status'),
+      catatan:         formData.get('catatan'),
+    };
+    const dokumentasi = data.dokumentasi || [];
+
     if (isUpdate) {
       const pageId = formData.get('page_id');
-      const entry = {
-        kegiatan: formData.get('kegiatan'),
-        tanggal:  formData.get('tanggal'),
-        waktu:    formData.get('waktu'),
-        lokasi:   formData.get('lokasi_kegiatan'),
-        kategori: formData.get('kategori'),
-        status:   formData.get('status'),
-        catatan:  formData.get('catatan'),
-      };
-      const dokumentasi = data.dokumentasi || [];
       updateRowInTable(pageId, entry, dokumentasi);
 
       // Sinkronkan juga ke AGENDA_DATA supaya kalau dibuka Edit lagi datanya sudah yang terbaru
       const idx = AGENDA_DATA.findIndex(a => a.id === pageId);
       const updatedRecord = {
-        id: pageId, title: entry.kegiatan, date: entry.tanggal, time: entry.waktu,
+        id: pageId, title: entry.kegiatan, date: entry.tanggal, date_end: entry.tanggal_selesai, time: entry.waktu,
         lokasi: entry.lokasi, kategori: entry.kategori, status: entry.status,
         catatan: entry.catatan, dokumentasi: dokumentasi,
       };
@@ -829,21 +875,12 @@ async function handleAgendaForm(event){
       return;
     }
 
-    const entry = {
-      kegiatan: formData.get('kegiatan'),
-      tanggal:  formData.get('tanggal'),
-      waktu:    formData.get('waktu'),
-      lokasi:   formData.get('lokasi_kegiatan'),
-      kategori: formData.get('kategori'),
-      status:   formData.get('status'),
-      catatan:  formData.get('catatan'),
-    };
-    const dokumentasi = data.dokumentasi || [];
     addRowToTable(entry, data.id, dokumentasi);
     AGENDA_DATA.push({
       id: data.id,
       title: entry.kegiatan,
       date: entry.tanggal,
+      date_end: entry.tanggal_selesai,
       time: entry.waktu,
       lokasi: entry.lokasi,
       kategori: entry.kategori,

@@ -34,10 +34,9 @@ $events = [];
 $totalCount = 0; $liveCount = 0; $eventCount = 0;
 foreach ($allAgenda as $a) {
     if ($a['date'] === '') continue;
-    $parts = explode('-', $a['date']);
-    if (count($parts) !== 3) continue;
-    [$ay, $am, $ad] = array_map('intval', $parts);
-    if ($ay !== $year || $am !== $month) continue;
+
+    $startDateObj = new DateTime($a['date']);
+    $endDateObj = (!empty($a['date_end']) && $a['date_end'] !== $a['date']) ? new DateTime($a['date_end']) : clone $startDateObj;
 
     $totalCount++;
     $tagLower = strtolower($a['tag']);
@@ -50,7 +49,17 @@ foreach ($allAgenda as $a) {
     } else {
         $type = 'default';
     }
-    $events[$ad][] = ['label' => $a['title'], 'type' => $type];
+
+    $curr = clone $startDateObj;
+    while ($curr <= $endDateObj) {
+        $cy = (int)$curr->format('Y');
+        $cm = (int)$curr->format('m');
+        $cd = (int)$curr->format('d');
+        if ($cy === $year && $cm === $month) {
+            $events[$cd][] = ['label' => $a['title'], 'type' => $type];
+        }
+        $curr->modify('+1 day');
+    }
 }
 
 $dows = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];

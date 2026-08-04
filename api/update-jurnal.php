@@ -71,8 +71,11 @@ $response = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
+require_once __DIR__ . '/jurnal.php';
+
 if ($http_code === 200) {
-    echo json_encode(['success' => true, 'message' => 'Jurnal berhasil ditambahkan!']);
+    clearJurnalCache();
+    echo json_encode(['success' => true, 'message' => 'Jurnal berhasil diperbarui!']);
 } else {
     $err = json_decode($response, true);
     echo json_encode(['success' => false, 'error' => $err['message'] ?? 'Gagal menyimpan ke Notion']);

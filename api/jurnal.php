@@ -1,7 +1,26 @@
 <?php
 require_once __DIR__.'/../config/notion.php';
 
-function getJurnal() {
+function clearJurnalCache() {
+    $cacheFile = __DIR__ . '/../cache/jurnal_cache.json';
+    if (file_exists($cacheFile)) {
+        @unlink($cacheFile);
+    }
+}
+
+function getJurnal($forceRefresh = false) {
+    $cacheDir = __DIR__ . '/../cache';
+    $cacheFile = $cacheDir . '/jurnal_cache.json';
+    $ttl = 180; // 3 menit TTL cache
+
+    // Kembalikan data dari cache jika masih segar dan tidak dipaksa refresh
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $ttl) {
+        $cached = @json_decode(file_get_contents($cacheFile), true);
+        if (is_array($cached) && !empty($cached) && !isset($cached['error'])) {
+            return $cached;
+        }
+    }
+
     // Gunakan DATABASE_ID_KEGIATAN sesuai config Anda
     $url = "https://api.notion.com/v1/databases/" . DATABASE_ID_KEGIATAN . "/query";
 
@@ -14,12 +33,16 @@ function getJurnal() {
     $entries = [];
     $has_more = true;
     $start_cursor = null;
+    $pageCount = 0;
+    $maxPages = 5; // Batasi maksimal 5 halaman (500 data terbaru) agar sinkronisasi sangat cepat
 
-    while ($has_more) {
+    while ($has_more && $pageCount < $maxPages) {
+        $pageCount++;
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         
         $payloadArray = [
             "page_size" => 100,
@@ -35,33 +58,41 @@ function getJurnal() {
         if (curl_errno($ch)) {
             $error = curl_error($ch);
             curl_close($ch);
+            if (file_exists($cacheFile)) {
+                $fallback = @json_decode(file_get_contents($cacheFile), true);
+                if (is_array($fallback)) return $fallback;
+            }
             return ['error' => "cURL Error: " . $error];
         }
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        // === PENANGANAN ERROR DETAIL (DIGABUNG DI SINI) ===
         if ($httpCode !== 200) {
             $errData = json_decode($response, true);
             $errMsg = $errData['message'] ?? 'Unknown Notion API Error';
-            // Sekarang pesan error Notion akan langsung tampil di layar
+            if (file_exists($cacheFile)) {
+                $fallback = @json_decode(file_get_contents($cacheFile), true);
+                if (is_array($fallback)) return $fallback;
+            }
             return ['error' => "Notion Error (HTTP {$httpCode}): {$errMsg}"]; 
         }
-        // ===================================================
 
         $data = json_decode($response, true);
         if (!$data || !isset($data['results'])) {
+            if (file_exists($cacheFile)) {
+                $fallback = @json_decode(file_get_contents($cacheFile), true);
+                if (is_array($fallback)) return $fallback;
+            }
             return ['error' => 'Invalid API response'];
         }
 
         foreach ($data['results'] as $item) {
             $props = $item['properties'];
             
-            // PHP 8+ Safe Array Access
             $full_id = $item['id'];
             $id = strtoupper(substr(str_replace('-', '', $full_id), 0, 6));
-            $url_page = $item['url'] ?? '#'; // Diubah jadi $url_page agar tidak bentrok dengan $url API
+            $url_page = $item['url'] ?? '#';
             
             $title_arr = $props['Nama Kegiatan']['title'] ?? [];
             $title = !empty($title_arr) ? $title_arr[0]['plain_text'] : 'Tanpa Judul';
@@ -116,7 +147,7 @@ function getJurnal() {
                 'ops_arr' => $ops_arr, 
                 'date' => $date, 
                 'date_raw' => $date_raw, 
-                'url' => $url_page, // Menggunakan variabel yang sudah diubah
+                'url' => $url_page, 
                 'docs' => $docs, 
                 'status' => $status, 
                 'eviden_3' => $eviden_3 
@@ -125,6 +156,14 @@ function getJurnal() {
 
         $has_more = $data['has_more'];
         $start_cursor = $data['next_cursor'];
+    }
+
+    // Simpan ke file cache jika data berhasil ditarik
+    if (!empty($entries)) {
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+        @file_put_contents($cacheFile, json_encode($entries, JSON_PRETTY_PRINT));
     }
 
     return $entries;

@@ -276,16 +276,39 @@ if (!is_array($videos)) {
 
 include __DIR__ . '/../includes/header.php';
 ?>
+
+<style>
+/* Hilangkan tombol panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+</style>
+
 <div id="galleryMainView">
 <div class="page-head">
   <div>
     <h2>Rekap Youtube</h2>
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
-  <div class="gallery-header-actions">
-    <!-- PENCARIAN & FILTER UNTUK DAFTAR VIDEO UTAMA -->
-    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; outline: none; width:200px;">
-    
+  <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
+</div>
+
+<!-- ACTION BAR: SEARCHBAR RATA KIRI, FILTER RATA KANAN -->
+<div class="gallery-header-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+  <!-- Searchbar (Rata Kiri) -->
+  <div class="search-box" style="max-width: 280px; margin: 0; background: var(--card-bg, #fff);">
+    <i class="ri-search-line"></i>
+    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+  </div>
+
+  <!-- Filter Groups & Action Buttons (Rata Kanan) -->
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;">
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>
@@ -316,7 +339,6 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter" style="height:40px; padding:0 12px; font-weight:600;"><i class="ri-refresh-line"></i> Reset Filter</button>
     </div>
-    <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
   </div>
 </div>
 
@@ -459,8 +481,8 @@ include __DIR__ . '/../includes/header.php';
   </div>
 
   <!-- PAGING CONTAINER UTAMA -->
-  <div class="pagination-wrap" id="mainPaginationWrap" style="display: none; justify-content: space-between; align-items: center; padding: 1rem; border-top: 1px solid #e2e8f0; background: #fff; border-radius: 0 0 8px 8px;">
-    <div class="pagination-info" id="mainPaginationInfo" style="font-size: 0.85rem; color: #64748b;">Menampilkan data</div>
+  <div class="pagination-wrap" id="mainPaginationWrap" style="display: none;">
+    <div class="pagination-info" id="mainPaginationInfo" style="font-size: 0.85rem; color: var(--text-secondary);">Menampilkan data</div>
     <div class="pagination-buttons" id="mainPaginationButtons" style="display: flex; gap: 8px; align-items: center;"></div>
   </div>
 </div>
@@ -550,6 +572,54 @@ include __DIR__ . '/../includes/header.php';
   .video-row:hover { background:rgba(0,0,0,0.03); }
   .icon-action.view { color:#0ea5e9; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; text-decoration:none; display:inline-flex; }
   .icon-action.view:hover { background:rgba(14,165,233,0.12); }
+
+  /* Desktop RSS Card Header Layout (Default) */
+  .rss-card-header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .rss-channel-group { flex: 2; min-width: 250px; margin-bottom: 0; }
+  .rss-date-group { flex: 1; min-width: 150px; margin-bottom: 0; }
+  .rss-btn-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .rss-btn { height: 40px; white-space: nowrap; }
+  .rss-btn-save { background: #16a34a; }
+
+  /* Mobile RSS Card Header Layout (<= 768px) */
+  @media (max-width: 768px) {
+    .rss-card-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .rss-channel-group, .rss-date-group {
+      width: 100%;
+      min-width: 0;
+      flex: none;
+    }
+    .rss-btn-group {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .rss-btn {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px;
+      min-height: 40px;
+      height: auto;
+      justify-content: center;
+      text-align: center;
+      white-space: normal;
+      line-height: 1.15;
+      font-size: 12.5px;
+    }
+  }
 </style>
 </div>
 
@@ -572,19 +642,19 @@ include __DIR__ . '/../includes/header.php';
   </div>
 
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-header" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
-      <div class="form-group" style="flex:2; min-width:250px; margin-bottom:0;">
+    <div class="card-header rss-card-header">
+      <div class="form-group rss-channel-group">
         <label>ID Channel Youtube</label>
         <input type="text" id="rssChannelId" placeholder="Misal: UCPX... (cari di link channel)" value="UCa45qWSDXbdgLBjrGfQ7tmA">
       </div>
-      <div class="form-group" style="flex:1; min-width:150px; margin-bottom:0;">
+      <div class="form-group rss-date-group">
         <label>Pilih Tanggal</label>
         <input type="date" id="rssTargetDate" value="<?= date('Y-m-d') ?>">
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn btn-primary" onclick="tarikRss()"><i class="ri-refresh-line"></i> Tarik Data</button>
-        <button type="button" class="btn btn-secondary" onclick="bersihkanTabel()"><i class="ri-eraser-line"></i> Clear Tabel</button>
-        <button type="button" class="btn btn-primary" style="background:#16a34a;" onclick="simpanSemuaKeNotion()"><i class="ri-save-3-line"></i> Simpan Semua</button>
+      <div class="rss-btn-group">
+        <button type="button" class="btn btn-primary rss-btn" onclick="tarikRss()"><i class="ri-refresh-line"></i> <span>Tarik Data</span></button>
+        <button type="button" class="btn btn-secondary rss-btn" onclick="bersihkanTabel()"><i class="ri-eraser-line"></i> <span>Clear Tabel</span></button>
+        <button type="button" class="btn btn-primary rss-btn rss-btn-save" onclick="simpanSemuaKeNotion()"><i class="ri-save-3-line"></i> <span>Simpan Semua</span></button>
       </div>
       <div id="rssLoadingStatus" style="display:none; color:var(--primary); font-weight:600; align-self:center; font-size:13px;">Menghubungi Youtube &amp; mengekstrak data...</div>
     </div>
@@ -1864,20 +1934,14 @@ function getPaginationRangeJS(current, total, delta = 1) {
 function renderPaginationButtonsJS(currentPage, totalPages, onPageClickFn) {
     if (totalPages <= 1) return '';
 
-    let html = '<div style="display:flex; gap:0.4rem; flex-wrap:wrap;">';
+    let html = '<div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">';
     
     const prevDisabled = currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '';
     html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem; ${prevDisabled}" onclick="${onPageClickFn}(${Math.max(1, currentPage - 1)})">&laquo; Prev</button>`;
 
-    const pages = getPaginationRangeJS(currentPage, totalPages);
-    pages.forEach(p => {
-        if (p === '...') {
-            html += `<span style="padding:0.4rem 0.3rem; color:#9ca3af; font-size:0.85rem;">&hellip;</span>`;
-        } else {
-            const btnClass = p === currentPage ? 'btn-primary' : 'btn-secondary';
-            html += `<button type="button" class="btn ${btnClass}" style="padding:0.4rem 0.8rem; min-width:36px; text-align:center;" onclick="${onPageClickFn}(${p})">${p}</button>`;
-        }
-    });
+    html += `<input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="${currentPage}" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="let p=parseInt(this.value, 10); if(!isNaN(p) && p>=1 && p<=${totalPages}) ${onPageClickFn}(p);" onkeydown="if(event.key === 'Enter'){ let p=parseInt(this.value, 10); if(!isNaN(p) && p>=1 && p<=${totalPages}) ${onPageClickFn}(p); }">`;
+
+    html += `<span style="font-size:0.9rem; color:#475569; display:inline-flex; align-items:center;">dari ${totalPages}</span>`;
 
     const nextDisabled = currentPage >= totalPages ? 'pointer-events:none; opacity:0.5;' : '';
     html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem; ${nextDisabled}" onclick="${onPageClickFn}(${Math.min(totalPages, currentPage + 1)})">Next &raquo;</button>`;
@@ -2160,14 +2224,13 @@ function renderTabelRss(videos) {
             optionsAcara += '</optgroup>';
         });
 
-        var cellStyle = 'vertical-align:top; padding:10px 8px; font-size:12px; color:#334155;';
-        var labelStyle = 'font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:3px;';
-        var valueStyle = 'font-size:12px; color:#334155; line-height:1.5;';
+        var cellStyle = 'vertical-align:top; padding:10px 8px; font-size:12px; color:var(--text-primary);';
+        var labelStyle = 'font-size:10px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:3px;';
+        var valueStyle = 'font-size:12px; color:var(--text-primary); line-height:1.5;';
 
         var tr = document.createElement('tr');
         if (alreadySaved) {
-            tr.style.background = '#f8fafc';
-            tr.style.opacity = '0.82';
+            tr.className = 'rss-saved-row';
 
             var vId = vid.video_id || extractYoutubeId(vidUrl);
             var savedVid = (typeof notionSavedVideosMap !== 'undefined' && notionSavedVideosMap[vId]) ? notionSavedVideosMap[vId] : null;
@@ -2213,7 +2276,7 @@ function renderTabelRss(videos) {
             tr.innerHTML = `
                 <td style="${cellStyle} text-align:center; padding-top:12px;">
                     <span style="font-weight:700; font-size:14px;">${index + 1}</span><br>
-                    <span style="font-size:10px; background:#e2e8f0; color:#64748b; padding:1px 6px; border-radius:3px; font-weight:500; margin-top:4px; display:inline-block;">tersimpan</span>
+                    <span class="badge-tersimpan" style="font-size:10px; background:rgba(148,163,184,0.18); color:var(--text-secondary); padding:2px 8px; border-radius:4px; font-weight:600; margin-top:4px; display:inline-block;">tersimpan</span>
                 </td>
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Nama Acara</span>
@@ -2244,7 +2307,7 @@ function renderTabelRss(videos) {
                 <td style="${cellStyle}">
                     <span style="${labelStyle}">Link YouTube</span>
                     ${linkUrl && linkUrl !== ''
-                        ? `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener" style="font-size:12px; color:#2563eb; word-break:break-all;">${escapeHtml(linkUrl)}</a>`
+                        ? `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener" style="font-size:12px; color:#60a5fa; word-break:break-all;">${escapeHtml(linkUrl)}</a>`
                         : '<span style="' + valueStyle + '">—</span>'
                     }
                     <span style="${labelStyle} margin-top:8px;">Flyer</span>
@@ -2254,7 +2317,7 @@ function renderTabelRss(videos) {
                     }
                 </td>
                 <td style="vertical-align:top; text-align:center; padding-top:12px;">
-                    <button class="btn" disabled style="background:#94a3b8; color:#fff; border:none; border-radius:4px; padding:9px 12px; font-weight:600; cursor:not-allowed; font-size:12px;">Sudah Tersimpan</button>
+                    <button class="btn btn-secondary btn-tersimpan" disabled style="padding:9px 12px; font-weight:600; cursor:not-allowed; font-size:12px; opacity:0.85;">Sudah Tersimpan</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -2409,7 +2472,7 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
     var selectedValues = hiddenInput.value ? hiddenInput.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
 
     var selectBox = document.createElement('div');
-    selectBox.style.cssText = 'min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 6px; background:#fff; cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px; font-size:12px;';
+    selectBox.style.cssText = 'min-height:32px; border:1px solid var(--border-color, #ced4da); border-radius:4px; padding:4px 24px 4px 6px; background:var(--input-bg, #fff); cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px; font-size:12px; color:var(--text-primary, #334155);';
 
     var arrow = document.createElement('div');
     arrow.innerHTML = '▼';
@@ -2418,14 +2481,14 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
 
     var dropdown = document.createElement('div');
     dropdown.className = 'custom-dropdown-menu';
-    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:220px; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:220px; background:var(--card-bg, #fff); border:1px solid var(--border-color, #ced4da); border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.15); color:var(--text-primary, #334155);';
 
     var searchDiv = document.createElement('div');
-    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid #eee;';
+    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid var(--border-color, #eee);';
     var searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.placeholder = 'Search...';
-    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:12px;';
+    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid var(--border-color, #ccc); border-radius:4px; box-sizing:border-box; outline:none; font-size:12px; background:var(--input-bg, #fff); color:var(--text-primary, #334155);';
     searchDiv.appendChild(searchInput);
     dropdown.appendChild(searchDiv);
 
@@ -2442,17 +2505,18 @@ function createRssMultiSelect(containerId, hiddenInputId, options) {
         if (selectedValues.length === 0) {
             var placeholder = document.createElement('span');
             placeholder.textContent = 'Pilih...';
-            placeholder.style.color = '#999';
+            placeholder.style.color = 'var(--text-secondary, #999)';
             selectBox.insertBefore(placeholder, arrow);
         } else {
             selectedValues.forEach(function(val) {
                 var chip = document.createElement('span');
-                chip.style.cssText = 'background:#e2e8f0; color:#334155; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-flex; align-items:center; gap:4px; border:1px solid #cbd5e1;';
+                chip.className = 'select-chip';
+                chip.style.cssText = 'padding:2px 6px; border-radius:4px; font-size:11px; display:inline-flex; align-items:center; gap:4px;';
                 chip.textContent = val;
 
                 var closeBtn = document.createElement('span');
                 closeBtn.innerHTML = '&times;';
-                closeBtn.style.cssText = 'cursor:pointer; font-size:12px; font-weight:bold; color:#64748b;';
+                closeBtn.style.cssText = 'cursor:pointer; font-size:12px; font-weight:bold; margin-left:2px;';
                 closeBtn.onclick = function(e) { e.stopPropagation(); toggleValue(val, false); };
                 chip.appendChild(closeBtn);
                 selectBox.insertBefore(chip, arrow);
@@ -2949,12 +3013,12 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
     // 1. Box Tampilan Utama
     // 1. Box Tampilan Utama
     var selectBox = document.createElement('div');
-    selectBox.style.cssText = 'width:100%; box-sizing:border-box; min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 8px; background:#fff; cursor:pointer; display:flex; align-items:center; position:relative; font-size:12px; font-weight:600; color:#334155;';
+    selectBox.style.cssText = 'width:100%; box-sizing:border-box; min-height:32px; border:1px solid var(--border-color, #ced4da); border-radius:4px; padding:4px 24px 4px 8px; background:var(--input-bg, #fff); cursor:pointer; display:flex; align-items:center; position:relative; font-size:12px; font-weight:600; color:var(--text-primary, #334155);';
 
     var displayLabel = document.createElement('span');
     displayLabel.style.cssText = 'display:block; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
     displayLabel.textContent = selectedValue || ('-- ' + placeholderText + ' --');
-    if (!selectedValue) displayLabel.style.color = '#94a3b8';
+    if (!selectedValue) displayLabel.style.color = 'var(--text-secondary, #94a3b8)';
 
     var arrow = document.createElement('div');
     arrow.innerHTML = '▼';
@@ -2966,14 +3030,14 @@ function createRssSingleSelect(containerId, hiddenInputId, optionsGrouped, place
     // 2. Menu Dropdown & Search Input
     var dropdown = document.createElement('div');
     dropdown.className = 'custom-dropdown-menu';
-    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:var(--card-bg, #fff); border:1px solid var(--border-color, #ced4da); border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.15); color:var(--text-primary, #334155);';
 
     var searchDiv = document.createElement('div');
-    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid #eee;';
+    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid var(--border-color, #eee);';
     var searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.placeholder = 'Ketik untuk cari / input manual...';
-    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:12px;';
+    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid var(--border-color, #ccc); border-radius:4px; box-sizing:border-box; outline:none; font-size:12px; background:var(--input-bg, #fff); color:var(--text-primary, #334155);';
     searchDiv.appendChild(searchInput);
     dropdown.appendChild(searchDiv);
 
@@ -3077,7 +3141,7 @@ function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGroupe
     var selectedValues = hiddenInput.value ? hiddenInput.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
 
     var selectBox = document.createElement('div');
-    selectBox.style.cssText = 'min-height:32px; border:1px solid #ced4da; border-radius:4px; padding:4px 24px 4px 6px; background:#fff; cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px; font-size:12px;';
+    selectBox.style.cssText = 'min-height:32px; border:1px solid var(--border-color, #ced4da); border-radius:4px; padding:4px 24px 4px 6px; background:var(--input-bg, #fff); cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; position:relative; gap:4px; font-size:12px; color:var(--text-primary, #334155);';
 
     var arrow = document.createElement('div');
     arrow.innerHTML = '▼';
@@ -3086,14 +3150,14 @@ function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGroupe
 
     var dropdown = document.createElement('div');
     dropdown.className = 'custom-dropdown-menu';
-    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:#fff; border:1px solid #ced4da; border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    dropdown.style.cssText = 'position:absolute; top:100%; left:0; width:260px; background:var(--card-bg, #fff); border:1px solid var(--border-color, #ced4da); border-radius:4px; margin-top:2px; z-index:9999; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.15); color:var(--text-primary, #334155);';
 
     var searchDiv = document.createElement('div');
-    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid #eee;';
+    searchDiv.style.cssText = 'padding:6px; border-bottom:1px solid var(--border-color, #eee);';
     var searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.placeholder = 'Ketik untuk cari / input manual...';
-    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; outline:none; font-size:12px;';
+    searchInput.style.cssText = 'width:100%; padding:5px 8px; border:1px solid var(--border-color, #ccc); border-radius:4px; box-sizing:border-box; outline:none; font-size:12px; background:var(--input-bg, #fff); color:var(--text-primary, #334155);';
     searchDiv.appendChild(searchInput);
     dropdown.appendChild(searchDiv);
 
@@ -3115,12 +3179,13 @@ function createRssMultiCreatableSelect(containerId, hiddenInputId, optionsGroupe
         } else {
             selectedValues.forEach(function(val) {
                 var chip = document.createElement('span');
-                chip.style.cssText = 'background:#e2e8f0; color:#334155; padding:2px 6px; border-radius:4px; font-size:11px; display:inline-flex; align-items:center; gap:4px; border:1px solid #cbd5e1;';
+                chip.className = 'select-chip';
+                chip.style.cssText = 'padding:2px 6px; border-radius:4px; font-size:11px; display:inline-flex; align-items:center; gap:4px;';
                 chip.textContent = val;
 
                 var closeBtn = document.createElement('span');
                 closeBtn.innerHTML = '&times;';
-                closeBtn.style.cssText = 'cursor:pointer; font-size:12px; font-weight:bold; color:#64748b;';
+                closeBtn.style.cssText = 'cursor:pointer; font-size:12px; font-weight:bold; margin-left:2px;';
                 closeBtn.onclick = function(e) { e.stopPropagation(); toggleValue(val, false); };
                 chip.appendChild(closeBtn);
                 selectBox.insertBefore(chip, arrow);

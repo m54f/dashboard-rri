@@ -20,6 +20,19 @@ $jenisKegiatanList = ['Acara Live / Dialog Luar','Podcast / Tapping','Troublesho
 include __DIR__ . '/../includes/header.php';
 ?>
 
+<style>
+/* Hilangkan tombol panah atas-bawah (spinner) pada input halaman pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+</style>
+
 <div class="page-head">
   <div>
     <h2>Logbook Jurnal Kegiatan</h2>
@@ -229,7 +242,7 @@ function renderTable() {
     renderPagination(totalPages);
 }
 
-// FUNGSI PAGINATION TINGKAT LANJUT (Desain Input Minimalis)
+// FUNGSI PAGINATION TINGKAT LANJUT (Desain Input Minimalis Fokus Ketik Angka)
 function renderPagination(totalPages) {
     let pg = document.getElementById('paginationNav');
     pg.innerHTML = '';
@@ -244,11 +257,13 @@ function renderPagination(totalPages) {
 
     pg.innerHTML += `
         <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="number" 
-                   class="page-item" 
-                   style="width: 55px; padding: 6px; text-align: center; margin: 0; outline: none; box-sizing: border-box;" 
+            <input type="text"
+                   inputmode="numeric"
+                   pattern="[0-9]*"
+                   class="page-item page-input-clean" 
+                   style="width: 50px; padding: 6px; text-align: center; margin: 0; outline: none; box-sizing: border-box; font-weight: 600;" 
                    value="${currentPage}" 
-                   min="1" max="${totalPages}"
+                   onfocus="this.select()"
                    onchange="jumpToPage(this.value, ${totalPages})"
                    onkeyup="if(event.key === 'Enter') jumpToPage(this.value, ${totalPages})"
                    title="Ketik nomor halaman lalu tekan Enter">

@@ -84,16 +84,19 @@ function getAgenda($date = null, $sort = 'asc')
             }
         }
 
-        // 2. Tanggal & Waktu (Date property)
+        // 2. Tanggal & Waktu (Date property - support start & end date)
         $dateRaw = '';
+        $dateEndRaw = '';
         foreach (['Date', 'Tanggal', 'Tanggal Kegiatan', 'Waktu Kegiatan'] as $key) {
             if (isset($props[$key]['date']['start'])) {
                 $dateRaw = $props[$key]['date']['start'];
+                $dateEndRaw = $props[$key]['date']['end'] ?? '';
                 break;
             }
         }
 
         $dateYmd = '';
+        $dateEndYmd = '';
         $time = '-';
         if ($dateRaw !== '') {
             try {
@@ -104,9 +107,22 @@ function getAgenda($date = null, $sort = 'asc')
                 // biarkan default jika parsing gagal
             }
         }
+        if ($dateEndRaw !== '') {
+            try {
+                $dateEndObj = new DateTime($dateEndRaw);
+                $dateEndYmd = $dateEndObj->format('Y-m-d');
+            } catch (Exception $e) {
+                // biarkan default jika parsing gagal
+            }
+        }
 
-        if ($date !== null && $dateYmd !== $date) {
-            continue;
+        // Filter berdasarkan tanggal: jika agenda berlangsung beberapa hari,
+        // tanggal filter cocok jika berada di antara dateYmd (mulai) dan dateEndYmd (selesai).
+        if ($date !== null) {
+            $endDateCheck = ($dateEndYmd !== '' && $dateEndYmd !== $dateYmd) ? $dateEndYmd : $dateYmd;
+            if ($date < $dateYmd || $date > $endDateCheck) {
+                continue;
+            }
         }
 
         // 3. Kategori / Jenis Kegiatan (Select atau Multi Select)
@@ -206,6 +222,7 @@ function getAgenda($date = null, $sort = 'asc')
             'cls'         => $cls,
             'notes'       => $notes,
             'date'        => $dateYmd,
+            'date_end'    => $dateEndYmd,
             'time'        => $time,
             'dokumentasi' => $dokumentasi,
         ];
@@ -363,31 +380,37 @@ function notionUploadFiles($filesInput)
 }
 
 /**
- * Susun properties dasar (judul, tanggal, lokasi, kategori, status) yang
+ * Susun properties dasar (judul, tanggal mulai & selesai, lokasi, kategori, status) yang
  * dipakai bareng oleh createAgenda() dan updateAgenda().
  */
 function buildAgendaBaseProperties($data)
 {
-    $judul    = trim($data['kegiatan'] ?? '');
-    $tanggal  = trim($data['tanggal'] ?? '');
-    $waktu    = trim($data['waktu'] ?? '');
-    $lokasi   = trim($data['lokasi_kegiatan'] ?? $data['pic'] ?? '');
-    $kategori = trim($data['kategori'] ?? 'EVENT');
-    $status   = trim($data['status'] ?? 'Belum');
-    // Status cuma boleh "Belum" atau "Selesai" (opsi "Cancel" sudah dihapus
-    // dari alur ini) — kalau yang dikirim bukan salah satu dari itu (kosong,
-    // typo, atau nilai lama seperti "Cancel"/"Proses"), fallback aman ke "Belum".
+    $judul          = trim($data['kegiatan'] ?? '');
+    $tanggal        = trim($data['tanggal'] ?? '');
+    $tanggalSelesai = trim($data['tanggal_selesai'] ?? $data['tanggal_akhir'] ?? '');
+    $waktu          = trim($data['waktu'] ?? '');
+    $lokasi         = trim($data['lokasi_kegiatan'] ?? $data['pic'] ?? '');
+    $kategori       = trim($data['kategori'] ?? 'EVENT');
+    $status         = trim($data['status'] ?? 'Belum');
+
     if (!in_array($status, ['Belum', 'Selesai'], true)) {
         $status = 'Belum';
     }
 
     if ($judul === '' || $tanggal === '' || $waktu === '') {
-        return ['error' => 'Judul, tanggal, dan waktu wajib diisi'];
+        return ['error' => 'Judul, tanggal mulai, dan waktu wajib diisi'];
     }
 
     $dateTimeStr = $tanggal . 'T' . $waktu . ':00+07:00';
+    $dateObj = ['start' => $dateTimeStr];
 
-    // ==== SESUAIKAN nama property di sini kalau beda dengan Notion-mu ====
+    if ($tanggalSelesai !== '' && $tanggalSelesai !== $tanggal) {
+        if ($tanggalSelesai < $tanggal) {
+            return ['error' => 'Tanggal selesai tidak boleh sebelum tanggal mulai'];
+        }
+        $dateObj['end'] = $tanggalSelesai . 'T' . $waktu . ':00+07:00';
+    }
+
     return [
         'properties' => [
             'Nama Kegiatan' => [
@@ -396,7 +419,7 @@ function buildAgendaBaseProperties($data)
                 ]
             ],
             'Date' => [
-                'date' => ['start' => $dateTimeStr]
+                'date' => $dateObj
             ],
             'Lokasi Kegiatan' => [
                 'rich_text' => [

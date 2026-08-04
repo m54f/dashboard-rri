@@ -75,7 +75,10 @@ $response = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
+require_once __DIR__ . '/jurnal.php';
+
 if ($http_code === 200) {
+    clearJurnalCache();
     echo json_encode(['success' => true, 'message' => 'Jurnal berhasil ditambahkan!']);
 } else {
     $err = json_decode($response, true);
