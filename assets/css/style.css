@@ -222,6 +222,38 @@ body.dark-mode .select2-search__field {
 
 /* ===== Table ===== */
 .table-wrap{overflow-x:auto;}
+
+/* ===== Figma Spec Circular Loader ===== */
+.figtree-loader-box {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  display: inline-block;
+}
+
+.figtree-loader-circle {
+  box-sizing: border-box;
+  position: absolute;
+  left: 0%;
+  right: 0%;
+  top: 0%;
+  bottom: 0%;
+  border: 7px solid #323338;
+  border-top-color: transparent;
+  border-radius: 50%;
+  transform: rotate(90deg);
+  animation: figtreeLoaderRotate 0.85s linear infinite;
+}
+
+@keyframes figtreeLoaderRotate {
+  0% { transform: rotate(90deg); }
+  100% { transform: rotate(450deg); }
+}
 table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 .data-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary);font-weight:700;padding:10px 14px;border-bottom:2px solid var(--border-color);white-space:nowrap;}
 .data-table td{padding:13px 14px;border-bottom:1px solid var(--border-color);vertical-align:top;}

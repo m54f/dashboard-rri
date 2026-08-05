@@ -508,6 +508,31 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<!-- Modal Overlay Loader Ekstraksi Laporan (Figma Loader Spec) -->
+<div class="modal-overlay" id="exportLoaderOverlay" style="z-index: 10000;">
+  <div class="modal-content" style="max-width: 360px; text-align: center; padding: 2.25rem 1.75rem; border-radius: 16px; background: #ffffff; box-shadow: 0 20px 40px rgba(0,0,0,0.18);">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem;">
+      
+      <!-- Container Loader 40px Presisi Spesifikasi Figma -->
+      <div class="figtree-loader-box">
+        <div class="figtree-loader-circle"></div>
+      </div>
+      
+      <!-- Display Angka Real Persentase & Status Ekstraksi -->
+      <div>
+        <div id="exportLoaderPct" style="font-family: 'Figtree', sans-serif; font-size: 32px; font-weight: 800; color: #323338; line-height: 1.2; letter-spacing: -0.5px;">0%</div>
+        <div id="exportLoaderStatus" style="font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 500; color: #64748b; margin-top: 6px;">Mengekstrak data...</div>
+      </div>
+      
+      <!-- Progress Bar Visual -->
+      <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-top: 0.25rem;">
+        <div id="exportLoaderBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #323338, #0073EA); border-radius: 99px; transition: width 0.2s ease;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- Modal Form -->
 <div class="modal-overlay" id="petugasModal">
   <div class="modal-content">
@@ -934,6 +959,28 @@ async function parallelFetch(urls, concurrency = 10, onProgress = null) {
     return results;
 }
 
+function showExportLoader() {
+  const overlay = document.getElementById('exportLoaderOverlay');
+  if (overlay) overlay.classList.add('active');
+  updateExportLoaderProgress(0, 'Memulai ekstraksi data...');
+}
+
+function updateExportLoaderProgress(pct, statusText) {
+  const pctEl = document.getElementById('exportLoaderPct');
+  const statusEl = document.getElementById('exportLoaderStatus');
+  const barEl = document.getElementById('exportLoaderBar');
+  
+  const cleanPct = Math.min(100, Math.max(0, Math.round(pct)));
+  if (pctEl) pctEl.textContent = cleanPct + '%';
+  if (statusEl && statusText) statusEl.textContent = statusText;
+  if (barEl) barEl.style.width = cleanPct + '%';
+}
+
+function hideExportLoader() {
+  const overlay = document.getElementById('exportLoaderOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
 async function exportToExcel() {
   let dataToExport = getFilteredData();
   if (dataToExport.length === 0) { showToast("⚠️ Tidak ada data pada filter ini!", "error"); return; }
@@ -941,13 +988,15 @@ async function exportToExcel() {
   const btnExport = document.getElementById('btnExport');
   const originalText = btnExport.innerHTML;
   btnExport.disabled = true;
+  showExportLoader();
 
   try {
     const includeFoto = document.getElementById('exportFoto')?.checked ?? false;
     const photoBuffers = new Array(dataToExport.length).fill(null);
 
     if (includeFoto) {
-        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses 0%...';
+        updateExportLoaderProgress(0, 'Menyiapkan unduhan foto...');
+        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> 0%...';
         
         const indexWithPhoto = [];
         dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
@@ -955,8 +1004,9 @@ async function exportToExcel() {
         if (indexWithPhoto.length > 0) {
             const fotoUrls = indexWithPhoto.map(idx => dataToExport[idx].foto);
             const fetchedPhotos = await parallelFetch(fotoUrls, 10, (done, total) => {
-                const progress = Math.round((done / total) * 100);
-                btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
+                const progress = Math.round((done / total) * 85);
+                updateExportLoaderProgress(progress, `Mengunduh foto (${done}/${total})...`);
+                btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> ${progress}%...`;
             }); // 10 concurrent
             
             fetchedPhotos.forEach((img, i) => {
@@ -964,8 +1014,10 @@ async function exportToExcel() {
             });
         }
         
+        updateExportLoaderProgress(90, 'Menyusun file Excel...');
         btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
     } else {
+        updateExportLoaderProgress(50, 'Menyusun file Excel...');
         btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
     }
 
@@ -1041,6 +1093,7 @@ async function exportToExcel() {
       }
     });
 
+    updateExportLoaderProgress(98, 'Membuat file Excel...');
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
@@ -1052,6 +1105,10 @@ async function exportToExcel() {
     if (currentFilter !== 'Semua') fileName += `_${currentFilter.replace(/\s+/g, '_')}`;
     link.download = fileName + '.xlsx';
     document.body.appendChild(link);
+    
+    updateExportLoaderProgress(100, 'Ekstraksi selesai!');
+    await new Promise(resolve => setTimeout(resolve, 350));
+    
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
@@ -1060,6 +1117,7 @@ async function exportToExcel() {
   } catch (err) {
     showToast('❌ Gagal export: ' + err.message, 'error');
   } finally {
+    hideExportLoader();
     btnExport.disabled = false;
     btnExport.innerHTML = originalText;
   }
