@@ -296,17 +296,17 @@ include __DIR__ . '/../includes/header.php';
     <h2>Rekap Youtube</h2>
     <p>Koleksi siaran yang telah tayang.</p>
   </div>
-  <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
+  <div class="page-head-actions">
+    <div class="search-box page-head-search">
+      <i class="ri-search-line"></i>
+      <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+    </div>
+    <button class="btn btn-primary" style="height:40px;" onclick="showAddView()"><i class="ri-add-line"></i> Tambah Video</button>
+  </div>
 </div>
 
-<!-- ACTION BAR: SEARCHBAR RATA KIRI, FILTER RATA KANAN -->
-<div class="gallery-header-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-  <!-- Searchbar (Rata Kiri) -->
-  <div class="search-box" style="max-width: 280px; margin: 0; background: var(--card-bg, #fff);">
-    <i class="ri-search-line"></i>
-    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
-  </div>
-
+<!-- ACTION BAR: FILTER GROUP -->
+<div class="gallery-header-actions" style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
   <!-- Filter Groups & Action Buttons (Rata Kanan) -->
   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;">
     <div class="gallery-filter-group">

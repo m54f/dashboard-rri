@@ -175,13 +175,15 @@ include __DIR__ . '/../includes/header.php';
     <h2>Inventaris Alat</h2>
     <p>Manajemen stok dan ketersediaan peralatan studio.</p>
   </div>
-  <form class="search-bar" method="get" style="display:inline-flex; align-items:center; gap:0.5rem; margin-left:1rem;">
-    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode alat..." style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db; width:200px;">
-    <button type="submit" class="btn btn-secondary"><i class="ri-search-line"></i></button>
-  </form>
-  <?php if (getRole() === 'admin'): ?>
-  <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
-  <?php endif; ?>
+  <div class="page-head-actions">
+    <form class="search-box page-head-search" method="get">
+      <i class="ri-search-line"></i>
+      <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode alat..." style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+    </form>
+    <?php if (getRole() === 'admin'): ?>
+    <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
+    <?php endif; ?>
+  </div>
 </div>
 
 <div class="stats-row">

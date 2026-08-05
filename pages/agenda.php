@@ -193,13 +193,16 @@ include __DIR__ . '/../includes/header.php';
     <h2>Daily Agenda</h2>
     <p>Jadwal kegiatan operasional siaran hari ini.</p>
   </div>
-  <form class="date-picker" method="get" id="filterForm" style="display:inline-flex; align-items:center; gap:0.75rem; margin-left:1rem; flex-wrap:wrap;">
-    <label for="dateFilter" style="margin:0; font-weight:600;">Filter Tanggal:</label>
-    <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db;">
-  </form>
-  <?php if (getRole() === 'admin'): ?>
-  <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
-  <?php endif; ?>
+  <div class="page-head-actions">
+    <!-- Filter Tanggal (Format Pill Presisi: Sebelah Kiri Tombol Tambah di Desktop, Di Atas Tombol Tambah di Mobile) -->
+    <form class="filter-input-group filter-set page-head-search" method="get" id="filterForm" style="width: auto; min-width: 210px;">
+      <label for="dateFilter" class="filter-prefix prefix-set" style="cursor:pointer; width:auto; padding:0 10px; font-weight:700;"><i class="ri-calendar-line" style="margin-right:4px;"></i> Tanggal</label>
+      <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" onchange="this.form.submit()" class="header-filter-select" style="border:none !important; outline:none !important; background:transparent !important; cursor:pointer; padding:0 8px; font-size:13px; font-weight:600;">
+    </form>
+    <?php if (getRole() === 'admin'): ?>
+    <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
+    <?php endif; ?>
+  </div>
 </div>
 
 <div class="stats-row">

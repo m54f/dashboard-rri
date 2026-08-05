@@ -38,7 +38,13 @@ include __DIR__ . '/../includes/header.php';
     <h2>Logbook Jurnal Kegiatan</h2>
     <p style="color: #6b7280; margin-top: 5px;">Dokumentasi kegiatan operasional tim TMB.</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Tulis Jurnal</button>
+  <div class="page-head-actions">
+    <div class="search-box page-head-search">
+      <i class="ri-search-line"></i>
+      <input type="text" id="searchInput" placeholder="Cari kegiatan/petugas..." onkeyup="handleSearch(this.value)" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+    </div>
+    <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Tulis Jurnal</button>
+  </div>
 </div>
 
 <?php if (isset($errorMessage)): ?>
@@ -54,7 +60,6 @@ include __DIR__ . '/../includes/header.php';
         <button class="filter-tab" onclick="setFilter('proses', this)">Proses</button>
         <button class="filter-tab" onclick="setFilter('selesai', this)">Selesai</button>
     </div>
-    <input type="text" id="searchInput" placeholder="Cari kegiatan atau petugas..." onkeyup="handleSearch(this.value)" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0); font-size: 0.85rem; outline: none; width: 240px;">
 </div>
 
 <div class="card">

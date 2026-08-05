@@ -59,7 +59,13 @@ include __DIR__ . '/../includes/header.php';
     <h2>Peminjaman Alat</h2>
     <p>Kelola peminjaman dan pengembalian alat siaran.</p>
   </div>
-  <a href="peminjaman_form.php" class="btn btn-primary"><i class="ri-add-line"></i> Catat Peminjaman</a>
+  <div class="page-head-actions">
+    <div class="search-box page-head-search">
+      <i class="ri-search-line"></i>
+      <input type="text" id="searchInput" placeholder="Cari kegiatan/PIC/alat..." oninput="handleSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+    </div>
+    <a href="peminjaman_form.php" class="btn btn-primary"><i class="ri-add-line"></i> Catat Peminjaman</a>
+  </div>
 </div>
 
 <?php if (isset($errorMessage)): ?>
@@ -81,18 +87,13 @@ include __DIR__ . '/../includes/header.php';
   <?php endforeach; ?>
 </div>
 
-<!-- Container Filter dan Search -->
-<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
+<!-- Container Filter -->
+<div style="display:flex; justify-content:flex-start; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
     <div class="filter-tabs" style="margin-bottom:0;">
       <div class="filter-tab active" onclick="filterPinjam('Semua', this)">Semua</div>
       <div class="filter-tab" onclick="filterPinjam('Dipinjam', this)">Dipinjam</div>
       <div class="filter-tab" onclick="filterPinjam('Terlambat', this)">Terlambat</div>
       <div class="filter-tab" onclick="filterPinjam('Dikembalikan', this)">Dikembalikan</div>
-    </div>
-    
-    <!-- Kotak Pencarian -->
-    <div style="flex:1; min-width:200px; display:flex; justify-content:flex-end;">
-        <input type="text" id="searchInput" placeholder="Cari kegiatan/PIC/alat..." oninput="handleSearch()" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0); font-size: 0.85rem; outline: none; width:100%; max-width: 300px;">
     </div>
 </div>
 
