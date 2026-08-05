@@ -18,6 +18,9 @@ function getJurnal($forceRefresh = false) {
         $cached = @json_decode(file_get_contents($cacheFile), true);
         if (is_array($cached) && !empty($cached) && !isset($cached['error'])) {
             return $cached;
+        } else {
+            // Jika file cache korup / berisi sintaks invalid (misal konflik git), hapus file korup
+            @unlink($cacheFile);
         }
     }
 

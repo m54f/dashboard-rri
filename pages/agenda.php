@@ -163,8 +163,100 @@ include __DIR__ . '/../includes/header.php';
   opacity: 0.9;
 }
 
-/* Pagination di layar HP — ditumpuk & di-tengah biar rapi, nggak mepet kanan-kiri */
-@media (max-width: 640px) {
+/* Hilangkan panah atas-bawah (spinner) pada input pagination */
+.page-input-clean::-webkit-outer-spin-button,
+.page-input-clean::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.page-input-clean {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+/* Stil khusus form filter tanggal */
+.date-picker-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.date-picker-form label {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #4b5563);
+}
+.date-picker-form input[type="date"] {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #d1d5db);
+  font-size: 0.85rem;
+  outline: none;
+  background: #fff;
+}
+
+/* Optimasi Responsif Layar Mobile & Tablet */
+@media (max-width: 768px) {
+  .page-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 1rem !important;
+  }
+  .page-head > div:first-child {
+    width: 100%;
+  }
+  .date-picker-form {
+    margin-left: 0 !important;
+    width: 100% !important;
+    justify-content: space-between;
+    background: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-sizing: border-box;
+  }
+  .date-picker-form input[type="date"] {
+    flex: 1;
+    min-width: 130px;
+  }
+  .page-head .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  /* Filter Tabs scroll horizontal halus di HP */
+  .filter-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 1rem !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+    scrollbar-width: thin;
+  }
+  .filter-tab {
+    flex-shrink: 0 !important;
+  }
+
+  /* Tabel agenda responsif di HP */
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 12px 12px;
+  }
+  #agendaTable {
+    min-width: 750px !important;
+  }
+  #agendaTable th, #agendaTable td {
+    padding: 0.75rem 0.6rem !important;
+    font-size: 0.83rem !important;
+  }
+
   .pagination-wrap {
     flex-direction: column;
     align-items: stretch !important;
@@ -177,22 +269,28 @@ include __DIR__ . '/../includes/header.php';
     justify-content: center !important;
   }
 }
-/* Hilangkan panah atas-bawah (spinner) pada input pagination */
-.page-input-clean::-webkit-outer-spin-button,
-.page-input-clean::-webkit-inner-spin-button {
-  -webkit-appearance: none !important;
-  margin: 0 !important;
-}
-.page-input-clean {
-  -moz-appearance: textfield !important;
-  appearance: textfield !important;
+
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .stats-row > *:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+  .form-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
 }
 </style>
+
 <div class="page-head">
   <div>
     <h2>Daily Agenda</h2>
     <p>Jadwal kegiatan operasional siaran hari ini.</p>
   </div>
+<<<<<<< HEAD
   <div class="page-head-actions">
     <!-- Filter Tanggal (Format Pill Presisi: Sebelah Kiri Tombol Tambah di Desktop, Di Atas Tombol Tambah di Mobile) -->
     <form class="filter-input-group filter-set page-head-search" method="get" id="filterForm" style="width: auto; min-width: 210px;">
@@ -203,6 +301,15 @@ include __DIR__ . '/../includes/header.php';
     <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
     <?php endif; ?>
   </div>
+=======
+  <form class="date-picker-form" method="get" id="filterForm">
+    <label for="dateFilter">Filter Tanggal:</label>
+    <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" onchange="this.form.submit()">
+  </form>
+  <?php if (getRole() === 'admin'): ?>
+  <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
+  <?php endif; ?>
+>>>>>>> 6225b71bff5d2514afd23d108477e7a91d931911
 </div>
 
 <div class="stats-row">

@@ -168,6 +168,92 @@ include __DIR__ . '/../includes/header.php';
   -moz-appearance: textfield !important;
   appearance: textfield !important;
 }
+
+/* Optimasi Responsif Layar Mobile & Tablet */
+.inv-search-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+.inv-search-bar input[type="text"] {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  width: 200px;
+  font-size: 0.85rem;
+  outline: none;
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .page-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 1rem !important;
+  }
+  .page-head > div:first-child {
+    width: 100%;
+  }
+  .inv-search-bar {
+    margin-left: 0 !important;
+    width: 100% !important;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-sizing: border-box;
+  }
+  .inv-search-bar input[type="text"] {
+    flex: 1;
+    width: 100% !important;
+  }
+  .page-head .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .filter-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 1rem !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+  }
+  .filter-tab {
+    flex-shrink: 0 !important;
+  }
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 12px 12px;
+  }
+  #invTable {
+    min-width: 700px !important;
+  }
+  #invTable th, #invTable td {
+    padding: 0.75rem 0.6rem !important;
+    font-size: 0.83rem !important;
+  }
+  .pagination-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .stats-row > *:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+}
 </style>
 
 <div class="page-head">
@@ -175,6 +261,7 @@ include __DIR__ . '/../includes/header.php';
     <h2>Inventaris Alat</h2>
     <p>Manajemen stok dan ketersediaan peralatan studio.</p>
   </div>
+<<<<<<< HEAD
   <div class="page-head-actions">
     <form class="search-box page-head-search" method="get">
       <i class="ri-search-line"></i>
@@ -184,6 +271,15 @@ include __DIR__ . '/../includes/header.php';
     <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
     <?php endif; ?>
   </div>
+=======
+  <form class="inv-search-bar" method="get">
+    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode alat...">
+    <button type="submit" class="btn btn-secondary"><i class="ri-search-line"></i></button>
+  </form>
+  <?php if (getRole() === 'admin'): ?>
+  <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
+  <?php endif; ?>
+>>>>>>> 6225b71bff5d2514afd23d108477e7a91d931911
 </div>
 
 <div class="stats-row">

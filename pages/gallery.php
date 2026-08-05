@@ -288,6 +288,88 @@ include __DIR__ . '/../includes/header.php';
   -moz-appearance: textfield !important;
   appearance: textfield !important;
 }
+
+.gallery-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.gallery-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Optimasi Responsif Layar Mobile & Tablet */
+@media (max-width: 768px) {
+  .page-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 1rem !important;
+  }
+  .page-head > div:first-child {
+    width: 100%;
+  }
+  .page-head .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .gallery-header-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+  .gallery-header-actions .search-box {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .gallery-filter-wrap {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .gallery-filter-group {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .gallery-filter-group .filter-input-group {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .gallery-filter-group .filter-input-group select {
+    width: 100% !important;
+  }
+  .gallery-filter-group .btn {
+    grid-column: span 2 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 12px 12px;
+  }
+  .video-table {
+    min-width: 750px !important;
+  }
+  .video-table th, .video-table td {
+    padding: 0.75rem 0.6rem !important;
+    font-size: 0.83rem !important;
+  }
+  .pagination-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+    text-align: center;
+  }
+}
 </style>
 
 <div id="galleryMainView">
@@ -305,10 +387,23 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<<<<<<< HEAD
 <!-- ACTION BAR: FILTER GROUP -->
 <div class="gallery-header-actions" style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
   <!-- Filter Groups & Action Buttons (Rata Kanan) -->
   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;">
+=======
+<!-- ACTION BAR: SEARCHBAR RATA KIRI, FILTER RATA KANAN -->
+<div class="gallery-header-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+  <!-- Searchbar (Rata Kiri) -->
+  <div class="search-box" style="max-width: 280px; margin: 0; background: var(--card-bg, #fff);">
+    <i class="ri-search-line"></i>
+    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+  </div>
+
+  <!-- Filter Groups & Action Buttons (Rata Kanan di Desktop, Grid Sejajar di Mobile) -->
+  <div class="gallery-filter-wrap">
+>>>>>>> 6225b71bff5d2514afd23d108477e7a91d931911
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>

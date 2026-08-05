@@ -67,27 +67,68 @@ $dows = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 include __DIR__ . '/../includes/header.php';
 ?>
 <style>
-/* Tampilan Calendar Recap di layar HP:
-   - header (bulan/tahun + tombol panah) ditumpuk & center biar nggak mepet/overflow
-   - grid kalender dikecilin biar 7 kolom tetap muat tanpa scroll horizontal */
-@media (max-width: 640px) {
-  .page-head form {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+/* Stil Form Navigasi Bulan & Tahun */
+.cal-nav-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+.cal-nav-form select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #d1d5db);
+  font-weight: 600;
+  font-size: 0.88rem;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Accent Hari Ini */
+.cal-cell.today {
+  background: #eff6ff !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 8px;
+}
+.cal-cell.today .cal-daynum {
+  color: #2563eb !important;
+  font-weight: 800 !important;
+}
+
+/* Tampilan Calendar Recap di layar HP & Tablet */
+@media (max-width: 768px) {
+  .page-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .cal-nav-form {
+    margin-left: 0 !important;
+    width: 100% !important;
+    justify-content: space-between;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-sizing: border-box;
+  }
+  .cal-nav-form select {
+    flex: 1;
   }
   .cal-grid { gap: 3px !important; }
   .cal-dow { font-size: 10px !important; padding: 4px 0 !important; }
-  .cal-cell { padding: 4px 3px !important; min-height: 56px; }
+  .cal-cell { padding: 4px 3px !important; min-height: 56px !important; }
   .cal-daynum { font-size: 11px !important; margin-bottom: 2px !important; }
 
-  /* Di HP, teks nama kegiatan diganti titik warna doang (teks kepanjangan
-     nggak bakal muat kebaca di kolom sesempit ini) — tap tanggalnya buat
-     lihat daftar lengkap nama kegiatannya lewat modal. */
   .cal-event-list { display: none !important; }
   .cal-event-dots { display: flex !important; }
   .cal-cell.has-events { cursor: pointer; }
   .cal-cell.has-events:active { background: var(--bg-color); }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
 }
 
 .cal-event-dots {
@@ -96,20 +137,20 @@ include __DIR__ . '/../includes/header.php';
   flex-wrap: wrap;
   margin-top: 2px;
 }
-.cal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); display: inline-block; }
-.cal-dot.live { background: var(--danger); }
-.cal-dot.event { background: var(--warning); }
+.cal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary, #2563eb); display: inline-block; }
+.cal-dot.live { background: var(--danger, #ef4444); }
+.cal-dot.event { background: var(--warning, #f59e0b); }
 
-/* Modal detail kegiatan per-tanggal (dipakai pas tap kotak tanggal di HP) */
+/* Modal detail kegiatan per-tanggal */
 #dayEventsModal .modal-content { max-width: 400px; }
 #dayEventsModal .day-event-item {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 0; border-bottom: 1px solid var(--border-color);
 }
 #dayEventsModal .day-event-item:last-child { border-bottom: none; }
-#dayEventsModal .day-event-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: var(--primary); }
-#dayEventsModal .day-event-dot.live { background: var(--danger); }
-#dayEventsModal .day-event-dot.event { background: var(--warning); }
+#dayEventsModal .day-event-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: var(--primary, #2563eb); }
+#dayEventsModal .day-event-dot.live { background: var(--danger, #ef4444); }
+#dayEventsModal .day-event-dot.event { background: var(--warning, #f59e0b); }
 </style>
 
 <div class="page-head">
@@ -117,14 +158,14 @@ include __DIR__ . '/../includes/header.php';
     <h2>Calendar Recap</h2>
     <p>Rekap kegiatan dan siaran dalam tampilan kalender bulanan.</p>
   </div>
-  <form method="get" style="display:inline-flex; align-items:center; gap:0.5rem;">
+  <form method="get" class="cal-nav-form">
     <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>" class="btn btn-secondary" style="padding:0.5rem 0.65rem; display:flex; align-items:center;" title="Bulan sebelumnya"><i class="ri-arrow-left-s-line"></i></a>
-    <select name="month" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db; font-weight:600;">
+    <select name="month" onchange="this.form.submit()">
       <?php for ($m = 1; $m <= 12; $m++): ?>
       <option value="<?= $m ?>" <?= $m === $month ? 'selected' : '' ?>><?= $monthNames[$m] ?></option>
       <?php endfor; ?>
     </select>
-    <select name="year" onchange="this.form.submit()" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid #d1d5db; font-weight:600;">
+    <select name="year" onchange="this.form.submit()">
       <?php
         $yearNow = (int) $jakartaNow->format('Y');
         $yearStart = min($yearNow - 2, $year);
@@ -155,9 +196,10 @@ include __DIR__ . '/../includes/header.php';
 <div class="card">
   <div class="card-header">
     <div class="card-title"><i class="ri-calendar-2-line"></i><?= $monthNames[$month] ?> <?= $year ?></div>
-    <div style="display:flex;gap:14px;font-size:11.5px;color:var(--text-secondary);">
-      <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:3px;background:var(--primary);display:inline-block;"></i>Kegiatan</span>
-      <span style="display:flex;align-items:center;gap:6px;"><i style="width:8px;height:8px;border-radius:3px;background:var(--warning);display:inline-block;"></i>Event</span>
+    <div style="display:flex; gap:14px; font-size:11.5px; color:var(--text-secondary); align-items:center;">
+      <span style="display:flex; align-items:center; gap:6px;"><i style="width:8px; height:8px; border-radius:50%; background:var(--primary, #2563eb); display:inline-block;"></i>Kegiatan</span>
+      <span style="display:flex; align-items:center; gap:6px;"><i style="width:8px; height:8px; border-radius:50%; background:var(--danger, #ef4444); display:inline-block;"></i>Live</span>
+      <span style="display:flex; align-items:center; gap:6px;"><i style="width:8px; height:8px; border-radius:50%; background:var(--warning, #f59e0b); display:inline-block;"></i>Event</span>
     </div>
   </div>
   <div class="cal-grid">
