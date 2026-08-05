@@ -2200,6 +2200,19 @@ body.dark-mode .filter-prefix.prefix-pro {
   border-right: 1px solid #2b3952 !important;
 }
 
+/* Global Select Option Styling (Fix White-on-White Dropdown Text in Dark Mode) */
+select option,
+.header-filter-select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.dark-mode select option,
+body.dark-mode .header-filter-select option {
+  background-color: #161f30 !important;
+  color: #f8fafc !important;
+}
+
 /* ==========================================================================
    MODAL FORM SYSTEM (Light Mode Base & Dark Mode Unified)
    ========================================================================== */

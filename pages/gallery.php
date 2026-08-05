@@ -303,6 +303,60 @@ include __DIR__ . '/../includes/header.php';
   flex-wrap: wrap;
 }
 
+/* Optimasi Khusus Layar Desktop (Desktop Only) */
+@media (min-width: 769px) {
+  .gallery-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .gallery-filter-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-left: auto !important;
+  }
+  .gallery-filter-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+  }
+  .gallery-filter-group .filter-input-group {
+    width: 165px !important;
+    flex: 0 0 165px !important;
+    height: 40px !important;
+    border-radius: 9px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .gallery-filter-group .filter-input-group:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07) !important;
+  }
+  .gallery-filter-group .header-filter-select {
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+  }
+  .gallery-filter-group .btn {
+    height: 40px !important;
+    padding: 0 14px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border-radius: 9px !important;
+    transition: all 0.2s ease !important;
+  }
+  .gallery-filter-group .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
 /* Optimasi Responsif Layar Mobile & Tablet */
 @media (max-width: 768px) {
   .page-head {
@@ -388,9 +442,8 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <!-- ACTION BAR: FILTER GROUP -->
-<div class="gallery-header-actions" style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-  <!-- Filter Groups & Action Buttons (Rata Kanan) -->
-  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;">
+<div class="gallery-header-actions">
+  <div class="gallery-filter-wrap">
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>
@@ -419,7 +472,7 @@ include __DIR__ . '/../includes/header.php';
                 <option value="Pro 4">Pro 4</option>
             </select>
         </div>
-        <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter" style="height:40px; padding:0 12px; font-weight:600;"><i class="ri-refresh-line"></i> Reset Filter</button>
+        <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter"><i class="ri-refresh-line"></i> Reset Filter</button>
     </div>
   </div>
 </div>
@@ -615,7 +668,23 @@ include __DIR__ . '/../includes/header.php';
   body.dark-mode .filter-prefix.prefix-prod { background: rgba(139, 92, 246, 0.18) !important; color: #a78bfa !important; border-right: 1px solid #2b3952 !important; }
   body.dark-mode .filter-prefix.prefix-pro { background: rgba(245, 158, 11, 0.18) !important; color: #fbbf24 !important; border-right: 1px solid #2b3952 !important; }
   body.dark-mode .filter-input-group { background: #0f172a !important; border-color: #2b3952 !important; }
-  body.dark-mode .header-filter-select { background-color: #0f172a !important; color: #f8fafc !important; }
+  body.dark-mode .header-filter-select {
+    background-color: #0f172a !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    color: #f8fafc !important;
+  }
+
+  select option,
+  .header-filter-select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  body.dark-mode select option,
+  body.dark-mode .header-filter-select option {
+    background-color: #161f30 !important;
+    color: #f8fafc !important;
+  }
 
   .filter-input-group.filter-set:hover { border-color: #93c5fd; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.1); }
   .filter-input-group.filter-prod:hover { border-color: #c4b5fd; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1); }
