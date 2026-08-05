@@ -167,10 +167,45 @@ body.dark-mode .select2-search__field {
 .tag.green{background:#ecfdf5;color:var(--success);}
 .tag.gray{background:#f1f5f9;color:var(--text-secondary);}
 
-.status-tag{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:7px;white-space:nowrap;display:inline-block;}
-.status-tag.selesai,.status-tag.baik,.status-tag.dikembalikan,.status-tag.hadir{background:#ecfdf5;color:var(--success);}
-.status-tag.proses,.status-tag.dipinjam{background:#fffbeb;color:var(--warning);}
-.status-tag.belum,.status-tag.rusak,.status-tag.terlambat{background:#fee2e2;color:var(--danger);}
+.status-tag, .status-select {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 8px;
+  gap: 8px;
+  min-width: 50px;
+  height: 24px;
+  border-radius: 4px;
+  font-family: 'Figtree', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #FFFFFF;
+  border: none;
+  box-sizing: border-box;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.status-tag.selesai, .status-tag.sudah, .status-tag.green,
+.status-select.selesai, .status-select.sudah, .status-select.green,
+.status-tag.baik, .status-tag.dikembalikan, .status-tag.hadir {
+  background: #0073EA !important;
+  color: #FFFFFF !important;
+}
+.status-tag.belum, .status-tag.menunggu, .status-tag.gray, .status-tag.red,
+.status-select.belum, .status-select.menunggu, .status-select.gray, .status-select.red,
+.status-tag.rusak, .status-tag.terlambat, .status-tag.cancel {
+  background: #64748b !important;
+  color: #FFFFFF !important;
+}
+.status-tag.proses, .status-tag.dipinjam, .status-tag.orange,
+.status-select.proses, .status-select.orange {
+  background: #f59e0b !important;
+  color: #FFFFFF !important;
+}
 
 /* ===== Table ===== */
 .table-wrap{overflow-x:auto;}
