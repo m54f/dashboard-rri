@@ -53,6 +53,7 @@ if (is_dir($shiftFolder)) {
     <div class="shift-image">
         <img 
             src="<?= htmlspecialchars($img['url']) ?>" 
+            loading="lazy"
             alt="Jadwal Shift"
         >
     </div>

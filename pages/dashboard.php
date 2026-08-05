@@ -552,7 +552,7 @@ include __DIR__ . '/../includes/header.php';
             <div class="yt-card">
               <div class="yt-thumb">
                 <?php if ($flyer): ?>
-                  <img src="<?= htmlspecialchars($flyer) ?>" alt="Thumbnail">
+                  <img src="<?= htmlspecialchars($flyer) ?>" loading="lazy" alt="Thumbnail">
                 <?php else: ?>
                   <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8; background: #f1f5f9;">
                     <i class="ri-image-2-line" style="font-size:2.5rem;"></i>

@@ -361,6 +361,7 @@ include __DIR__ . '/../includes/header.php';
                       
                       <!-- Gambar Thumbnail -->
                       <img src="<?= htmlspecialchars($file['url']) ?>" 
+                           loading="lazy" 
                            alt="<?= htmlspecialchars($file['name']) ?>" 
                            style="width:100%; height:100%; object-fit:cover;"
                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">

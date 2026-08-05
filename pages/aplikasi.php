@@ -343,7 +343,7 @@ $appSlides = array_chunk($apps, 3);
                         <?php foreach ($slide as $app): ?>
                             <div class="panel-card">
                                 <div class="panel-image">
-                                    <img src="<?= $imagePath . htmlspecialchars($app['image']) ?>">
+                                    <img src="<?= $imagePath . htmlspecialchars($app['image']) ?>" loading="lazy" alt="<?= htmlspecialchars($app['name']) ?>">
                                 </div>
                                 <div class="panel-content">
                                     <h5>

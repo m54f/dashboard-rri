@@ -379,7 +379,7 @@ include __DIR__ . '/../includes/header.php';
               <?php if (!empty($t['dokumentasi'])): ?>
               <div style="display:flex;gap:4px;flex-wrap:wrap;">
                 <?php foreach (array_slice($t['dokumentasi'], 0, 3) as $dok): ?>
-                <img src="<?= htmlspecialchars($dok['url']) ?>" alt="dok" class="doc-thumb" onclick="openLightbox('<?= htmlspecialchars($dok['url']) ?>')" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border-color);">
+                <img src="<?= htmlspecialchars($dok['url']) ?>" loading="lazy" alt="dok" class="doc-thumb" onclick="openLightbox('<?= htmlspecialchars($dok['url']) ?>')" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border-color);">
                 <?php endforeach; ?>
                 <?php if (count($t['dokumentasi']) > 3): ?>
                 <span style="font-size:10px;color:var(--text-secondary);align-self:center;">+<?= count($t['dokumentasi']) - 3 ?></span>

@@ -255,7 +255,7 @@ function renderTable() {
             let publicUrl = e.url.replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
             
             for(let i=0; i < Math.min(e.docs.length, limit); i++) {
-                docsHtml += `<img src="${e.docs[i].url}" class="doc-thumb" onclick="openLightbox('${e.docs[i].url}')" onerror="this.src='https://via.placeholder.com/36?text=IMG'">`;
+                docsHtml += `<img src="${e.docs[i].url}" loading="lazy" class="doc-thumb" onclick="openLightbox('${e.docs[i].url}')" onerror="this.src='https://via.placeholder.com/36?text=IMG'">`;
             }
             if(e.docs.length > limit) {
                 docsHtml += `<div class="doc-more" onclick="window.open('${publicUrl}', '_blank')">+${e.docs.length - limit}</div>`;

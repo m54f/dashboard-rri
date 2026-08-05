@@ -561,7 +561,7 @@ include __DIR__ . '/../includes/header.php';
             <tr class="video-row" data-video="<?= $videoData ?>">
               <td>
                 <?php if ($flyer !== ''): ?>
-                  <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" class="video-thumb">
+                  <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" class="video-thumb">
                 <?php else: ?>
                   <div class="video-thumb video-thumb-empty"><i class="ri-image-line"></i></div>
                 <?php endif; ?>
@@ -1872,7 +1872,7 @@ function renderVideoRows(videos) {
         tr.dataset.video = JSON.stringify(videoDataObj);
 
         var flyerHtml = flyer !== ''
-            ? `<img src="${escapeHtml(flyer)}" alt="${escapeHtml(title)}" class="video-thumb">`
+            ? `<img src="${escapeHtml(flyer)}" loading="lazy" alt="${escapeHtml(title)}" class="video-thumb">`
             : `<div class="video-thumb video-thumb-empty"><i class="ri-image-line"></i></div>`;
 
         var subTitleHtml = namaAcara !== ''
@@ -2463,7 +2463,7 @@ function renderTabelRss(videos) {
                     }
                     <span style="${labelStyle} margin-top:8px;">Flyer</span>
                     ${flyerUrl
-                        ? `<img src="${escapeHtml(flyerUrl)}" style="width:100%; max-width:120px; height:70px; object-fit:cover; border-radius:4px; cursor:zoom-in; display:block;" onclick="openImagePopup('${escapeHtml(flyerUrl)}')" alt="Flyer">`
+                        ? `<img src="${escapeHtml(flyerUrl)}" loading="lazy" style="width:100%; max-width:120px; height:70px; object-fit:cover; border-radius:4px; cursor:zoom-in; display:block;" onclick="openImagePopup('${escapeHtml(flyerUrl)}')" alt="Flyer">`
                         : '<span style="' + valueStyle + '">—</span>'
                     }
                 </td>
@@ -2531,7 +2531,7 @@ function renderTabelRss(videos) {
                     <div id="dropzone_${index}" class="dropzone-mini" style="padding:0; overflow:hidden; position:relative; min-height:120px; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('flyer_input_${index}').click()">
                         <input type="file" id="flyer_input_${index}" accept="image/*" style="display:none;" onchange="handleFlyerSelect(this, '${index}')">
                         ${vid.flyer
-                            ? `<img src="${vid.flyer}" style="width:100%; height:100%; object-fit:cover; position:absolute;" alt="Flyer" onclick="event.stopPropagation(); openImagePopup(this.src)"><button type="button" class="remove-flyer-btn" onclick="hapusFlyer('${index}', event)">&times;</button>`
+                            ? `<img src="${vid.flyer}" loading="lazy" style="width:100%; height:100%; object-fit:cover; position:absolute;" alt="Flyer" onclick="event.stopPropagation(); openImagePopup(this.src)"><button type="button" class="remove-flyer-btn" onclick="hapusFlyer('${index}', event)">&times;</button>`
                             : `<span style="padding:10px;">Pilih / Tarik Flyer</span>`
                         }
                     </div>

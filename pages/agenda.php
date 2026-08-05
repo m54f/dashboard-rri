@@ -389,7 +389,7 @@ include __DIR__ . '/../includes/header.php';
               ?>
                 <?php if ($isImage): ?>
                 <a href="<?= htmlspecialchars($doc['url']) ?>" target="_blank" rel="noopener" title="<?= htmlspecialchars($doc['name']) ?>">
-                  <img src="<?= htmlspecialchars($doc['url']) ?>" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; display:block;" onerror="this.outerHTML='<span style=&quot;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid #e5e7eb;background:#f3f4f6;&quot;><i class=&quot;ri-image-line&quot; style=&quot;color:#9ca3af;&quot;></i></span>';">
+                  <img src="<?= htmlspecialchars($doc['url']) ?>" loading="lazy" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; display:block;" onerror="this.outerHTML='<span style=&quot;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid #e5e7eb;background:#f3f4f6;&quot;><i class=&quot;ri-image-line&quot; style=&quot;color:#9ca3af;&quot;></i></span>';">
                 </a>
                 <?php else: ?>
                 <a href="<?= htmlspecialchars($doc['url']) ?>" target="_blank" rel="noopener" title="<?= htmlspecialchars($doc['name']) ?>" class="doc-icon-link" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px; text-decoration:none;">
@@ -836,7 +836,7 @@ function renderDokumenCell(docs){
     const safeName = escapeHtml(doc.name);
     const safeUrl = escapeHtml(doc.url);
     if (isImage) {
-      html += `<a href="${safeUrl}" target="_blank" rel="noopener" title="${safeName}"><img src="${safeUrl}" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;display:block;" onerror="this.style.display='none';"></a>`;
+      html += `<a href="${safeUrl}" target="_blank" rel="noopener" title="${safeName}"><img src="${safeUrl}" loading="lazy" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;display:block;" onerror="this.style.display='none';"></a>`;
     } else {
       html += `<a href="${safeUrl}" target="_blank" rel="noopener" title="${safeName}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid #e5e7eb;background:#f3f4f6;text-decoration:none;"><i class="ri-file-text-line" style="color:#6b7280;"></i></a>`;
     }

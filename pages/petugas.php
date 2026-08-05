@@ -815,7 +815,7 @@ function renderReportTable() {
   tbody.innerHTML = '';
   pagedData.forEach(r => {
     let statusColor = r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316';
-    let fotoHtml = r.foto ? `<img src="${r.foto}" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
+    let fotoHtml = r.foto ? `<img src="${r.foto}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
     
     tbody.innerHTML += `
       <tr>
