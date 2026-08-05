@@ -343,9 +343,17 @@ include __DIR__ . '/../includes/header.php';
       </h2>
       <p style="margin-top:0.25rem;">Rekap aktivitas dari seluruh logbook (Listrik, Troubleshoot, Checklist, Jurnal, Youtube, Peminjaman).</p>
     </div>
-    <button class="btn btn-primary" onclick="exportToExcel()" id="btnExport" style="display: none;">
-      <i class="ri-file-excel-line"></i> Export Excel
-    </button>
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+      <div id="exportFotoWrap" style="display: none; align-items: center;">
+        <label style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.85rem; color:var(--text-muted); cursor:pointer;">
+            <input type="checkbox" id="exportFoto" style="cursor:pointer;">
+            <span>Sertakan Foto</span>
+        </label>
+      </div>
+      <button class="btn btn-primary" onclick="exportToExcel()" id="btnExport" style="display: none;">
+        <i class="ri-file-excel-line"></i> Export Excel
+      </button>
+    </div>
   </div>
 
   <div class="stats-row">
@@ -551,6 +559,7 @@ function loadLaporan(nama) {
       
       document.getElementById('reportFilterBar').style.display = 'flex';
       document.getElementById('btnExport').style.display = 'inline-flex';
+      if (document.getElementById('exportFotoWrap')) document.getElementById('exportFotoWrap').style.display = 'inline-flex';
       
       document.querySelectorAll('#reportFilterTabs .filter-tab, #timeFilterWrap .filter-tab').forEach(t => t.classList.remove('active'));
       document.querySelector('#reportFilterTabs .filter-tab').classList.add('active');
@@ -580,6 +589,14 @@ function loadLaporan(nama) {
       document.getElementById('rKategoriDetail').textContent = `Ditangani ${maxVal} kali`;
       
       renderReportTable();
+
+      // Prefetch gambar di background (tidak blocking UI)
+      const fotoUrls = [...new Set(data.riwayat.filter(r => r.foto).map(r => r.foto))];
+      if (fotoUrls.length > 0) {
+          setTimeout(() => {
+              parallelFetch(fotoUrls, 6).catch(() => {}); // ignore error
+          }, 1000); // tunggu 1 detik setelah tabel render
+      }
     })
     .catch(err => { showToast('❌ Gagal memuat laporan: ' + err, 'error'); closeReportView(); });
 }
@@ -588,6 +605,7 @@ function closeReportView() {
   document.getElementById('reportView').style.display = 'none';
   document.getElementById('mainView').style.display = 'block';
   document.getElementById('btnExport').style.display = 'none';
+  if (document.getElementById('exportFotoWrap')) document.getElementById('exportFotoWrap').style.display = 'none';
   document.getElementById('reportFilterBar').style.display = 'none';
   document.getElementById('reportPaginationWrap').style.display = 'none';
   document.getElementById('reportSearch').value = ''; 
@@ -827,6 +845,36 @@ async function deletePetugas(pageId, name) {
   }
 }
 
+async function parallelFetch(urls, concurrency = 10, onProgress = null) {
+    const results = new Array(urls.length).fill(null);
+    const queue = urls.map((url, idx) => ({ url, idx }));
+    let completed = 0;
+    
+    const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+        while (queue.length) {
+            const { url, idx } = queue.shift();
+            try {
+                const res = await fetch('../api/image-proxy.php?url=' + encodeURIComponent(url));
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const buffer = await blob.arrayBuffer();
+                    results[idx] = { buffer, extension: blob.type.includes('png') ? 'png' : 'jpeg' };
+                }
+            } catch (e) {
+                console.warn('Gagal fetch gambar:', url);
+            } finally {
+                completed++;
+                if (typeof onProgress === 'function') {
+                    onProgress(completed, urls.length);
+                }
+            }
+        }
+    });
+    
+    await Promise.all(workers);
+    return results;
+}
+
 async function exportToExcel() {
   let dataToExport = getFilteredData();
   if (dataToExport.length === 0) { showToast("⚠️ Tidak ada data pada filter ini!", "error"); return; }
@@ -834,35 +882,33 @@ async function exportToExcel() {
   const btnExport = document.getElementById('btnExport');
   const originalText = btnExport.innerHTML;
   btnExport.disabled = true;
-  btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses 0%...';
 
   try {
-    const toImageBuffer = async (url) => {
-      try {
-        const proxyUrl = '../api/image-proxy.php?url=' + encodeURIComponent(url);
-        const res = await fetch(proxyUrl);
-        if (!res.ok) return null;
-        const blob = await res.blob();
-        const buffer = await blob.arrayBuffer();
-        const extension = blob.type.includes('png') ? 'png' : 'jpeg';
-        return { buffer, extension };
-      } catch (e) { return null; }
-    };
-
+    const includeFoto = document.getElementById('exportFoto')?.checked ?? false;
     const photoBuffers = new Array(dataToExport.length).fill(null);
-    const indexWithPhoto = [];
-    dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
 
-    let completed = 0;
-    await Promise.all(indexWithPhoto.map(async (idx) => {
-      const img = await toImageBuffer(dataToExport[idx].foto);
-      if (img) photoBuffers[idx] = img;
-      completed++;
-      const progress = indexWithPhoto.length ? Math.round((completed / indexWithPhoto.length) * 100) : 100;
-      btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
-    }));
-
-    btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+    if (includeFoto) {
+        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses 0%...';
+        
+        const indexWithPhoto = [];
+        dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
+        
+        if (indexWithPhoto.length > 0) {
+            const fotoUrls = indexWithPhoto.map(idx => dataToExport[idx].foto);
+            const fetchedPhotos = await parallelFetch(fotoUrls, 10, (done, total) => {
+                const progress = Math.round((done / total) * 100);
+                btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> Memproses ${progress}%...`;
+            }); // 10 concurrent
+            
+            fetchedPhotos.forEach((img, i) => {
+                if (img) photoBuffers[indexWithPhoto[i]] = img;
+            });
+        }
+        
+        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+    } else {
+        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+    }
 
     const nama = currentReportData.nama ? currentReportData.nama : 'Semua Pegawai';
     const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -909,21 +955,30 @@ async function exportToExcel() {
     });
 
     dataToExport.forEach((r, idx) => {
-      const img = photoBuffers[idx];
-      const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, img ? '' : '-', r.durasi, r.status]);
-      row.height = 58; 
-      row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
-      row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+      if (!includeFoto) {
+        // Skip foto, isi kolom dengan '-'
+        const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, '-', r.durasi, r.status]);
+        row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
+        row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+      } else {
+        const img = photoBuffers[idx];
+        const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, img ? '' : '-', r.durasi, r.status]);
+        row.height = 58; 
+        row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
+        row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
 
-      if (img) {
-        const imageId = workbook.addImage({ buffer: img.buffer, extension: img.extension });
-        sheet.addImage(imageId, {
-          tl: { col: 4.15, row: row.number - 1 + 0.1 },
-          ext: { width: 62, height: 62 },
-          editAs: 'oneCell'
-        });
+        if (img) {
+          const imageId = workbook.addImage({ buffer: img.buffer, extension: img.extension });
+          sheet.addImage(imageId, {
+            tl: { col: 4.15, row: row.number - 1 + 0.1 },
+            ext: { width: 62, height: 62 },
+            editAs: 'oneCell'
+          });
+        }
       }
     });
 
