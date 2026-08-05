@@ -105,17 +105,19 @@ include __DIR__ . '/../includes/header.php';
 
   .card-body { padding: 1.5rem; position: relative; z-index: 1; flex-grow: 1; }
   
-  .role-badge { 
-    display: inline-block;
+  .staff-role-badge { 
+    display: inline-flex;
+    align-items: center;
     font-size: 0.75rem; 
     color: var(--primary); 
     font-weight: 700; 
     background: var(--primary-light); 
-    padding: 0.3rem 0.8rem; 
+    padding: 0.25rem 0.75rem; 
     border-radius: 99px; 
     letter-spacing: 0.02em;
     margin-bottom: 0.75rem;
-    border: 1px solid rgba(79, 70, 229, 0.1);
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    line-height: 1.2;
   }
   
   .staff-name { 
@@ -184,6 +186,63 @@ include __DIR__ . '/../includes/header.php';
   .page-input-clean {
     -moz-appearance: textfield !important;
     appearance: textfield !important;
+  }
+
+  /* Optimasi Responsif Layar Mobile & Tablet */
+  @media (max-width: 768px) {
+    .page-head {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+      margin-bottom: 1rem !important;
+    }
+    .page-head > div:first-child {
+      width: 100%;
+    }
+    .page-head .btn-primary {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+    .filter-tabs, .filter-group {
+      display: flex !important;
+      overflow-x: auto !important;
+      white-space: nowrap !important;
+      flex-wrap: nowrap !important;
+      padding-bottom: 8px !important;
+      margin-bottom: 1rem !important;
+      -webkit-overflow-scrolling: touch;
+      gap: 8px !important;
+    }
+    .filter-tab {
+      flex-shrink: 0 !important;
+    }
+    .table-wrap {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 0 0 12px 12px;
+    }
+    .data-table {
+      min-width: 700px !important;
+    }
+    .data-table th, .data-table td {
+      padding: 0.75rem 0.6rem !important;
+      font-size: 0.83rem !important;
+    }
+    .pagination-wrap {
+      flex-direction: column;
+      align-items: stretch !important;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 10px !important;
+    }
+    .stats-row > *:last-child:nth-child(odd) {
+      grid-column: span 2;
+    }
   }
 
   .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -298,7 +357,7 @@ include __DIR__ . '/../includes/header.php';
         <div class="bg-initial"><?= $initial ?></div>
         
         <div class="card-body">
-          <span class="role-badge"><?= htmlspecialchars($p['role']) ?></span>
+          <span class="staff-role-badge"><?= htmlspecialchars($p['role']) ?></span>
           <h3 class="staff-name"><?= htmlspecialchars($p['name']) ?></h3>
           
           <div class="detail-row">

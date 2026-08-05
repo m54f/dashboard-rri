@@ -109,7 +109,7 @@ include __DIR__ . '/../includes/header.php';
   .petugas-name{ font-size:.76rem; }
 }
 
-/* Hilangkan tombol panah atas-bawah (spinner) pada input pagination */
+/* Hilangkan panah atas-bawah (spinner) pada input pagination */
 .page-input-clean::-webkit-outer-spin-button,
 .page-input-clean::-webkit-inner-spin-button {
   -webkit-appearance: none !important;
@@ -118,6 +118,63 @@ include __DIR__ . '/../includes/header.php';
 .page-input-clean {
   -moz-appearance: textfield !important;
   appearance: textfield !important;
+}
+
+/* Optimasi Responsif Layar Mobile & Tablet */
+@media (max-width: 768px) {
+  .page-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 1rem !important;
+  }
+  .page-head > div:first-child {
+    width: 100%;
+  }
+  .page-head .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .filter-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 1rem !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+  }
+  .filter-tab {
+    flex-shrink: 0 !important;
+  }
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 12px 12px;
+  }
+  #checklistTable {
+    min-width: 700px !important;
+  }
+  #checklistTable th, #checklistTable td {
+    padding: 0.75rem 0.6rem !important;
+    font-size: 0.83rem !important;
+  }
+  .pagination-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .stats-row > *:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
 }
 </style>
 

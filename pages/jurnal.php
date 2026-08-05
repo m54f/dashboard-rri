@@ -31,6 +31,61 @@ include __DIR__ . '/../includes/header.php';
   -moz-appearance: textfield !important;
   appearance: textfield !important;
 }
+
+/* Optimasi Responsif Layar Mobile & Tablet */
+@media (max-width: 768px) {
+  .page-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 1rem !important;
+  }
+  .page-head > div:first-child {
+    width: 100%;
+  }
+  .page-head .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .table-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .table-controls #searchInput {
+    width: 100% !important;
+  }
+  .filter-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 0.5rem !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+  }
+  .filter-tab {
+    flex-shrink: 0 !important;
+  }
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 12px 12px;
+  }
+  #jurnalTable {
+    min-width: 720px !important;
+  }
+  #jurnalTable th, #jurnalTable td {
+    padding: 0.75rem 0.6rem !important;
+    font-size: 0.83rem !important;
+  }
+  .pagination-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+    text-align: center;
+  }
+}
 </style>
 
 <div class="page-head">
