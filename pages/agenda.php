@@ -115,32 +115,52 @@ include __DIR__ . '/../includes/header.php';
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  border: 1px dashed rgba(0,0,0,0.25);
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 22px 0px 8px !important;
+  gap: 8px;
+  min-width: 50px;
+  height: 24px;
+  border-radius: 4px;
+  font-family: 'Figtree', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #FFFFFF !important;
+  border: none;
   outline: none;
   cursor: pointer;
-  font: inherit;
-  font-weight: 600;
-  padding-right: 20px !important;
-  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  box-sizing: border-box;
+  transition: opacity .15s ease, filter .15s ease;
 }
 .status-select:hover {
-  border-color: rgba(37,99,235,0.55);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  filter: brightness(0.92);
 }
 .status-select:focus {
-  border-color: rgba(37,99,235,0.7);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.22);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 115, 234, 0.4);
 }
 .status-select:disabled { cursor: wait; opacity: 0.6; }
+.status-select option {
+  background: #ffffff;
+  color: #0f172a;
+  font-family: 'Figtree', sans-serif;
+  font-size: 14px;
+}
 .status-select-arrow {
   position: absolute;
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
-  opacity: 0.7;
+  color: #FFFFFF;
+  opacity: 0.9;
 }
 
 /* Hilangkan panah atas-bawah (spinner) pada input pagination */

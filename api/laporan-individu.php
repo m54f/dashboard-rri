@@ -22,6 +22,10 @@ foreach ($apiFiles as $file) {
     }
 }
 
+if (file_exists(__DIR__ . '/lib/cache.php')) {
+    require_once __DIR__ . '/lib/cache.php';
+}
+
 // 1. BAGIAN INI DIPERBARUI: Blokir error jika nama kosong dihapus
 $namaInput = $_GET['nama'] ?? '';
 
@@ -94,7 +98,7 @@ $debugLog = [];
 // ==========================================
 if (function_exists('getPemadaman')) {
     try {
-        $pemadaman = getPemadaman();
+        $pemadaman = function_exists('cached') ? cached('pemadaman', 600, 'getPemadaman') : getPemadaman();
         if (is_array($pemadaman) && !isset($pemadaman['error'])) {
             foreach ($pemadaman as $p) {
                 if (isPetugasIni($namaInput, $p['petugas_arr'] ?? []) || isPetugasIni($namaInput, $p['petugas'] ?? '')) {
@@ -142,7 +146,7 @@ if (function_exists('getPemadaman')) {
 // ==========================================
 if (function_exists('getTroubleshoot')) {
     try {
-        $troubleshoot = getTroubleshoot();
+        $troubleshoot = function_exists('cached') ? cached('troubleshoot', 600, 'getTroubleshoot') : getTroubleshoot();
         if (is_array($troubleshoot) && !isset($troubleshoot['error'])) {
             foreach ($troubleshoot as $t) {
                 if (isPetugasIni($namaInput, $t['petugas_arr'] ?? []) || isPetugasIni($namaInput, $t['petugas'] ?? '') || isPetugasIni($namaInput, $t['pic'] ?? '')) {
@@ -186,7 +190,7 @@ if (function_exists('getTroubleshoot')) {
 // ==========================================
 if (function_exists('getChecklist')) {
     try {
-        $checklist = getChecklist();
+        $checklist = function_exists('cached') ? cached('checklist', 600, 'getChecklist') : getChecklist();
         if (is_array($checklist) && !isset($checklist['error'])) {
             foreach ($checklist as $c) {
                 if (isPetugasIni($namaInput, $c['petugas_arr'] ?? []) || isPetugasIni($namaInput, $c['petugas'] ?? '')) {
@@ -221,7 +225,7 @@ if (function_exists('getChecklist')) {
 // ==========================================
 if (function_exists('getJurnal')) {
     try {
-        $jurnal = getJurnal();
+        $jurnal = function_exists('cached') ? cached('jurnal', 600, 'getJurnal') : getJurnal();
         if (is_array($jurnal) && !isset($jurnal['error'])) {
             foreach ($jurnal as $j) {
                 if (isPetugasIni($namaInput, $j['ops_arr'] ?? []) || isPetugasIni($namaInput, $j['op'] ?? '')) {
@@ -265,7 +269,7 @@ if (function_exists('getJurnal')) {
 // ==========================================
 if (function_exists('getYoutubeVideos')) {
     try {
-        $youtube = getYoutubeVideos();
+        $youtube = function_exists('cached') ? cached('youtube', 600, 'getYoutubeVideos') : getYoutubeVideos();
         if (is_array($youtube) && !isset($youtube['error'])) {
             foreach ($youtube as $y) {
                 // Cek apakah petugas terlibat sebagai Teknik (PT Setting) atau PA (PT Produksi)
@@ -310,7 +314,7 @@ if (function_exists('getYoutubeVideos')) {
 // ==========================================
 if (function_exists('getPeminjaman')) {
     try {
-        $peminjaman = getPeminjaman();
+        $peminjaman = function_exists('cached') ? cached('peminjaman', 600, 'getPeminjaman') : getPeminjaman();
         if (is_array($peminjaman) && !isset($peminjaman['error'])) {
             foreach ($peminjaman as $p) {
                 if (isPetugasIni($namaInput, $p['pic'] ?? '')) {
