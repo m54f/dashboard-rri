@@ -387,23 +387,10 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<<<<<<< HEAD
 <!-- ACTION BAR: FILTER GROUP -->
 <div class="gallery-header-actions" style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
   <!-- Filter Groups & Action Buttons (Rata Kanan) -->
   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;">
-=======
-<!-- ACTION BAR: SEARCHBAR RATA KIRI, FILTER RATA KANAN -->
-<div class="gallery-header-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-  <!-- Searchbar (Rata Kiri) -->
-  <div class="search-box" style="max-width: 280px; margin: 0; background: var(--card-bg, #fff);">
-    <i class="ri-search-line"></i>
-    <input type="text" id="mainSearchInput" placeholder="Cari judul/narasumber..." oninput="handleMainSearch()" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
-  </div>
-
-  <!-- Filter Groups & Action Buttons (Rata Kanan di Desktop, Grid Sejajar di Mobile) -->
-  <div class="gallery-filter-wrap">
->>>>>>> 6225b71bff5d2514afd23d108477e7a91d931911
     <div class="gallery-filter-group">
         <div class="filter-input-group filter-penyiar" onclick="triggerSelect(event, 'filterPenyiar')">
             <label for="filterPenyiar" class="filter-prefix prefix-penyiar">Host</label>

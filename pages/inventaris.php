@@ -261,7 +261,6 @@ include __DIR__ . '/../includes/header.php';
     <h2>Inventaris Alat</h2>
     <p>Manajemen stok dan ketersediaan peralatan studio.</p>
   </div>
-<<<<<<< HEAD
   <div class="page-head-actions">
     <form class="search-box page-head-search" method="get">
       <i class="ri-search-line"></i>
@@ -271,15 +270,6 @@ include __DIR__ . '/../includes/header.php';
     <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
     <?php endif; ?>
   </div>
-=======
-  <form class="inv-search-bar" method="get">
-    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode alat...">
-    <button type="submit" class="btn btn-secondary"><i class="ri-search-line"></i></button>
-  </form>
-  <?php if (getRole() === 'admin'): ?>
-  <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
-  <?php endif; ?>
->>>>>>> 6225b71bff5d2514afd23d108477e7a91d931911
 </div>
 
 <div class="stats-row">
