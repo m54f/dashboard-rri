@@ -58,11 +58,11 @@ include __DIR__ . '/../includes/header.php';
   .stat-sub { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; line-height: 1.3; }
 
   @media (max-width: 640px) {
-    .stats-row { grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-card { padding: 1.25rem; gap: 1rem; }
-    .stat-icon { width: 48px; height: 48px; font-size: 1.5rem; border-radius: 12px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+    .stat-card { padding: 0.75rem 0.85rem; gap: 0.5rem; }
+    .stat-icon { width: 38px; height: 38px; font-size: 1.1rem; border-radius: 10px; }
     .stat-value { font-size: 1.35rem !important; }
-    .stat-sub { font-size: 0.8rem; }
+    .stat-sub { font-size: 0.72rem; }
   }
   /* Staff Grid */
   .staff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
