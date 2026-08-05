@@ -293,6 +293,99 @@ include __DIR__ . '/../includes/header.php';
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Lightbox Styles */
+.lightbox-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+.lightbox-overlay.active {
+  display: flex !important;
+}
+.lightbox-container {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+.lightbox-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease;
+}
+.lightbox-close-btn {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10001;
+  transition: background 0.2s;
+}
+.lightbox-close-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+.lightbox-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10001;
+  transition: background 0.2s, transform 0.2s;
+}
+.lightbox-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-50%) scale(1.08);
+}
+.lightbox-nav-btn.prev {
+  left: 24px;
+}
+.lightbox-nav-btn.next {
+  right: 24px;
+}
+.lightbox-counter {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 14px;
+  border-radius: 99px;
+}
 </style>
 
 <div class="page-head">
@@ -376,13 +469,16 @@ include __DIR__ . '/../includes/header.php';
             <td><span class="tag gray"><?= htmlspecialchars($t['cat']) ?></span></td>
             <td><?= htmlspecialchars($t['pic']) ?></td>
             <td>
-              <?php if (!empty($t['dokumentasi'])): ?>
+              <?php if (!empty($t['dokumentasi'])): 
+                $docUrls = array_map(function($d) { return $d['url']; }, $t['dokumentasi']);
+                $jsonUrls = htmlspecialchars(json_encode($docUrls), ENT_QUOTES, 'UTF-8');
+              ?>
               <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                <?php foreach (array_slice($t['dokumentasi'], 0, 3) as $dok): ?>
-                <img src="<?= htmlspecialchars($dok['url']) ?>" loading="lazy" alt="dok" class="doc-thumb" onclick="openLightbox('<?= htmlspecialchars($dok['url']) ?>')" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border-color);">
+                <?php foreach (array_slice($t['dokumentasi'], 0, 3) as $idx => $dok): ?>
+                <img src="<?= htmlspecialchars($dok['url']) ?>" loading="lazy" alt="dok" class="doc-thumb" onclick='openLightbox(<?= $jsonUrls ?>, <?= $idx ?>)' style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border-color);">
                 <?php endforeach; ?>
                 <?php if (count($t['dokumentasi']) > 3): ?>
-                <span style="font-size:10px;color:var(--text-secondary);align-self:center;">+<?= count($t['dokumentasi']) - 3 ?></span>
+                <span style="font-size:10px;color:var(--text-secondary);align-self:center;cursor:pointer;" onclick='openLightbox(<?= $jsonUrls ?>, 3)'>+<?= count($t['dokumentasi']) - 3 ?></span>
                 <?php endif; ?>
               </div>
               <?php else: ?>
@@ -620,21 +716,101 @@ async function uploadFiles(files) {
   return data.files.map(f => ({ id: f.id, name: f.name }));
 }
 
-// ===== Lightbox =====
-function openLightbox(url) {
+// ===== Lightbox Navigation & Close =====
+let currentLightboxImages = [];
+let currentLightboxIndex = 0;
+
+function openLightbox(urlOrUrls, index = 0) {
+  if (Array.isArray(urlOrUrls)) {
+    currentLightboxImages = urlOrUrls;
+    currentLightboxIndex = index;
+  } else {
+    currentLightboxImages = [urlOrUrls];
+    currentLightboxIndex = 0;
+  }
+
   let lb = document.getElementById('lightboxOverlay');
   if (!lb) {
     lb = document.createElement('div');
     lb.id = 'lightboxOverlay';
     lb.className = 'lightbox-overlay';
-    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-    lb.onclick = () => lb.classList.remove('active');
-    lb.innerHTML = '<img id="lightboxImg" src="" alt="Preview" style="max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;">';
+    
+    // Tap luar / backdrop click untuk menutup modal
+    lb.addEventListener('click', function(e) {
+      if (e.target === lb || e.target.classList.contains('lightbox-close-btn')) {
+        closeLightbox();
+      }
+    });
+
+    lb.innerHTML = `
+      <button type="button" class="lightbox-close-btn" onclick="closeLightbox()" title="Tutup">&times;</button>
+      <button type="button" class="lightbox-nav-btn prev" id="lbPrevBtn" onclick="navigateLightbox(-1, event)" title="Foto Sebelumnya">&#10094;</button>
+      <button type="button" class="lightbox-nav-btn next" id="lbNextBtn" onclick="navigateLightbox(1, event)" title="Foto Selanjutnya">&#10095;</button>
+      <div class="lightbox-container" onclick="event.stopPropagation()">
+        <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
+        <div id="lightboxCounter" class="lightbox-counter"></div>
+      </div>
+    `;
     document.body.appendChild(lb);
   }
-  document.getElementById('lightboxImg').src = url;
+
+  updateLightboxContent();
   lb.classList.add('active');
   lb.style.display = 'flex';
+
+  document.removeEventListener('keydown', handleLightboxKeydown);
+  document.addEventListener('keydown', handleLightboxKeydown);
+}
+
+function closeLightbox() {
+  const lb = document.getElementById('lightboxOverlay');
+  if (lb) {
+    lb.classList.remove('active');
+    lb.style.display = 'none';
+  }
+  document.removeEventListener('keydown', handleLightboxKeydown);
+}
+
+function updateLightboxContent() {
+  if (currentLightboxImages.length === 0) return;
+  const img = document.getElementById('lightboxImg');
+  const prevBtn = document.getElementById('lbPrevBtn');
+  const nextBtn = document.getElementById('lbNextBtn');
+  const counter = document.getElementById('lightboxCounter');
+
+  img.src = currentLightboxImages[currentLightboxIndex];
+
+  if (currentLightboxImages.length > 1) {
+    if (prevBtn) prevBtn.style.display = 'flex';
+    if (nextBtn) nextBtn.style.display = 'flex';
+    if (counter) {
+      counter.style.display = 'block';
+      counter.textContent = `${currentLightboxIndex + 1} / ${currentLightboxImages.length}`;
+    }
+  } else {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+    if (counter) counter.style.display = 'none';
+  }
+}
+
+function navigateLightbox(dir, event) {
+  if (event) event.stopPropagation();
+  if (currentLightboxImages.length <= 1) return;
+  currentLightboxIndex = (currentLightboxIndex + dir + currentLightboxImages.length) % currentLightboxImages.length;
+  updateLightboxContent();
+}
+
+function handleLightboxKeydown(e) {
+  const lb = document.getElementById('lightboxOverlay');
+  if (!lb || lb.style.display === 'none') return;
+  if (e.key === 'Escape') {
+    closeLightbox();
+  } else if (e.key === 'ArrowLeft') {
+    navigateLightbox(-1);
+  } else if (e.key === 'ArrowRight') {
+    navigateLightbox(1);
+  }
 }
 
 // ===== Mode CREATE =====
