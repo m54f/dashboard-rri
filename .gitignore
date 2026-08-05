@@ -20,3 +20,9 @@ test-supabase.php
 debug-supabase.php
 _explore_db.php
 _test_*.php
+cache_fix.php
+
+# Local Cache files
+cache/*.json
+cache/
+
