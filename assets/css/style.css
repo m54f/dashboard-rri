@@ -5,6 +5,70 @@
   --bg-color:#f8fafc; --card-bg:#ffffff;
   --text-primary:#0f172a; --text-secondary:#64748b; --border-color:#e2e8f0;
 }
+/* ===== FLOATING OVERLAY SCROLLBAR (Hanya di Halaman, Mengambang Tanpa Merubah Layout) ===== */
+html, body {
+  overflow-y: overlay; /* Scrollbar mengambang di atas konten tanpa geser layout */
+  scrollbar-gutter: auto;
+}
+
+/* Custom Overlay Scrollbar Mengambang (Sleek 6px) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4) !important;
+  border-radius: 99px !important;
+  transition: background-color 0.2s ease !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.75) !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Firefox Thin Scrollbar */
+html, body, .main, .table-wrap, .filter-tabs, .modal-body, .yt-slider {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35) !important;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(203, 213, 225, 0.7) !important;
+}
+
+/* ===== TETAP SEMBUNYIKAN SCROLLBAR SIDEBAR (HIDE SIDEBAR SCROLLBAR) ===== */
+.sidebar,
+.sidebar *,
+.sidebar::-webkit-scrollbar,
+.sidebar *::-webkit-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.sidebar::-webkit-scrollbar,
+.sidebar *::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-track {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--bg-color);color:var(--text-primary);}
 a{text-decoration:none;color:inherit;}
@@ -282,10 +346,54 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
 }
 .avatar-sm{width:28px;height:28px;border-radius:8px;background:var(--primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
 
-/* ===== Filter tabs / chips ===== */
-.filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
-.filter-tab{padding:8px 16px;border-radius:9px;background:#fff;border:1px solid var(--border-color);font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;}
-.filter-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+/* ===== Filter tabs / chips (Universal Horizontal Scrollable - Scrollbar Hidden) ===== */
+.filter-tabs,
+.filter-group:not(.gallery-filter-group),
+#reportFilterTabs,
+#timeFilterWrap {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  margin-bottom: 16px !important;
+  padding-bottom: 2px !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.filter-tabs::-webkit-scrollbar,
+.filter-group:not(.gallery-filter-group)::-webkit-scrollbar,
+#reportFilterTabs::-webkit-scrollbar,
+#timeFilterWrap::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.filter-tab,
+.filter-tabs > *,
+.filter-group:not(.gallery-filter-group) > .filter-tab {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  padding: 8px 16px;
+  border-radius: 9px;
+  background: #fff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.filter-tab.active {
+  background: var(--primary, #2563eb);
+  color: #fff !important;
+  border-color: var(--primary, #2563eb);
+}
 
 /* ===== Action icon buttons ===== */
 .icon-action{width:30px;height:30px;border-radius:7px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
@@ -2179,6 +2287,23 @@ body.dark-mode .filter-input-group {
   border: 1px solid #2b3952 !important;
   color: #f8fafc !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.dark-mode .filter-tab {
+  background: #161f30 !important;
+  border-color: #2b3952 !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .filter-tab:hover {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .filter-tab.active {
+  background: var(--primary, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: var(--primary, #2563eb) !important;
 }
 
 /* Dark Mode untuk Input Tanggal & Dropdown Filter */
