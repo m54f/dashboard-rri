@@ -93,7 +93,9 @@ include __DIR__ . '/../includes/header.php';
     <h2>Jadwal Operasional</h2>
     <p>Kumpulan gambar jadwal siaran (Pro 1, Pro 2, Pro 4, PA, PT, Pemancar Ngadirejo, dll).</p>
   </div>
-  <button class="btn btn-primary" onclick="openModal()"><i class="ri-upload-2-line"></i> Tambah Gambar</button>
+  <div class="page-head-actions">
+    <button class="btn btn-primary" onclick="openModal()"><i class="ri-upload-2-line"></i> Tambah Gambar</button>
+  </div>
 </div>
 
 <?php if ($message): ?>

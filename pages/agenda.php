@@ -290,7 +290,6 @@ include __DIR__ . '/../includes/header.php';
     <h2>Daily Agenda</h2>
     <p>Jadwal kegiatan operasional siaran hari ini.</p>
   </div>
-<<<<<<< HEAD
   <div class="page-head-actions">
     <!-- Filter Tanggal (Format Pill Presisi: Sebelah Kiri Tombol Tambah di Desktop, Di Atas Tombol Tambah di Mobile) -->
     <form class="filter-input-group filter-set page-head-search" method="get" id="filterForm" style="width: auto; min-width: 210px;">
@@ -301,15 +300,6 @@ include __DIR__ . '/../includes/header.php';
     <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
     <?php endif; ?>
   </div>
-=======
-  <form class="date-picker-form" method="get" id="filterForm">
-    <label for="dateFilter">Filter Tanggal:</label>
-    <input id="dateFilter" type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>" onchange="this.form.submit()">
-  </form>
-  <?php if (getRole() === 'admin'): ?>
-  <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Agenda</button>
-  <?php endif; ?>
->>>>>>> 6225b71bff5d2514afd23d108477e7a91d931911
 </div>
 
 <div class="stats-row">

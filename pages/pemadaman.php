@@ -252,7 +252,13 @@ include __DIR__ . '/../includes/header.php';
     <h2>Logbook Aktivitas Listrik</h2>
     <p>Catat dan pantau riwayat pemadaman listrik, penggunaan panel, dan maintenance genset.</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Catat Aktivitas</button>
+  <div class="page-head-actions">
+    <div class="search-box page-head-search">
+      <i class="ri-search-line"></i>
+      <input type="text" id="pemadamanSearchInput" placeholder="Cari aktivitas/petugas..." oninput="filterPemadamanTable(this.value)" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+    </div>
+    <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Catat Aktivitas</button>
+  </div>
 </div>
 
 <?php if (isset($errorMessage)): ?>
@@ -576,6 +582,13 @@ function openEditModal(btn){
 let currentPage = 1;
 const rowsPerPage = 8;
 let currentFilter = 'Semua';
+let currentSearchQuery = '';
+
+function filterPemadamanTable(val) {
+  currentSearchQuery = (val || '').toLowerCase().trim();
+  currentPage = 1;
+  updateTablePagination();
+}
 
 function filterPemadaman(value, el){
   if (el) {
@@ -602,8 +615,10 @@ function updateTablePagination() {
   }
 
   const filteredRows = allRows.filter(row => {
-    if (currentFilter === 'Semua') return true;
-    return row.dataset.pemancar === currentFilter;
+    const matchFilter = (currentFilter === 'Semua') || (row.dataset.pemancar === currentFilter);
+    const text = row.innerText.toLowerCase();
+    const matchSearch = !currentSearchQuery || text.includes(currentSearchQuery);
+    return matchFilter && matchSearch;
   });
 
   const totalRows = filteredRows.length;

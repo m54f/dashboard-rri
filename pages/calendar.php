@@ -158,25 +158,27 @@ include __DIR__ . '/../includes/header.php';
     <h2>Calendar Recap</h2>
     <p>Rekap kegiatan dan siaran dalam tampilan kalender bulanan.</p>
   </div>
-  <form method="get" class="cal-nav-form">
-    <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>" class="btn btn-secondary" style="padding:0.5rem 0.65rem; display:flex; align-items:center;" title="Bulan sebelumnya"><i class="ri-arrow-left-s-line"></i></a>
-    <select name="month" onchange="this.form.submit()">
-      <?php for ($m = 1; $m <= 12; $m++): ?>
-      <option value="<?= $m ?>" <?= $m === $month ? 'selected' : '' ?>><?= $monthNames[$m] ?></option>
-      <?php endfor; ?>
-    </select>
-    <select name="year" onchange="this.form.submit()">
-      <?php
-        $yearNow = (int) $jakartaNow->format('Y');
-        $yearStart = min($yearNow - 2, $year);
-        $yearEnd = max($yearNow + 2, $year);
-        for ($y = $yearStart; $y <= $yearEnd; $y++):
-      ?>
-      <option value="<?= $y ?>" <?= $y === $year ? 'selected' : '' ?>><?= $y ?></option>
-      <?php endfor; ?>
-    </select>
-    <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>" class="btn btn-secondary" style="padding:0.5rem 0.65rem; display:flex; align-items:center;" title="Bulan berikutnya"><i class="ri-arrow-right-s-line"></i></a>
-  </form>
+  <div class="page-head-actions">
+    <form method="get" class="cal-nav-form page-head-search" style="display:flex; align-items:center; gap:6px; margin:0; padding:4px 8px; border-radius:10px; background:var(--card-bg, #fff); border:1px solid var(--border-color, #e2e8f0);">
+      <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>" class="btn btn-secondary" style="padding:0.4rem 0.6rem; display:flex; align-items:center;" title="Bulan sebelumnya"><i class="ri-arrow-left-s-line"></i></a>
+      <select name="month" onchange="this.form.submit()" class="header-filter-select" style="border:none !important; outline:none !important; background:transparent !important; font-size:13px; font-weight:600; cursor:pointer;">
+        <?php for ($m = 1; $m <= 12; $m++): ?>
+        <option value="<?= $m ?>" <?= $m === $month ? 'selected' : '' ?>><?= $monthNames[$m] ?></option>
+        <?php endfor; ?>
+      </select>
+      <select name="year" onchange="this.form.submit()" class="header-filter-select" style="border:none !important; outline:none !important; background:transparent !important; font-size:13px; font-weight:600; cursor:pointer;">
+        <?php
+          $yearNow = (int) $jakartaNow->format('Y');
+          $yearStart = min($yearNow - 2, $year);
+          $yearEnd = max($yearNow + 2, $year);
+          for ($y = $yearStart; $y <= $yearEnd; $y++):
+        ?>
+        <option value="<?= $y ?>" <?= $y === $year ? 'selected' : '' ?>><?= $y ?></option>
+        <?php endfor; ?>
+      </select>
+      <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>" class="btn btn-secondary" style="padding:0.4rem 0.6rem; display:flex; align-items:center;" title="Bulan berikutnya"><i class="ri-arrow-right-s-line"></i></a>
+    </form>
+  </div>
 </div>
 
 <?php if ($errorMessage): ?>

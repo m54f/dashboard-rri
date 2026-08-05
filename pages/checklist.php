@@ -183,7 +183,13 @@ include __DIR__ . '/../includes/header.php';
     <h2>Checklist Pagi Malam</h2>
     <p>Rekap checklist perangkat siaran sesi Pagi dan Malam.</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Isi Checklist Baru</button>
+  <div class="page-head-actions">
+    <div class="search-box page-head-search">
+      <i class="ri-search-line"></i>
+      <input type="text" id="checklistSearchInput" placeholder="Cari tanggal/petugas/status..." oninput="filterChecklistTable(this.value)" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+    </div>
+    <button class="btn btn-primary" onclick="openCreateModal()"><i class="ri-add-line"></i> Isi Checklist Baru</button>
+  </div>
 </div>
 
 <?php if (isset($errorMessage)): ?>
@@ -524,6 +530,13 @@ function toggleAllPetugas(){
 let currentPage = 1;
 const rowsPerPage = 8;
 let currentFilter = 'Semua';
+let currentSearchQuery = '';
+
+function filterChecklistTable(val) {
+  currentSearchQuery = (val || '').toLowerCase().trim();
+  currentPage = 1;
+  updateTablePagination();
+}
 
 function filterChecklist(value, el){
   if (el) {
@@ -535,10 +548,7 @@ function filterChecklist(value, el){
   updateTablePagination();
 }
 
-// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
-// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
-// tanda "…"). Tanpa ini, kalau halaman banyak, semua nomor kelist penuh dan
-// bikin harus scroll horizontal (Prev/Next jadi ketutup/kegeser ke luar layar).
+// Pagination dipadatkan supaya muat di layar HP
 function getPaginationRange(current, total, delta = 1) {
   const result = [];
   let prev = 0;
@@ -567,9 +577,13 @@ function updateTablePagination() {
   }
 
   const filteredRows = allRows.filter(row => {
-    if (currentFilter === 'Semua') return true;
-    if (currentFilter === 'Belum Lengkap') return row.dataset.complete === '0';
-    return row.dataset.status === currentFilter;
+    let matchFilter = true;
+    if (currentFilter === 'Belum Lengkap') matchFilter = row.dataset.complete === '0';
+    else if (currentFilter !== 'Semua') matchFilter = row.dataset.status === currentFilter;
+    
+    const text = row.innerText.toLowerCase();
+    const matchSearch = !currentSearchQuery || text.includes(currentSearchQuery);
+    return matchFilter && matchSearch;
   });
 
   const totalRows = filteredRows.length;
