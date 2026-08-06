@@ -9,11 +9,11 @@ if (!is_array($pemadaman) || isset($pemadaman['error'])) {
 }
 
 $total      = count($pemadaman);
-$studioN    = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Studio'));
-$ngadirejoN = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Ngadirejo'));
-$ngijoN     = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Pemancar Ngijo'));
-$panelN     = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Panel Auditorium'));
-$gensetN    = count(array_filter($pemadaman, fn($p) => $p['pemancar'] === 'Maintenance Genset'));
+$studioN    = count(array_filter($pemadaman, fn($p) => strpos($p['pemancar'], 'Studio') !== false));
+$ngadirejoN = count(array_filter($pemadaman, fn($p) => strpos($p['pemancar'], 'Ngadirejo') !== false));
+$ngijoN     = count(array_filter($pemadaman, fn($p) => strpos($p['pemancar'], 'Ngijo') !== false));
+$panelN     = count(array_filter($pemadaman, fn($p) => strpos($p['pemancar'], 'Auditorium') !== false || strpos($p['pemancar'], 'Panel') !== false));
+$gensetN    = count(array_filter($pemadaman, fn($p) => strpos($p['pemancar'], 'Genset') !== false));
 
 $stats = [
     ['label' => 'Total Log', 'value' => $total, 'sub' => 'Semua catatan', 'icon' => 'ri-flashlight-line', 'tone' => 'orange'],
@@ -616,9 +616,28 @@ function updateTablePagination() {
   }
 
   const filteredRows = allRows.filter(row => {
-    const matchFilter = (currentFilter === 'Semua') || (row.dataset.pemancar === currentFilter);
+    const rowPemancar = (row.dataset.pemancar || '').trim().toLowerCase();
+    const filterVal = (currentFilter || '').trim().toLowerCase();
+
+    let matchFilter = false;
+    if (filterVal === 'semua' || !filterVal) {
+      matchFilter = true;
+    } else if (rowPemancar === filterVal) {
+      matchFilter = true;
+    } else if (rowPemancar.includes(filterVal) || filterVal.includes(rowPemancar)) {
+      matchFilter = true;
+    } else {
+      const keywords = ['studio', 'ngijo', 'ngadirejo', 'probolinggo', 'auditorium', 'panel', 'genset'];
+      for (const kw of keywords) {
+        if (filterVal.includes(kw) && rowPemancar.includes(kw)) {
+          matchFilter = true;
+          break;
+        }
+      }
+    }
+
     const text = row.innerText.toLowerCase();
-    const matchSearch = !currentSearchQuery || text.includes(currentSearchQuery);
+    const matchSearch = !currentSearchQuery || text.includes(currentSearchQuery.toLowerCase());
     return matchFilter && matchSearch;
   });
 
