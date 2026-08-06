@@ -317,10 +317,10 @@ include __DIR__ . '/../includes/header.php';
   .tag.blue { background: var(--primary-light); color: var(--primary); }
   .tag.orange { background: var(--warning-light); color: var(--warning); }
   .tag.purple { background: var(--purple-light); color: var(--purple); }
-  .tag.gray { background: #f1f5f9; color: var(--text-secondary); }
+  .tag.gray { background: rgba(255,255,255,0.07); color: var(--text-secondary); }
   .tag.green { background: var(--success-light); color: var(--success); }
   
-  .pic-badge { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+  .pic-badge { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.07); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
   .pic-badge i { color: var(--text-secondary); }
 
   .trouble-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.75rem; transition: all 0.2s ease; border-left: 4px solid transparent; }
