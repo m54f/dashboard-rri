@@ -11,6 +11,24 @@ $totalPetugas = count($petugas);
 $totalPosisi  = count(array_unique(array_filter(array_column($petugas, 'posisi'), fn($v) => $v !== '-')));
 $totalJabatan = count(array_unique(array_filter(array_column($petugas, 'role'), fn($v) => $v !== '-')));
 
+function getRoleBadgeClass($role) {
+    $r = strtolower(trim((string)$role));
+    if (empty($r) || $r === '-') return 'tone-gray';
+    
+    if (strpos($r, 'asisten teknisi') !== false) return 'tone-purple';
+    if (strpos($r, 'pranata') !== false || strpos($r, 'penyiar') !== false) return 'tone-blue';
+    if (strpos($r, 'katim') !== false || strpos($r, 'koordinator') !== false || strpos($r, 'kepala') !== false) return 'tone-orange';
+    if (strpos($r, 'teknisi') !== false) return 'tone-indigo';
+    if (strpos($r, 'pengarah') !== false || strpos($r, 'admin') !== false) return 'tone-red';
+    if (strpos($r, 'operator') !== false || strpos($r, 'it') !== false) return 'tone-cyan';
+    if (strpos($r, 'editor') !== false || strpos($r, 'reporter') !== false || strpos($r, 'jurnal') !== false) return 'tone-green';
+    
+    // Hash fallback untuk string Jabatan lain agar konsisten beda warna per Jabatan
+    $palettes = ['tone-purple', 'tone-blue', 'tone-green', 'tone-orange', 'tone-indigo', 'tone-cyan', 'tone-red'];
+    $hash = abs(crc32($r));
+    return $palettes[$hash % count($palettes)];
+}
+
 $base = '..'; 
 $pageTitle = 'Manajemen Petugas'; 
 $activeMenu = 'petugas';
@@ -43,8 +61,7 @@ include __DIR__ . '/../includes/header.php';
   .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
   .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
 
-  /* Stats Row */
-/* Stats Row - Diperbarui untuk PC & Mobile */
+  /* Stats Row - Diperbarui untuk PC & Mobile */
   .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
   .stat-card { background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-start; gap: 1.25rem; transition: all 0.3s ease; position: relative; overflow: hidden; }
   .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: #c7d2fe; }
@@ -64,6 +81,7 @@ include __DIR__ . '/../includes/header.php';
     .stat-value { font-size: 1.35rem !important; }
     .stat-sub { font-size: 0.72rem; }
   }
+  
   /* Staff Grid */
   .staff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
   
@@ -109,16 +127,34 @@ include __DIR__ . '/../includes/header.php';
     display: inline-flex;
     align-items: center;
     font-size: 0.75rem; 
-    color: var(--primary); 
     font-weight: 700; 
-    background: var(--primary-light); 
-    padding: 0.25rem 0.75rem; 
+    padding: 0.28rem 0.8rem; 
     border-radius: 99px; 
     letter-spacing: 0.02em;
     margin-bottom: 0.75rem;
-    border: 1px solid rgba(79, 70, 229, 0.15);
     line-height: 1.2;
+    transition: all 0.2s ease;
   }
+
+  /* Palet Warna Jabatan (Light Mode) */
+  .staff-role-badge.tone-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+  .staff-role-badge.tone-blue   { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+  .staff-role-badge.tone-green  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .staff-role-badge.tone-orange { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+  .staff-role-badge.tone-indigo { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+  .staff-role-badge.tone-cyan   { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+  .staff-role-badge.tone-red    { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .staff-role-badge.tone-gray   { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
+  /* Palet Warna Jabatan (Dark Mode) */
+  body.dark-mode .staff-role-badge.tone-purple { background: rgba(139, 92, 246, 0.18) !important; color: #a78bfa !important; border: 1px solid rgba(139, 92, 246, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-blue   { background: rgba(59, 130, 246, 0.18) !important; color: #60a5fa !important; border: 1px solid rgba(59, 130, 246, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-green  { background: rgba(16, 185, 129, 0.18) !important; color: #34d399 !important; border: 1px solid rgba(16, 185, 129, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-orange { background: rgba(245, 158, 11, 0.18) !important; color: #fbbf24 !important; border: 1px solid rgba(245, 158, 11, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-indigo { background: rgba(99, 102, 241, 0.18) !important; color: #818cf8 !important; border: 1px solid rgba(99, 102, 241, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-cyan   { background: rgba(20, 184, 166, 0.18) !important; color: #2dd4bf !important; border: 1px solid rgba(20, 184, 166, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-red    { background: rgba(239, 68, 68, 0.18) !important; color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.35) !important; }
+  body.dark-mode .staff-role-badge.tone-gray   { background: rgba(148, 163, 184, 0.18) !important; color: #cbd5e1 !important; border: 1px solid rgba(148, 163, 184, 0.35) !important; }
   
   .staff-name { 
     font-size: 1.35rem; 
@@ -172,7 +208,7 @@ include __DIR__ . '/../includes/header.php';
   .filter-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
   .filter-tab { padding: 0.4rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border: 1px solid transparent; background: transparent; transition: 0.2s; }
   .filter-tab:hover { background: #f1f5f9; color: var(--text-main); }
-  .filter-tab.active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
+  .filter-tab.active { background: var(--primary); color: #fff; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
   .filter-tab.cakrabot { background: #f5f3ff; color: #6366f1; border-color: #c4b5fd; }
   .filter-tab.cakrabot:hover { background: #ede9fe; }
   .filter-tab.cakrabot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-color: transparent; box-shadow: 0 2px 4px rgba(99,102,241,0.35); }
@@ -268,22 +304,51 @@ include __DIR__ . '/../includes/header.php';
   .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-  /* Input Search Style */
+  /* Input Search Style (Presisi tanpa Pergeseran Layout) */
   .search-input {
-    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    height: 38px;
+    padding: 0 0.75rem 0 2.2rem;
     border-radius: 8px;
     border: 1px solid var(--border);
     font-size: 0.85rem;
     outline: none;
-    width: 200px;
-    transition: all 0.2s;
+    width: 220px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
     background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="%2364748b"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 16.032 2 11C2 5.968 6.032 2 11 2C15.968 2 20 5.968 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>') no-repeat 10px center;
   }
   .search-input:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    width: 250px;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
   }
+
+  /* Loader Animations */
+  .ri-spin { animation: spin 1s linear infinite; display: inline-block; }
+  .figtree-loader-box { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+  .figtree-loader-circle { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+  /* Dark Mode Support Khusus Petugas */
+  body.dark-mode .page-head,
+  body.dark-mode .stat-card,
+  body.dark-mode .staff-card,
+  body.dark-mode .filter-bar { background: #161f30 !important; border-color: #2b3952 !important; color: #f8fafc !important; }
+  body.dark-mode .card-footer { background: #0f172a !important; border-top-color: #2b3952 !important; }
+  body.dark-mode .search-input { background-color: #0f172a !important; border-color: #2b3952 !important; color: #f8fafc !important; }
+  body.dark-mode #filterPegawai,
+  body.dark-mode #filterTahun { background-color: #0f172a !important; border-color: #2b3952 !important; color: #f8fafc !important; }
+  body.dark-mode .data-table th { background: #0f172a !important; color: #94a3b8 !important; border-bottom-color: #2b3952 !important; }
+  body.dark-mode .data-table td { background: #161f30 !important; color: #f8fafc !important; border-bottom-color: #2b3952 !important; }
+  body.dark-mode .data-table tbody tr:hover td { background: #1e293b !important; }
+  body.dark-mode .bg-initial { color: #1e293b !important; }
+  body.dark-mode .pagination-wrap { background: #161f30 !important; border-color: #2b3952 !important; }
+
+  /* Dark Mode Khusus Filter Tabs & Container di Petugas */
+  body.dark-mode .filter-group { background: transparent !important; border: none !important; padding: 0 !important; }
+  body.dark-mode .filter-tab { background: #161f30 !important; color: #94a3b8 !important; border: 1px solid #2b3952 !important; }
+  body.dark-mode .filter-tab:hover { background: #1e293b !important; color: #f8fafc !important; border-color: #3b82f6 !important; }
+  body.dark-mode .filter-tab.active { background: #2563eb !important; color: #ffffff !important; border-color: #2563eb !important; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4) !important; }
+  body.dark-mode .filter-tab.cakrabot { background: rgba(139, 92, 246, 0.18) !important; color: #a78bfa !important; border-color: rgba(139, 92, 246, 0.35) !important; }
+  body.dark-mode .filter-tab.cakrabot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: #ffffff !important; border-color: transparent !important; }
 </style>
 
 <!-- ===== MAIN VIEW ===== -->
@@ -357,7 +422,7 @@ include __DIR__ . '/../includes/header.php';
         <div class="bg-initial"><?= $initial ?></div>
         
         <div class="card-body">
-          <span class="staff-role-badge"><?= htmlspecialchars($p['role']) ?></span>
+          <span class="staff-role-badge <?= getRoleBadgeClass($p['role']) ?>"><?= htmlspecialchars($p['role']) ?></span>
           <h3 class="staff-name"><?= htmlspecialchars($p['name']) ?></h3>
           
           <div class="detail-row">
@@ -374,14 +439,14 @@ include __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="card-footer">
-          <button class="icon-action report" title="Lihat Laporan Kinerja" onclick="loadLaporan('<?= htmlspecialchars($p['name']) ?>')">
+          <button class="icon-action report" title="Lihat Laporan Kinerja" onclick="loadLaporan('<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>')">
             <i class="ri-file-chart-line"></i>
           </button>
           <?php if (getRole() === 'admin'): ?>
           <button class="icon-action edit" title="Edit Data" data-payload='<?= $editPayload ?>' onclick="openEditModal(this)">
             <i class="ri-pencil-line"></i>
           </button>
-          <button class="icon-action delete" title="Hapus Data" onclick="deletePetugas('<?= htmlspecialchars($p['page_id']) ?>', '<?= htmlspecialchars($p['name']) ?>')">
+          <button class="icon-action delete" title="Hapus Data" onclick="deletePetugas('<?= htmlspecialchars($p['page_id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>')">
             <i class="ri-delete-bin-line"></i>
           </button>
           <?php endif; ?>
@@ -433,15 +498,15 @@ include __DIR__ . '/../includes/header.php';
   <div style="background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow-card); border: 1px solid var(--border); padding: 1.5rem;">
     <div class="filter-bar" id="reportFilterBar" style="display: none;">
       
-      <div style="display:flex; gap:1rem; align-items:center; flex-wrap: wrap;">
+      <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap: wrap;">
         <!-- Dropdown Cari Pegawai -->
-        <select id="filterPegawai" onchange="loadLaporan(this.value)" style="padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--primary); font-size: 0.85rem; font-weight: 700; background: var(--primary-light); color: var(--primary); cursor: pointer; outline: none;">
+        <select id="filterPegawai" onchange="loadLaporan(this.value)" style="height: 38px; padding: 0 0.75rem; border-radius: 8px; border: 1px solid var(--primary); font-size: 0.85rem; font-weight: 700; background: var(--primary-light); color: var(--primary); cursor: pointer; outline: none; box-sizing: border-box;">
           <option value="">Semua Pegawai</option>
           <?php
           $sortedPetugas = $petugas;
           usort($sortedPetugas, fn($a, $b) => strcmp($a['name'], $b['name']));
           foreach ($sortedPetugas as $p): ?>
-            <option value="<?= htmlspecialchars($p['name']) ?>"><?= htmlspecialchars($p['name']) ?></option>
+            <option value="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"><?= htmlspecialchars($p['name']) ?></option>
           <?php endforeach; ?>
         </select>
 
@@ -462,8 +527,8 @@ include __DIR__ . '/../includes/header.php';
         </div>
       </div>
       
-      <div style="display:flex; gap:0.75rem; align-items:center; border-left: 1px solid var(--border); padding-left: 1rem;">
-        <select id="filterTahun" onchange="filterTahunChanged(this)" style="padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; background: #fff; cursor: pointer; outline: none;">
+      <div style="display:flex; gap:0.75rem; align-items:center; border-left: 1px solid var(--border); padding-left: 1rem; margin-left: auto;">
+        <select id="filterTahun" onchange="filterTahunChanged(this)" style="height: 38px; padding: 0 0.65rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; background: #fff; cursor: pointer; outline: none; box-sizing: border-box;">
           <option value="Semua">Semua Tahun</option>
         </select>
         <div class="filter-group" id="timeFilterWrap">
@@ -492,7 +557,7 @@ include __DIR__ . '/../includes/header.php';
         </thead>
         <tbody id="reportTableBody">
           <tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">
-            <i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br>
+            <i class="ri-loader-4-line ri-spin" style="font-size:1.5rem;"></i><br>
             <span style="margin-top:0.5rem; display:block; font-weight:500;">Memuat data laporan...</span>
           </td></tr>
         </tbody>
@@ -625,7 +690,7 @@ function loadLaporan(nama) {
   const paginationWrap = document.getElementById('reportPaginationWrap');
   if(paginationWrap) paginationWrap.style.display = 'none';
 
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);"><i class="ri-loader-4-line" style="animation: spin 1s linear infinite; display:inline-block; font-size:1.5rem;"></i><br><span style="margin-top:0.5rem; display:block; font-weight:500;">Mengumpulkan data dari seluruh logbook...</span></td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);"><i class="ri-loader-4-line ri-spin" style="font-size:1.5rem;"></i><br><span style="margin-top:0.5rem; display:block; font-weight:500;">Mengumpulkan data dari seluruh logbook...</span></td></tr>`;
   
   fetch(`../api/laporan-individu.php?nama=${encodeURIComponent(nama)}`)
     .then(res => res.json())
@@ -666,7 +731,7 @@ function loadLaporan(nama) {
       document.getElementById('rTotalDurasi').textContent = data.total_durasi;
       
       let maxKat = '-', maxVal = 0;
-      for (const [k, v] of Object.entries(data.statistik)) {
+      for (const [k, v] of Object.entries(data.statistik || {})) {
         if (v > maxVal) { maxVal = v; maxKat = k; }
       }
       document.getElementById('rKategori').textContent = maxKat;
@@ -814,19 +879,22 @@ function renderReportTable() {
   // Render Tabel
   tbody.innerHTML = '';
   pagedData.forEach(r => {
-    let statusColor = r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316';
+    const statusStr = (r.status || '').toString();
+    let statusColor = statusStr.includes('Selesai') || statusStr.includes('Lengkap') ? '#16a34a' : '#f97316';
     let proxyFotoUrl = r.foto ? '../api/image-proxy.php?url=' + encodeURIComponent(r.foto) + '&w=150' : '';
-    let fotoHtml = r.foto ? `<img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
+    
+    const escapedFoto = r.foto ? r.foto.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+    let fotoHtml = r.foto ? `<img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${escapedFoto}')">` : `<span style="color:#94a3b8;">-</span>`;
     
     tbody.innerHTML += `
       <tr>
-        <td style="font-weight: 600; white-space: nowrap;">${r.tanggal}</td>
-        <td><span style="padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569;">${r.kategori}</span></td>
-        <td style="max-width: 300px; line-height: 1.4;">${r.deskripsi}</td>
+        <td style="font-weight: 600; white-space: nowrap; text-align:left;">${r.tanggal || '-'}</td>
+        <td style="text-align:left;"><span style="padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569;">${r.kategori || '-'}</span></td>
+        <td style="max-width: 300px; line-height: 1.4; text-align:left;">${r.deskripsi || '-'}</td>
         <td style="text-align: center;">${fotoHtml}</td>
-        <td style="white-space: nowrap; font-weight: 600; color: var(--primary);">${r.durasi}</td>
-        <td style="font-size: 0.85rem; color: ${statusColor}; font-weight: 600;">${r.status}</td>
-        <td style="text-align:center;"><a href="${r.url}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>
+        <td style="white-space: nowrap; font-weight: 600; color: var(--primary); text-align: center;">${r.durasi || '-'}</td>
+        <td style="font-size: 0.85rem; color: ${statusColor}; font-weight: 600; text-align: center;">${r.status || '-'}</td>
+        <td style="text-align:center;"><a href="${r.url || '#'}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>
       </tr>
     `;
   });
@@ -1125,13 +1193,6 @@ async function exportToExcel() {
 }
 
 // showToast() is provided globally by /assets/css/js/sonner.js
-
-const style = document.createElement('style');
-style.innerHTML = `
-  @keyframes spin { 100% { transform: rotate(360deg); } } 
-  @keyframes slideInToast { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-`;
-document.head.appendChild(style);
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
