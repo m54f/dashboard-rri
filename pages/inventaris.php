@@ -70,6 +70,7 @@ while ($has_more) {
            $kategori = $getSelect($props['Kategori']);
            $status = $getSelect($props['Status']);
            $lokasi = $getSelect($props['Lokasi']);
+           $type   = !empty($props['Type']['rich_text'][0]['plain_text']) ? $props['Type']['rich_text'][0]['plain_text'] : (!empty($props['Type']['select']['name']) ? $props['Type']['select']['name'] : '');
 
            $katTone = match(strtolower($kategori)) {
                'audio' => 'purple', 'kamera' => 'blue', 'komputer' => 'green',
@@ -90,6 +91,7 @@ while ($has_more) {
                'qty'     => $getNumber($props['Qty']),
                'lokasi'  => $lokasi,
                'status'  => $status,
+               'type'    => $type,
                'cls'     => $statCls,
                'notes'   => $getText($props['Keterangan'])
            ];
@@ -350,7 +352,7 @@ include __DIR__ . '/../includes/header.php';
   <div class="table-wrap">
     <table class="data-table" id="invTable">
       <thead>
-        <tr><th>Nama Alat</th><th>Kode</th><th>Kategori</th><th>Qty</th><th>Lokasi</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr>
+        <tr><th>Nama Alat</th><th>Kode</th><th>Kategori</th><th>Tipe</th><th>Qty</th><th>Lokasi</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr>
       </thead>
       <tbody>
         <?php foreach ($inventaris as $i): ?>
@@ -360,6 +362,7 @@ include __DIR__ . '/../includes/header.php';
           <td class="cell-title"><?= htmlspecialchars($i['title']) ?></td>
           <td style="font-weight:600; color:#4b5563; font-family:monospace;"><?= htmlspecialchars($i['kode']) ?: '-' ?></td>
           <td><span class="tag <?= $i['tone'] ?>"><?= htmlspecialchars($i['tag']) ?></span></td>
+          <td><?= !empty($i['type']) && $i['type'] !== '-' ? htmlspecialchars($i['type']) : '<span style="color:#9ca3af;">—</span>' ?></td>
           <td style="text-align:center; font-weight:700;"><?= htmlspecialchars($i['qty']) ?></td>
           <td><?= htmlspecialchars($i['lokasi']) ?></td>
           <td><span class="status-tag <?= $i['cls'] ?>"><?= htmlspecialchars($i['status']) ?></span></td>
@@ -375,7 +378,7 @@ include __DIR__ . '/../includes/header.php';
         </tr>
         <?php endforeach; ?>
         <tr id="emptyRow" style="display:none;">
-          <td colspan="8" style="text-align:center; padding:2rem; color:#6b7280;">Tidak ada data inventaris ditemukan.</td>
+          <td colspan="9" style="text-align:center; padding:2rem; color:#6b7280;">Tidak ada data inventaris ditemukan.</td>
         </tr>
       </tbody>
     </table>
@@ -449,6 +452,10 @@ include __DIR__ . '/../includes/header.php';
           <select name="status">
             <option>Tersedia</option><option>Dipinjam</option><option>Rusak</option><option>Perbaikan</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>Type / Tipe</label>
+          <input type="text" name="type" placeholder="Contoh: Wireless, Portable, Type-A, dll">
         </div>
       </div>
       <div class="form-group"><label>Keterangan</label><textarea name="catatan" rows="2" placeholder="Kelengkapan, IP address, dll..."></textarea></div>
@@ -561,6 +568,7 @@ function openEditModal(id) {
   form.kategori.value = item.tag;
   form.lokasi.value = item.lokasi;
   form.status.value = item.status;
+  if (form.type) form.type.value = item.type && item.type !== '-' ? item.type : '';
   form.catatan.value = item.notes;
   form.page_id.value = item.page_id;
 

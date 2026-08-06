@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $qty      = (int)($_POST['qty'] ?? 0);
     $lokasi   = trim($_POST['lokasi'] ?? '');
     $status   = trim($_POST['status'] ?? '');
+    $type     = trim($_POST['type'] ?? '');
     $catatan  = trim($_POST['catatan'] ?? '');
 
     if (empty($namaAlat) && $action !== 'delete') {
@@ -60,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Notion API menerima array kosong [] jika text dikosongkan
     $textKode = !empty($kode) ? [['text' => ['content' => $kode]]] : [];
+    $textType = !empty($type) ? [['text' => ['content' => $type]]] : [];
     $textCatatan = !empty($catatan) ? [['text' => ['content' => $catatan]]] : [];
 
     $properties = [
@@ -69,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'Qty'          => ['number' => $qty],
         'Lokasi'       => ['select' => ['name' => $lokasi]],
         'Status'       => ['select' => ['name' => $status]],
+        'Type'         => ['rich_text' => $textType],
         'Keterangan'   => ['rich_text' => $textCatatan]
     ];
 

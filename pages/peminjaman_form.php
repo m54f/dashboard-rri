@@ -53,9 +53,9 @@ if ($isEdit) {
  $picList  = ['Alfian','Alif','Saiful','Yhanuar','Yayang','Yudha','Dicky','Yoyok','Anggi','Ludfi','Shofirin','Syukur','Dedy','Deny','Dayat','Winsa','Selvy'];
  $alatList = ['Mixer', 'Mic', 'Laptop', 'Tripod', 'Kamera', 'Kabel', 'Soundcard', 'Speaker', 'HT', 'Headphone', 'Modem', 'Video Switcher', 'Video Sender', 'Converter', 'Baterai', 'Lampu', 'Overlength', 'Earpik', 'Stand Mic', 'PC Desktop', 'Monitor', 'Keyboard', 'Mouse', 'Audio Distribution', 'Lainnya'];
 
-// Ambil stok dan keterangan (jenis) dari Inventaris
+// Ambil stok dan opsi jenis/tipe dari Inventaris
  $stockData = [];
- $jenisOptions = []; // Array untuk menampung opsi jenis per alat
+ $jenisOptions = []; // Array untuk menampung opsi jenis/tipe per alat
 
 if (defined('DATABASE_ID_INVENTARIS')) {
     $invQueryBody = ["page_size" => 100, "filter" => ["property" => "Status", "select" => ["equals" => "Tersedia"]]];
@@ -63,18 +63,27 @@ if (defined('DATABASE_ID_INVENTARIS')) {
     if (isset($invDbData['results'])) {
         foreach ($invDbData['results'] as $invPage) {
             $invName = !empty($invPage['properties']['Nama Alat']['title'][0]['plain_text']) ? $invPage['properties']['Nama Alat']['title'][0]['plain_text'] : '';
-            $invKet = !empty($invPage['properties']['Keterangan']['rich_text'][0]['plain_text']) ? $invPage['properties']['Keterangan']['rich_text'][0]['plain_text'] : '';
+            
+            // Mengambil dari kolom Type (rich_text / select), fallback ke Keterangan jika Type kosong
+            $invType = '';
+            if (!empty($invPage['properties']['Type']['rich_text'][0]['plain_text'])) {
+                $invType = $invPage['properties']['Type']['rich_text'][0]['plain_text'];
+            } elseif (!empty($invPage['properties']['Type']['select']['name'])) {
+                $invType = $invPage['properties']['Type']['select']['name'];
+            } elseif (!empty($invPage['properties']['Keterangan']['rich_text'][0]['plain_text'])) {
+                $invType = $invPage['properties']['Keterangan']['rich_text'][0]['plain_text'];
+            }
             
             foreach ($alatList as $alat) {
                 if (stripos($invName, $alat) !== false) {
                     if (!isset($stockData[$alat])) $stockData[$alat] = 0;
                     $stockData[$alat]++;
                     
-                    // Simpan keterangan sebagai opsi dropdown
-                    if (!empty($invKet)) {
+                    // Simpan tipe/jenis sebagai opsi dropdown
+                    if (!empty($invType)) {
                         if (!isset($jenisOptions[$alat])) $jenisOptions[$alat] = [];
-                        if (!in_array($invKet, $jenisOptions[$alat])) {
-                            $jenisOptions[$alat][] = $invKet;
+                        if (!in_array($invType, $jenisOptions[$alat])) {
+                            $jenisOptions[$alat][] = $invType;
                         }
                     }
                 }
