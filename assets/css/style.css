@@ -2322,9 +2322,12 @@ body.dark-mode .header-filter-select {
   border-color: #2b3952 !important;
 }
 
-body.dark-mode ::-webkit-calendar-picker-indicator {
-  filter: invert(1) !important;
-  opacity: 0.85 !important;
+body.dark-mode ::-webkit-calendar-picker-indicator,
+body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-mode input[type="time"]::-webkit-calendar-picker-indicator,
+body.dark-mode input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.9 !important;
   cursor: pointer !important;
 }
 
