@@ -389,10 +389,12 @@ table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
   transition: all 0.15s ease;
 }
 
-.filter-tab.active {
-  background: var(--primary, #2563eb);
+.filter-tab.active,
+.filter-tabs > .active,
+.filter-group:not(.gallery-filter-group) > .filter-tab.active {
+  background: var(--primary, #2563eb) !important;
   color: #fff !important;
-  border-color: var(--primary, #2563eb);
+  border-color: var(--primary, #2563eb) !important;
 }
 
 /* ===== Action icon buttons ===== */

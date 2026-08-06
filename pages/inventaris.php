@@ -1,7 +1,7 @@
 <?php
- $base = '..'; 
- $pageTitle = 'Inventaris'; 
- $activeMenu = 'inventaris';
+$base = '..'; 
+$pageTitle = 'Inventaris'; 
+$activeMenu = 'inventaris';
 
 require_once __DIR__ . '/../config/notion.php';
 
@@ -25,6 +25,9 @@ function notionCurl($method, $url, $body = []) {
     return json_decode($res, true);
 }
 $search = $_GET['search'] ?? '';
+$selectedCategory = $_GET['kategori'] ?? 'Semua';
+$selectedLokasi   = $_GET['lokasi'] ?? 'Semua';
+
 $inventaris = [];
 $errorMessage = null;
 
@@ -42,14 +45,13 @@ if (!empty($search)) {
    ];
 }
 
-// Variabel untuk pagination
+// Variabel untuk pagination Notion API
 $has_more = true;
 $start_cursor = null;
 
 while ($has_more) {
    $queryBody = $baseQueryBody;
    
-   // Tambahkan start_cursor jika ini bukan halaman pertama
    if ($start_cursor !== null) {
        $queryBody["start_cursor"] = $start_cursor;
    }
@@ -93,69 +95,37 @@ while ($has_more) {
            ];
        }
        
-       // Cek apakah masih ada halaman berikutnya
        $has_more = $dbData['has_more'] ?? false;
        $start_cursor = $dbData['next_cursor'] ?? null;
    } else {
        $errorMessage = "Gagal memuat data dari Notion.";
        if (isset($dbData['message'])) $errorMessage .= " Pesan Notion: " . $dbData['message'];
-       $has_more = false; // Hentikan loop jika terjadi error agar tidak infinite loop
+       $has_more = false;
    }
 }
 
- $totalItems = count($inventaris);
- $tersediaCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Tersedia') !== false));
- $dipinjamCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Dipinjam') !== false));
- $rusakCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Rusak') !== false || stripos($i['status'], 'Perbaikan') !== false));
+$totalItems = count($inventaris);
+$tersediaCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Tersedia') !== false));
+$dipinjamCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Dipinjam') !== false));
+$rusakCount = count(array_filter($inventaris, fn($i) => stripos($i['status'], 'Rusak') !== false || stripos($i['status'], 'Perbaikan') !== false));
 
- $stats = [
+$stats = [
     ['label' => 'Total Alat', 'value' => (string)$totalItems, 'sub' => 'Seluruh Inventaris', 'icon' => 'ri-archive-line', 'tone' => 'blue'],
     ['label' => 'Tersedia', 'value' => (string)$tersediaCount, 'sub' => 'Siap dipakai', 'icon' => 'ri-checkbox-circle-line', 'tone' => 'green'],
     ['label' => 'Dipinjam', 'value' => (string)$dipinjamCount, 'sub' => 'Sedang keluar', 'icon' => 'ri-share-forward-line', 'tone' => 'orange'],
     ['label' => 'Rusak / Perbaikan', 'value' => (string)$rusakCount, 'sub' => 'Tidak tersedia', 'icon' => 'ri-tools-line', 'tone' => 'red'],
 ];
 
- $categories = array_unique(array_map(fn($i) => $i['tag'], $inventaris));
+// Ekstraksi kategori unik
+$categories = array_values(array_unique(array_filter(array_map(fn($i) => trim($i['tag']), $inventaris), fn($c) => $c !== '' && $c !== '-')));
 sort($categories);
 
- $perPage = 8;
- $totalPages = max(1, (int)ceil($totalItems / $perPage));
- $currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
- $offset = ($currentPage - 1) * $perPage;
- $invPage = array_slice($inventaris, $offset, $perPage);
- $showingFrom = $totalItems === 0 ? 0 : $offset + 1;
- $showingTo = min($offset + $perPage, $totalItems);
-
-// Pagination dipadatkan supaya muat di layar HP (halaman pertama, halaman
-// terakhir, dan beberapa halaman di sekitar halaman aktif — sisanya diwakili
-// tanda "…"). Tanpa ini, kalau ada banyak halaman semua nomornya kelist penuh
-// dan bikin harus scroll horizontal di HP (Prev/Next jadi ketutup/kegeser).
-function paginationRange($current, $total, $delta = 1)
-{
-    $result = [];
-    $prev = 0;
-    for ($i = 1; $i <= $total; $i++) {
-        if ($i === 1 || $i === $total || ($i >= $current - $delta && $i <= $current + $delta)) {
-            if ($prev && $i - $prev > 1) {
-                $result[] = '...';
-            }
-            $result[] = $i;
-            $prev = $i;
-        }
-    }
-    return $result;
-}
-
-function invPageUrl($page, $search) {
-    $params = ['page' => $page];
-    if ($search !== '') $params['search'] = $search;
-    return '?' . http_build_query($params);
-}
+// Ekstraksi lokasi unik
+$locations = array_values(array_unique(array_filter(array_map(fn($i) => trim($i['lokasi']), $inventaris), fn($l) => $l !== '' && $l !== '-')));
+sort($locations);
 
 include __DIR__ . '/../includes/header.php';
 ?>
-
-<link rel="stylesheet" href="<?= $base ?>/assets/css/inventaris.css">
 
 <style>
 /* Hilangkan tombol panah atas-bawah (spinner) pada input pagination */
@@ -167,6 +137,54 @@ include __DIR__ . '/../includes/header.php';
 .page-input-clean {
   -moz-appearance: textfield !important;
   appearance: textfield !important;
+}
+
+/* Layout Filter Bar & Location Dropdown */
+.inv-filter-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.location-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.location-filter-wrap label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.location-filter-wrap select {
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.location-filter-wrap select:focus,
+.location-filter-wrap select:hover {
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 /* Optimasi Responsif Layar Mobile & Tablet */
@@ -213,13 +231,26 @@ include __DIR__ . '/../includes/header.php';
     width: 100% !important;
     justify-content: center !important;
   }
+  .inv-filter-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .location-filter-wrap {
+    width: 100% !important;
+    justify-content: space-between !important;
+    box-sizing: border-box;
+  }
+  .location-filter-wrap select {
+    flex: 1;
+  }
   .filter-tabs {
     display: flex !important;
     overflow-x: auto !important;
     white-space: nowrap !important;
     flex-wrap: nowrap !important;
     padding-bottom: 8px !important;
-    margin-bottom: 1rem !important;
+    margin-bottom: 0.5rem !important;
     -webkit-overflow-scrolling: touch;
     gap: 8px !important;
   }
@@ -262,9 +293,9 @@ include __DIR__ . '/../includes/header.php';
     <p>Manajemen stok dan ketersediaan peralatan studio.</p>
   </div>
   <div class="page-head-actions">
-    <form class="search-box page-head-search" method="get">
+    <form class="search-box page-head-search" method="get" onsubmit="event.preventDefault();">
       <i class="ri-search-line"></i>
-      <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode alat..." style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
+      <input type="text" id="invSearchInput" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari nama/kode/lokasi..." oninput="handleSearchInput(this.value)" style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent !important; width:100%;">
     </form>
     <?php if (getRole() === 'admin'): ?>
     <button class="btn btn-primary" onclick="openModal('create')"><i class="ri-add-line"></i> Tambah Alat</button>
@@ -291,11 +322,25 @@ include __DIR__ . '/../includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="filter-tabs" id="filterTabs">
-  <div class="filter-tab active" onclick="filterInventaris('Semua', this)">Semua</div>
-  <?php foreach ($categories as $cat): ?>
-  <div class="filter-tab" onclick="filterInventaris('<?= htmlspecialchars($cat, ENT_QUOTES) ?>', this)"><?= htmlspecialchars($cat) ?></div>
-  <?php endforeach; ?>
+<!-- Filter Bar: Kategori & Lokasi -->
+<div class="inv-filter-container">
+  <div class="filter-tabs" id="filterTabs" style="margin-bottom: 0;">
+    <div class="filter-tab <?= $selectedCategory === 'Semua' ? 'active' : '' ?>" data-cat="Semua" onclick="filterCategory('Semua', this)">Semua</div>
+    <?php foreach ($categories as $cat): ?>
+    <div class="filter-tab <?= $selectedCategory === $cat ? 'active' : '' ?>" data-cat="<?= htmlspecialchars($cat, ENT_QUOTES) ?>" onclick="filterCategory('<?= htmlspecialchars($cat, ENT_QUOTES) ?>', this)"><?= htmlspecialchars($cat) ?></div>
+    <?php endforeach; ?>
+  </div>
+
+  <div class="location-filter-wrap">
+    <i class="ri-map-pin-2-line" style="color: #3b82f6; font-size: 1.1rem;"></i>
+    <label for="filterLokasi">Lokasi:</label>
+    <select id="filterLokasi" onchange="filterLocation(this.value)">
+      <option value="Semua">Semua Lokasi</option>
+      <?php foreach ($locations as $loc): ?>
+      <option value="<?= htmlspecialchars($loc, ENT_QUOTES) ?>" <?= ($selectedLokasi === $loc) ? 'selected' : '' ?>><?= htmlspecialchars($loc) ?></option>
+      <?php endforeach; ?>
+    </select>
+  </div>
 </div>
 
 <div class="card">
@@ -308,11 +353,10 @@ include __DIR__ . '/../includes/header.php';
         <tr><th>Nama Alat</th><th>Kode</th><th>Kategori</th><th>Qty</th><th>Lokasi</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr>
       </thead>
       <tbody>
-        <?php if (empty($invPage)): ?>
-        <tr><td colspan="8" style="text-align:center; padding:2rem; color:#6b7280;">Tidak ada data inventaris ditemukan.</td></tr>
-        <?php else: ?>
-        <?php foreach ($invPage as $i): ?>
-        <tr data-tag="<?= htmlspecialchars($i['tag'], ENT_QUOTES) ?>" data-id="<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>">
+        <?php foreach ($inventaris as $i): ?>
+        <tr data-tag="<?= htmlspecialchars($i['tag'], ENT_QUOTES) ?>" 
+            data-lokasi="<?= htmlspecialchars($i['lokasi'], ENT_QUOTES) ?>" 
+            data-id="<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>">
           <td class="cell-title"><?= htmlspecialchars($i['title']) ?></td>
           <td style="font-weight:600; color:#4b5563; font-family:monospace;"><?= htmlspecialchars($i['kode']) ?: '-' ?></td>
           <td><span class="tag <?= $i['tone'] ?>"><?= htmlspecialchars($i['tag']) ?></span></td>
@@ -330,23 +374,19 @@ include __DIR__ . '/../includes/header.php';
           </td>
         </tr>
         <?php endforeach; ?>
-        <?php endif; ?>
+        <tr id="emptyRow" style="display:none;">
+          <td colspan="8" style="text-align:center; padding:2rem; color:#6b7280;">Tidak ada data inventaris ditemukan.</td>
+        </tr>
       </tbody>
     </table>
   </div>
 
   <div class="pagination-wrap">
-    <div style="font-size:0.9rem; color:#6b7280;">
-      Menampilkan <?= $showingFrom ?>-<?= $showingTo ?> dari <?= $totalItems ?> alat
+    <div id="showingInfo" style="font-size:0.9rem; color:#6b7280;">
+      Menampilkan data...
     </div>
-    <?php if ($totalPages > 1): ?>
-    <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
-      <a href="<?= htmlspecialchars(invPageUrl(max(1, $currentPage - 1), $search)) ?>" class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?>">&laquo; Prev</a>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="<?= $currentPage ?>" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="let p=parseInt(this.value); if(!isNaN(p) && p>=1 && p<=<?= $totalPages ?>) location.href='<?= htmlspecialchars(invPageUrl(999999, $search)) ?>'.replace('999999', p);" onkeydown="if(event.key === 'Enter'){ let p=parseInt(this.value); if(!isNaN(p) && p>=1 && p<=<?= $totalPages ?>) location.href='<?= htmlspecialchars(invPageUrl(999999, $search)) ?>'.replace('999999', p); }">
-      <span style="font-size:0.9rem; color:#475569;">dari <?= $totalPages ?></span>
-      <a href="<?= htmlspecialchars(invPageUrl(min($totalPages, $currentPage + 1), $search)) ?>" class="btn btn-secondary" style="padding:0.4rem 0.8rem; <?= $currentPage >= $totalPages ? 'pointer-events:none; opacity:0.5;' : '' ?>">Next &raquo;</a>
+    <div id="paginationControls" style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
     </div>
-    <?php endif; ?>
   </div>
 </div>
 
@@ -375,8 +415,18 @@ include __DIR__ . '/../includes/header.php';
         <div class="form-group">
           <label>Lokasi</label>
           <select name="lokasi">
-            <option>Gudang Musik 1</option><option>Gudang Musik 1 - Lemari Besi</option><option>Gudang Musik 1 - Lemari Kayu Kiri</option>
-            <option>Studio PRO 1</option><option>Studio PRO 2</option><option>Studio PRO 4</option><option>Studio Podcast</option>
+            <option value="Gudang Musik 1">Gudang Musik 1</option>
+            <option value="Gudang Musik 1 - Lemari Besi">Gudang Musik 1 - Lemari Besi</option>
+            <option value="Gudang Musik 1 - Lemari Kayu Kiri">Gudang Musik 1 - Lemari Kayu Kiri</option>
+            <option value="Studio PRO 1">Studio PRO 1</option>
+            <option value="Studio PRO 2">Studio PRO 2</option>
+            <option value="Studio PRO 4">Studio PRO 4</option>
+            <option value="Studio Podcast">Studio Podcast</option>
+            <?php foreach ($locations as $loc): ?>
+              <?php if (!in_array($loc, ['Gudang Musik 1', 'Gudang Musik 1 - Lemari Besi', 'Gudang Musik 1 - Lemari Kayu Kiri', 'Studio PRO 1', 'Studio PRO 2', 'Studio PRO 4', 'Studio Podcast'])): ?>
+              <option value="<?= htmlspecialchars($loc, ENT_QUOTES) ?>"><?= htmlspecialchars($loc) ?></option>
+              <?php endif; ?>
+            <?php endforeach; ?>
           </select>
         </div>
       </div>
@@ -400,8 +450,13 @@ include __DIR__ . '/../includes/header.php';
 
 <script>
 const BASE = '<?= $base ?>';
-// Kirim data PHP ke JS agar form Edit bisa terisi otomatis
-const INVENTARIS_DATA = <?= json_encode($invPage) ?>;
+const INVENTARIS_DATA = <?= json_encode($inventaris) ?>;
+
+let currentCategory = '<?= htmlspecialchars($selectedCategory, ENT_QUOTES) ?>';
+let currentLokasi   = '<?= htmlspecialchars($selectedLokasi, ENT_QUOTES) ?>';
+let currentSearch   = '<?= htmlspecialchars(strtolower($search), ENT_QUOTES) ?>';
+let currentPage     = 1;
+const perPage       = 8;
 
 // ===== Fungsi Modal =====
 function openModal(mode) {
@@ -416,7 +471,6 @@ function closeModal() {
   document.getElementById('invModal').classList.remove('active');
 }
 
-// Tutup modal jika klik di luar area kotak modal
 document.getElementById('invModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
@@ -440,13 +494,108 @@ function openEditModal(id) {
   document.getElementById('invModal').classList.add('active');
 }
 
-// ===== Fungsi Filter Tab =====
-function filterInventaris(tag, el) {
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+// ===== Fungsi Filter & Pagination =====
+function filterCategory(tag, el) {
+  document.querySelectorAll('#filterTabs .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  document.querySelectorAll('#invTable tbody tr').forEach(row => {
-    row.style.display = (tag === 'Semua' || row.dataset.tag === tag) ? '' : 'none';
+  currentCategory = tag;
+  currentPage = 1;
+  applyInvFilters();
+}
+
+function filterLocation(loc) {
+  currentLokasi = loc;
+  currentPage = 1;
+  applyInvFilters();
+}
+
+function handleSearchInput(val) {
+  currentSearch = val.toLowerCase().trim();
+  currentPage = 1;
+  applyInvFilters();
+}
+
+function changeInvPage(page) {
+  currentPage = page;
+  applyInvFilters();
+}
+
+function jumpToInvPage(val, maxPage) {
+  let p = parseInt(val, 10);
+  if (!isNaN(p) && p >= 1 && p <= maxPage) {
+    changeInvPage(p);
+  } else if (p > maxPage) {
+    changeInvPage(maxPage);
+  } else {
+    changeInvPage(1);
+  }
+}
+
+function applyInvFilters() {
+  const allRows = Array.from(document.querySelectorAll('#invTable tbody tr:not(#emptyRow)'));
+  const emptyRow = document.getElementById('emptyRow');
+
+  const filteredRows = allRows.filter(row => {
+    const matchCat = currentCategory === 'Semua' || row.dataset.tag === currentCategory;
+    const matchLoc = currentLokasi === 'Semua' || row.dataset.lokasi === currentLokasi;
+    
+    let matchSearch = true;
+    if (currentSearch) {
+      const text = row.textContent.toLowerCase();
+      matchSearch = text.includes(currentSearch);
+    }
+    
+    return matchCat && matchLoc && matchSearch;
   });
+
+  const totalFiltered = filteredRows.length;
+  const totalPages    = Math.ceil(totalFiltered / perPage) || 1;
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  allRows.forEach(row => row.style.display = 'none');
+
+  if (totalFiltered === 0) {
+    if (emptyRow) emptyRow.style.display = '';
+  } else {
+    if (emptyRow) emptyRow.style.display = 'none';
+    const start = (currentPage - 1) * perPage;
+    const end   = Math.min(start + perPage, totalFiltered);
+    for (let i = start; i < end; i++) {
+      filteredRows[i].style.display = '';
+    }
+  }
+
+  const showingFrom = totalFiltered === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const showingTo   = Math.min(currentPage * perPage, totalFiltered);
+
+  const infoEl = document.getElementById('showingInfo');
+  if (infoEl) {
+    infoEl.textContent = `Menampilkan ${showingFrom}-${showingTo} dari ${totalFiltered} alat`;
+  }
+
+  const paginationControls = document.getElementById('paginationControls');
+  if (paginationControls) {
+    if (totalPages <= 1) {
+      paginationControls.style.display = 'none';
+    } else {
+      paginationControls.style.display = 'flex';
+      let html = '';
+      
+      const prevDisabled = currentPage === 1 ? 'disabled style="pointer-events:none; opacity:0.5;"' : '';
+      html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem;" onclick="changeInvPage(${currentPage - 1})" ${prevDisabled}>&laquo; Prev</button>`;
+      
+      html += `<input type="text" inputmode="numeric" pattern="[0-9]*" class="page-input-clean" value="${currentPage}" style="width:50px; padding:0.4rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; text-align:center; color:#2563eb; outline:none; font-weight:600;" onfocus="this.select()" onchange="jumpToInvPage(this.value, ${totalPages})" onkeydown="if(event.key === 'Enter') jumpToInvPage(this.value, ${totalPages})">`;
+      
+      html += `<span style="font-size:0.9rem; color:#475569;">dari ${totalPages}</span>`;
+      
+      const nextDisabled = currentPage === totalPages ? 'disabled style="pointer-events:none; opacity:0.5;"' : '';
+      html += `<button type="button" class="btn btn-secondary" style="padding:0.4rem 0.8rem;" onclick="changeInvPage(${currentPage + 1})" ${nextDisabled}>Next &raquo;</button>`;
+      
+      paginationControls.innerHTML = html;
+    }
+  }
 }
 
 // ===== Fungsi Submit (Create & Update) =====
@@ -470,18 +619,15 @@ async function handleInvForm(event) {
     const data = await res.json();
     
     if (!res.ok || data.error) {
-      // Tampilkan notifikasi gagal
       showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
       console.error(data);
       return;
     }
     
-    // Tampilkan notifikasi sukses
     const msg = isUpdate ? '✅ Data alat berhasil diperbarui!' : '✅ Alat baru berhasil ditambahkan!';
     showToast(msg, 'success');
     
     closeModal();
-    // Delay reload 1.2 detik agar notifikasi sempat terbaca
     setTimeout(() => location.reload(), 1200);
 
   } catch (err) {
@@ -512,11 +658,9 @@ async function deleteInvRow(id, btn) {
       return;
     }
     
-    // Tampilkan notifikasi sukses hapus
     showToast('🗑️ Alat berhasil dihapus!', 'success');
     
     row.remove();
-    // Delay reload 1.2 detik agar notifikasi sempat terbaca
     setTimeout(() => location.reload(), 1200);
 
   } catch (err) {
@@ -526,7 +670,8 @@ async function deleteInvRow(id, btn) {
   }
 }
 
-// showToast() is provided globally by /assets/css/js/sonner.js
+// Inisialisasi filter saat DOM siap
+document.addEventListener('DOMContentLoaded', applyInvFilters);
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

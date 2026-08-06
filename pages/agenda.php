@@ -889,7 +889,7 @@ function addRowToTable(entry, pageId, dokumentasi){
     <td style="font-weight:700;">${escapeHtml(entry.waktu)}</td>
     <td class="cell-title">${escapeHtml(entry.kegiatan)}</td>
     <td><span class="tag ${categoryTone(entry.kategori)}">${escapeHtml(entry.kategori)}</span></td>
-    <td><span class="avatar-sm">${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
+    <td>${escapeHtml(entry.lokasi.slice(0,2).toUpperCase())}</span> ${escapeHtml(entry.lokasi)}</td>
     <td>${renderStatusSelect(pageId, entry.status)}</td>
     <td class="cell-sub">${entry.catatan ? escapeHtml(entry.catatan) : '—'}</td>
     <td>${renderDokumenCell(dokumentasi)}</td>

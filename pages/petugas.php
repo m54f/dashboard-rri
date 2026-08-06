@@ -172,7 +172,7 @@ include __DIR__ . '/../includes/header.php';
   .filter-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
   .filter-tab { padding: 0.4rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border: 1px solid transparent; background: transparent; transition: 0.2s; }
   .filter-tab:hover { background: #f1f5f9; color: var(--text-main); }
-  .filter-tab.active { background: var(--primary); color: #fff; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
+  .filter-tab.active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
   .filter-tab.cakrabot { background: #f5f3ff; color: #6366f1; border-color: #c4b5fd; }
   .filter-tab.cakrabot:hover { background: #ede9fe; }
   .filter-tab.cakrabot.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-color: transparent; box-shadow: 0 2px 4px rgba(99,102,241,0.35); }
@@ -815,7 +815,8 @@ function renderReportTable() {
   tbody.innerHTML = '';
   pagedData.forEach(r => {
     let statusColor = r.status.includes('Selesai') || r.status.includes('Lengkap') ? '#16a34a' : '#f97316';
-    let fotoHtml = r.foto ? `<img src="${r.foto}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
+    let proxyFotoUrl = r.foto ? '../api/image-proxy.php?url=' + encodeURIComponent(r.foto) + '&w=150' : '';
+    let fotoHtml = r.foto ? `<img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${r.foto}')">` : `<span style="color:#94a3b8;">-</span>`;
     
     tbody.innerHTML += `
       <tr>
