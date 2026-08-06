@@ -561,7 +561,7 @@ include __DIR__ . '/../includes/header.php';
             <tr class="video-row" data-video="<?= $videoData ?>">
               <td>
                 <?php if ($flyer !== ''): ?>
-                  <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" class="video-thumb">
+                  <img src="<?= htmlspecialchars($flyer, ENT_QUOTES, 'UTF-8') ?>" loading="lazy" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" class="video-thumb" onclick="event.stopPropagation(); openImagePopup(this.src);" style="cursor:zoom-in;" title="Klik untuk memperbesar thumbnail">
                 <?php else: ?>
                   <div class="video-thumb video-thumb-empty"><i class="ri-image-line"></i></div>
                 <?php endif; ?>
@@ -718,7 +718,8 @@ include __DIR__ . '/../includes/header.php';
     overflow: hidden;
   }
 
-  .video-thumb { width:64px; height:40px; object-fit:cover; border-radius:6px; display:block; }
+  .video-thumb { width:64px; height:40px; object-fit:cover; border-radius:6px; display:block; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; }
+  .video-thumb:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
   .video-thumb-empty { display:flex; align-items:center; justify-content:center; background:#e0e0e0; color:#999; font-size:1.1rem; }
   .video-row:hover { background:rgba(0,0,0,0.03); }
   .icon-action.view { color:#0ea5e9; background:none; border:none; cursor:pointer; font-size:1rem; padding:0.3rem; border-radius:6px; text-decoration:none; display:inline-flex; }
@@ -774,8 +775,19 @@ include __DIR__ . '/../includes/header.php';
 </style>
 </div>
 
-<div id="imageModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center;" onclick="this.style.display='none'">
-  <img id="imageModalSrc" src="" alt="Pop-up Flyer" style="max-width:90%; max-height:90%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); cursor:zoom-out;">
+<div id="imageModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center; flex-direction:column; padding:20px; box-sizing:border-box;" onclick="closeImagePopup()">
+  <span style="position:absolute; top:20px; right:35px; font-size:40px; color:#ffffff; cursor:pointer; font-weight:300; line-height:1; user-select:none; z-index:100000;" onclick="closeImagePopup()">&times;</span>
+  <div style="position:relative; max-width:92vw; max-height:85vh; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
+    <img id="imageModalSrc" src="" alt="Pop-up Flyer" style="max-width:100%; max-height:80vh; object-fit:contain; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+    <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+      <a id="imageModalDownload" href="" target="_blank" download class="btn btn-primary" style="padding:7px 16px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:6px;">
+        <i class="ri-external-link-line"></i> Buka Gambar Asli
+      </a>
+      <button type="button" class="btn btn-secondary" onclick="closeImagePopup()" style="padding:7px 16px; font-size:13px; border-radius:6px;">
+        Tutup
+      </button>
+    </div>
+  </div>
 </div>
 
 <div id="addVideoView" style="display:none;">
@@ -1872,7 +1884,7 @@ function renderVideoRows(videos) {
         tr.dataset.video = JSON.stringify(videoDataObj);
 
         var flyerHtml = flyer !== ''
-            ? `<img src="${escapeHtml(flyer)}" loading="lazy" alt="${escapeHtml(title)}" class="video-thumb">`
+            ? `<img src="${escapeHtml(flyer)}" loading="lazy" alt="${escapeHtml(title)}" class="video-thumb" onclick="event.stopPropagation(); openImagePopup(this.src);" style="cursor:zoom-in;" title="Klik untuk memperbesar thumbnail">`
             : `<div class="video-thumb video-thumb-empty"><i class="ri-image-line"></i></div>`;
 
         var subTitleHtml = namaAcara !== ''
@@ -2939,11 +2951,29 @@ function hapusFlyer(id, event) {
 }
 
 function openImagePopup(src) {
+    if (!src) return;
     var modal = document.getElementById('imageModal');
     var modalImg = document.getElementById('imageModalSrc');
-    modalImg.src = src;
-    modal.style.display = 'flex';
+    var modalDownload = document.getElementById('imageModalDownload');
+    if (modalImg) modalImg.src = src;
+    if (modalDownload) modalDownload.href = src;
+    if (modal) modal.style.display = 'flex';
 }
+
+function openLightbox(src) {
+    openImagePopup(src);
+}
+
+function closeImagePopup() {
+    var modal = document.getElementById('imageModal');
+    if (modal) modal.style.display = 'none';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImagePopup();
+    }
+});
 
 // ==========================================
 // HAPUS BARIS & CLEAR TABEL
