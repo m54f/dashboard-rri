@@ -400,13 +400,26 @@ include __DIR__ . '/../includes/header.php';
     <form id="invForm" onsubmit="handleInvForm(event)">
       <div class="form-group"><label>Nama Alat</label><input type="text" name="nama_alat" placeholder="Contoh: Mixer Ashley" required></div>
       <div class="form-row">
-        <div class="form-group"><label>Kode Inventaris</label><input type="text" name="kode" placeholder="Contoh: GM-042"></div>
+        <div class="form-group">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Kode Inventaris</span>
+            <button type="button" onclick="generateAutoKode()" style="background:none; border:none; color:#3b82f6; font-size:0.78rem; font-weight:600; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">
+              <i class="ri-magic-line"></i> Auto Kode
+            </button>
+          </label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" name="kode" id="invKodeInput" placeholder="Contoh: AUD-001" style="flex:1;">
+            <button type="button" class="btn btn-secondary" onclick="generateAutoKode()" style="padding:0.4rem 0.75rem; font-size:0.82rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;" title="Generate Kode Otomatis">
+              <i class="ri-magic-line"></i> Auto
+            </button>
+          </div>
+        </div>
         <div class="form-group"><label>Jumlah (Qty)</label><input type="number" name="qty" min="1" value="1" required></div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Kategori</label>
-          <select name="kategori">
+          <select name="kategori" onchange="onCategoryChangeInForm()">
             <option>Audio</option><option>Kamera</option><option>Komputer</option><option>Kabel</option>
             <option>Tripod</option><option>Lighting</option><option>Video</option><option>Komunikasi</option>
             <option>Aksesoris</option><option>Power</option><option>Jaringan</option>
@@ -452,6 +465,66 @@ include __DIR__ . '/../includes/header.php';
 const BASE = '<?= $base ?>';
 const INVENTARIS_DATA = <?= json_encode($inventaris) ?>;
 
+const CATEGORY_PREFIXES = {
+  'Audio': 'AUD',
+  'Kamera': 'KAM',
+  'Komputer': 'KOM',
+  'Kabel': 'KBL',
+  'Tripod': 'TRP',
+  'Lighting': 'LTG',
+  'Video': 'VID',
+  'Komunikasi': 'KMK',
+  'Aksesoris': 'AKS',
+  'Power': 'PWR',
+  'Jaringan': 'JRG'
+};
+
+function generateAutoKode() {
+  const form = document.getElementById('invForm');
+  const cat = form.kategori.value || 'Audio';
+  const prefix = CATEGORY_PREFIXES[cat] || (cat.substring(0, 3).toUpperCase());
+
+  let maxNum = 0;
+  const regex = new RegExp('^' + prefix + '-(\\d+)$', 'i');
+
+  INVENTARIS_DATA.forEach(item => {
+    if (item.kode) {
+      const match = item.kode.trim().match(regex);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+  });
+
+  const nextNum = maxNum + 1;
+  const numStr = String(nextNum).padStart(3, '0');
+  const newKode = `${prefix}-${numStr}`;
+
+  const kodeInput = form.querySelector('input[name="kode"]');
+  if (kodeInput) {
+    kodeInput.value = newKode;
+    kodeInput.style.transition = 'all 0.3s';
+    kodeInput.style.borderColor = '#3b82f6';
+    kodeInput.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.2)';
+    setTimeout(() => {
+      kodeInput.style.borderColor = '';
+      kodeInput.style.boxShadow = '';
+    }, 600);
+  }
+}
+
+function onCategoryChangeInForm() {
+  const form = document.getElementById('invForm');
+  const pageId = form.querySelector('input[name="page_id"]').value;
+  const kodeInput = form.querySelector('input[name="kode"]');
+  if (!pageId || !kodeInput.value.trim()) {
+    generateAutoKode();
+  }
+}
+
 let currentCategory = '<?= htmlspecialchars($selectedCategory, ENT_QUOTES) ?>';
 let currentLokasi   = '<?= htmlspecialchars($selectedLokasi, ENT_QUOTES) ?>';
 let currentSearch   = '<?= htmlspecialchars(strtolower($search), ENT_QUOTES) ?>';
@@ -464,6 +537,7 @@ function openModal(mode) {
   form.reset();
   document.querySelector('input[name="page_id"]').value = '';
   document.getElementById('modalTitle').textContent = 'Tambah Alat';
+  generateAutoKode();
   document.getElementById('invModal').classList.add('active');
 }
 
