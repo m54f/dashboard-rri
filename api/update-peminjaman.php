@@ -56,8 +56,27 @@ foreach ($oldRelations as $rel) {
 
 // 2. Susun properti Peminjaman baru
  $pic = $payload['pic'] ?? '';
- $alatTags = array_unique(array_map(fn($a) => $a['alat'], $payload['alat'] ?? []));
- $detailAlat = implode(', ', array_map(fn($a) => "{$a['alat']} ({$a['jenis']}) ({$a['qty']})", $payload['alat'] ?? []));
+ $alatPayload = $payload['alat'] ?? [];
+ $detailAlatParts = [];
+ $alatTags = [];
+
+foreach ($alatPayload as $a) {
+    $name = trim($a['alat'] ?? '');
+    $tipe = trim($a['tipe'] ?? $a['jenis'] ?? '');
+    $kat  = trim($a['kategori'] ?? '');
+    $qty  = (int)($a['qty'] ?? 1);
+    
+    if (empty($name)) continue;
+    
+    $alatTags[] = $name;
+    $part = $kat ? "[{$kat}] {$name}" : $name;
+    if (!empty($tipe)) $part .= " ({$tipe})";
+    $part .= " ({$qty}x)";
+    $detailAlatParts[] = $part;
+}
+
+ $detailAlat = implode(', ', $detailAlatParts);
+ $alatTags = array_unique($alatTags);
 
  $properties = [
     'Nama Kegiatan' => ['title' => [['text' => ['content' => $payload['kegiatan'] ?? '']]]],
@@ -82,30 +101,47 @@ if ($res['code'] === 200) {
     // 3. Cari & Hubungkan stok baru jika status masih Dipinjam
     if (($payload['status'] ?? 'Dipinjam') === 'Dipinjam') {
         $relationIds = [];
-        foreach ($payload['alat'] as $alatItem) {
-            $filter = [
-                "and" => [
-                    ["property" => "Nama Alat", "title" => ["contains" => $alatItem['alat']]],
-                    ["property" => "Status", "select" => ["equals" => "Tersedia"]]
-                ]
+        foreach ($alatPayload as $alatItem) {
+            $name = trim($alatItem['alat'] ?? '');
+            $tipe = trim($alatItem['tipe'] ?? $alatItem['jenis'] ?? '');
+            $kat  = trim($alatItem['kategori'] ?? '');
+            $qty  = (int)($alatItem['qty'] ?? 1);
+            
+            if (empty($name)) continue;
+            
+            $filterAnd = [
+                ["property" => "Status", "select" => ["equals" => "Tersedia"]],
+                ["property" => "Nama Alat", "title" => ["contains" => $name]]
             ];
-            if (!empty($alatItem['jenis'])) {
-                $filter['and'][] = ["property" => "Keterangan", "rich_text" => ["contains" => $alatItem['jenis']]];
+            if (!empty($kat)) {
+                $filterAnd[] = ["property" => "Kategori", "select" => ["equals" => $kat]];
             }
             
             $invQuery = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', [
-                "filter" => $filter,
-                "page_size" => (int)$alatItem['qty']
+                "filter" => ["and" => $filterAnd],
+                "page_size" => $qty
             ]);
             
-            if (isset($invQuery['data']['results'])) {
-                foreach ($invQuery['data']['results'] as $invPage) {
-                    $invPageId = $invPage['id'];
-                    $relationIds[] = $invPageId;
-                    notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $invPageId, [
-                        "properties" => ["Status" => ["select" => ["name" => "Dipinjam"]]]
-                    ]);
-                }
+            $matchedResults = $invQuery['data']['results'] ?? [];
+            
+            if (empty($matchedResults) && !empty($kat)) {
+                $fallbackFilterAnd = [
+                    ["property" => "Status", "select" => ["equals" => "Tersedia"]],
+                    ["property" => "Nama Alat", "title" => ["contains" => $name]]
+                ];
+                $invQueryFallback = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', [
+                    "filter" => ["and" => $fallbackFilterAnd],
+                    "page_size" => $qty
+                ]);
+                $matchedResults = $invQueryFallback['data']['results'] ?? [];
+            }
+            
+            foreach ($matchedResults as $invPage) {
+                $invPageId = $invPage['id'];
+                $relationIds[] = $invPageId;
+                notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $invPageId, [
+                    "properties" => ["Status" => ["select" => ["name" => "Dipinjam"]]]
+                ]);
             }
         }
         

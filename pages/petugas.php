@@ -981,21 +981,27 @@ async function handlePetugasSubmit(event) {
 }
 
 async function deletePetugas(pageId, name) {
-  if (!confirm(`Hapus data petugas "${name}"?\n\nData akan dipindahkan ke Trash di Notion.`)) return;
-  try {
-    const res = await fetch('../api/delete-petugas.php', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId })
-    });
-    const data = await res.json();
-    if (data.success) { 
-      showToast('🗑️ Data berhasil dihapus!', 'success');
-      setTimeout(() => location.reload(), 1000);
-    } else { 
-      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error'); 
-    }
-  } catch (err) { 
-    showToast('❌ Error: ' + err.message, 'error'); 
-  }
+  customConfirm(
+    'Hapus Petugas',
+    `Hapus data petugas "${name}"? Data akan dipindahkan ke Trash di Notion.`,
+    async () => {
+      try {
+        const res = await fetch('../api/delete-petugas.php', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId })
+        });
+        const data = await res.json();
+        if (data.success) { 
+          showToast('🗑️ Data berhasil dihapus!', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else { 
+          showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error'); 
+        }
+      } catch (err) { 
+        showToast('❌ Error: ' + err.message, 'error'); 
+      }
+    },
+    'Hapus'
+  );
 }
 
 async function parallelFetch(urls, concurrency = 10, onProgress = null) {

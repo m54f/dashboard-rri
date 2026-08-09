@@ -71,12 +71,46 @@ function getPeminjaman()
             $tglKembali  = $props['Tanggal Kembali']['date']['start'] ?? null;
 
             $alatOptions = $props['Alat Dipinjam']['multi_select'] ?? [];
-            $alatArr     = array_map(fn($a) => $a['name'], $alatOptions);
-            $alatDisplay = !empty($alatArr) ? implode(', ', $alatArr) : '-';
+            $rawAlatArr  = array_map(fn($a) => $a['name'], $alatOptions);
 
             $detailAlat = $props['Detail Alat']['rich_text'][0]['plain_text'] ?? '';
             $durasi     = $props['Durasi (jam)']['number'] ?? null;
             $keterangan = $props['Keterangan']['rich_text'][0]['plain_text'] ?? '';
+
+            $alatDisplay = !empty($detailAlat) ? $detailAlat : (!empty($rawAlatArr) ? implode(', ', $rawAlatArr) : '-');
+
+            // Parse detail_alat ke alat_arr untuk kemudahan edit mode di peminjaman_form.php
+            $parsedAlatArr = [];
+            if (!empty($detailAlat)) {
+                $parts = explode(',', $detailAlat);
+                foreach ($parts as $p) {
+                    $p = trim($p);
+                    if (empty($p)) continue;
+                    
+                    // Regex mencocokkan pattern: [Kategori] Nama (Tipe) (Qtyx) atau Nama (Tipe) (Qty)
+                    if (preg_match('/^(?:\[(.*?)\]\s*)?([^(]+)(?:\((.*?)\))?(?:\s*\((.*?)\))?$/', $p, $m)) {
+                        $kat  = trim($m[1] ?? '');
+                        $nama = trim($m[2] ?? '');
+                        $tipe = trim($m[3] ?? '');
+                        $qty  = preg_replace('/[^0-9]/', '', $m[4] ?? '1');
+                        
+                        if (!empty($nama)) {
+                            $parsedAlatArr[] = [
+                                'kategori' => $kat,
+                                'alat' => $nama,
+                                'jenis' => $tipe,
+                                'tipe' => $tipe,
+                                'qty' => (int)($qty ?: 1)
+                            ];
+                        }
+                    }
+                }
+            }
+            if (empty($parsedAlatArr) && !empty($rawAlatArr)) {
+                foreach ($rawAlatArr as $ra) {
+                    $parsedAlatArr[] = ['kategori' => '', 'alat' => $ra, 'jenis' => '', 'tipe' => '', 'qty' => 1];
+                }
+            }
 
             $statusRaw = $props['Status']['select']['name'] ?? 'Dipinjam';
 
@@ -100,7 +134,7 @@ function getPeminjaman()
                 'tgl_kegiatan' => $tglKegiatan,
                 'tgl_pinjam'   => $tglPinjam,
                 'tgl_kembali'  => $tglKembali,
-                'alat_arr'     => $alatArr,
+                'alat_arr'     => $parsedAlatArr,
                 'alat_display' => $alatDisplay,
                 'detail_alat'  => $detailAlat,
                 'durasi'       => $durasi,

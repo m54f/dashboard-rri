@@ -606,7 +606,7 @@ document.querySelectorAll('.modal-close').forEach(el => {
 
 function openEditModal(id){
   const entry = AGENDA_DATA.find(a => a.id === id);
-  if (!entry) { alert('Data agenda tidak ditemukan di halaman ini.'); return; }
+  if (!entry) { showToast('⚠️ Data agenda tidak ditemukan di halaman ini.', 'error'); return; }
 
   clearSelectedFiles();
   const form = document.getElementById('agendaForm');
@@ -766,7 +766,7 @@ async function updateStatusInline(selectEl){
   const prevValue = selectEl.dataset.prev || (newStatus === 'Selesai' ? 'Belum' : 'Selesai');
   const entry = AGENDA_DATA.find(a => a.id === pageId);
   if (!entry) {
-    alert('Data agenda tidak ditemukan di halaman ini, silakan reload halaman lalu coba lagi.');
+    showToast('⚠️ Data agenda tidak ditemukan di halaman ini, silakan reload halaman.', 'error');
     selectEl.value = prevValue;
     return;
   }
@@ -794,7 +794,7 @@ async function updateStatusInline(selectEl){
     selectEl.dataset.prev = newStatus;
   } catch (err) {
     console.error('[updateStatusInline] gagal ubah status:', err);
-    alert('Gagal mengubah status: ' + (err.message || err));
+    showToast('❌ Gagal mengubah status: ' + (err.message || err), 'error');
     selectEl.value = prevValue;
   } finally {
     selectEl.disabled = false;
@@ -940,7 +940,7 @@ async function handleAgendaForm(event){
   const tMulai = formData.get('tanggal');
   const tSelesai = formData.get('tanggal_selesai');
   if (tSelesai && tSelesai < tMulai) {
-    alert('Tanggal Selesai tidak boleh lebih awal dari Tanggal Mulai.');
+    showToast('⚠️ Tanggal Selesai tidak boleh lebih awal dari Tanggal Mulai.', 'error');
     return;
   }
 
@@ -959,7 +959,7 @@ async function handleAgendaForm(event){
       throw new Error(JSON.stringify(data));
     }
     if (data.file_warnings && data.file_warnings.length) {
-      alert('PERHATIAN: Agenda tersimpan, TAPI file gagal diupload ke Notion:\n\n' + data.file_warnings.join('\n') + '\n\nDetail lengkap ada di Console (F12).');
+      showToast('⚠️ Agenda tersimpan, TAPI file gagal diupload ke Notion.', 'warning');
     }
 
     const entry = {
@@ -1016,7 +1016,7 @@ async function handleAgendaForm(event){
     clearSelectedFiles();
   } catch (err) {
     console.error('[handleAgendaForm] exception:', err);
-    alert('Gagal menyimpan agenda: ' + (err.message || err));
+    showToast('❌ Gagal menyimpan agenda: ' + (err.message || err), 'error');
   } finally {
     submitBtn.disabled = false; submitBtn.textContent = origText;
   }

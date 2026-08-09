@@ -149,17 +149,29 @@ include __DIR__ . '/../includes/header.php';
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .location-filter-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   background: #ffffff;
-  padding: 6px 14px;
+  padding: 4px 12px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.location-filter-wrap:hover,
+.location-filter-wrap:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
 }
 
 .location-filter-wrap label {
@@ -167,26 +179,39 @@ include __DIR__ . '/../includes/header.php';
   font-weight: 600;
   color: #475569;
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .location-filter-wrap select {
-  padding: 0.4rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  padding: 0.4rem 0.5rem 0.4rem 0.2rem;
+  border: none !important;
+  outline: none !important;
   font-size: 0.85rem;
-  font-weight: 600;
-  background: #f8fafc;
-  color: #0f172a;
+  font-weight: 700;
+  background: transparent !important;
+  color: #1e293b;
   cursor: pointer;
-  outline: none;
-  transition: all 0.2s;
+  box-shadow: none !important;
+  transition: color 0.15s ease;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.location-filter-wrap select:focus,
-.location-filter-wrap select:hover {
-  border-color: #3b82f6;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+body.dark-mode .location-filter-wrap {
+  background: #1e293b;
+  border-color: #334155;
+}
+body.dark-mode .location-filter-wrap label {
+  color: #94a3b8;
+}
+body.dark-mode .location-filter-wrap select {
+  color: #f8fafc;
+}
+body.dark-mode .location-filter-wrap select option {
+  background: #1e293b;
+  color: #f8fafc;
 }
 
 /* Optimasi Responsif Layar Mobile & Tablet */
@@ -212,79 +237,106 @@ include __DIR__ . '/../includes/header.php';
     align-items: stretch !important;
     gap: 12px !important;
     margin-bottom: 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .page-head > div:first-child {
-    width: 100%;
-  }
-  .inv-search-bar {
-    margin-left: 0 !important;
     width: 100% !important;
-    background: #f8fafc;
-    padding: 8px 12px;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    box-sizing: border-box;
   }
-  .inv-search-bar input[type="text"] {
-    flex: 1;
+  .page-head-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
     width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .page-head-search {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   .page-head .btn-primary {
     width: 100% !important;
     justify-content: center !important;
+    box-sizing: border-box !important;
   }
   .inv-filter-container {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   .location-filter-wrap {
     width: 100% !important;
     justify-content: space-between !important;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
   }
   .location-filter-wrap select {
-    flex: 1;
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-overflow: ellipsis;
   }
   .filter-tabs {
     display: flex !important;
     overflow-x: auto !important;
+    overflow-y: hidden !important;
     white-space: nowrap !important;
     flex-wrap: nowrap !important;
     padding-bottom: 8px !important;
     margin-bottom: 0.5rem !important;
     -webkit-overflow-scrolling: touch;
     gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
   }
   .filter-tab {
     flex-shrink: 0 !important;
   }
   .table-wrap {
     overflow-x: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
     -webkit-overflow-scrolling: touch;
     border-radius: 0 0 12px 12px;
+    box-sizing: border-box !important;
   }
   #invTable {
-    min-width: 700px !important;
+    min-width: 650px !important;
   }
   #invTable th, #invTable td {
     padding: 0.75rem 0.6rem !important;
     font-size: 0.83rem !important;
   }
   .pagination-wrap {
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: stretch !important;
     text-align: center;
+    gap: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  #paginationControls {
+    justify-content: center !important;
+    width: 100% !important;
   }
 }
 
 @media (max-width: 640px) {
   .stats-row {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
-  }
-  .stats-row > *:last-child:nth-child(odd) {
-    grid-column: span 2;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 </style>
@@ -401,65 +453,67 @@ include __DIR__ . '/../includes/header.php';
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <form id="invForm" onsubmit="handleInvForm(event)">
-      <div class="form-group"><label>Nama Alat</label><input type="text" name="nama_alat" placeholder="Contoh: Mixer Ashley" required></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Kode Inventaris</span>
-            <button type="button" onclick="generateAutoKode()" style="background:none; border:none; color:#3b82f6; font-size:0.78rem; font-weight:600; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">
-              <i class="ri-magic-line"></i> Auto Kode
-            </button>
-          </label>
-          <div style="display:flex; gap:6px;">
-            <input type="text" name="kode" id="invKodeInput" placeholder="Contoh: AUD-001" style="flex:1;">
-            <button type="button" class="btn btn-secondary" onclick="generateAutoKode()" style="padding:0.4rem 0.75rem; font-size:0.82rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;" title="Generate Kode Otomatis">
-              <i class="ri-magic-line"></i> Auto
-            </button>
+      <div class="modal-body">
+        <div class="form-group"><label>Nama Alat</label><input type="text" name="nama_alat" placeholder="Contoh: Mixer Ashley" required></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Kode Inventaris</span>
+              <button type="button" onclick="generateAutoKode()" style="background:none; border:none; color:#3b82f6; font-size:0.78rem; font-weight:600; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">
+                <i class="ri-magic-line"></i> Auto Kode
+              </button>
+            </label>
+            <div style="display:flex; gap:6px;">
+              <input type="text" name="kode" id="invKodeInput" placeholder="Contoh: AUD-001" style="flex:1;">
+              <button type="button" class="btn btn-secondary" onclick="generateAutoKode()" style="padding:0.4rem 0.75rem; font-size:0.82rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;" title="Generate Kode Otomatis">
+                <i class="ri-magic-line"></i> Auto
+              </button>
+            </div>
+          </div>
+          <div class="form-group"><label>Jumlah (Qty)</label><input type="number" name="qty" min="1" value="1" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Kategori</label>
+            <select name="kategori" onchange="onCategoryChangeInForm()">
+              <option>Audio</option><option>Kamera</option><option>Komputer</option><option>Kabel</option>
+              <option>Tripod</option><option>Lighting</option><option>Video</option><option>Komunikasi</option>
+              <option>Aksesoris</option><option>Power</option><option>Jaringan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Lokasi</label>
+            <select name="lokasi">
+              <option value="Gudang Musik 1">Gudang Musik 1</option>
+              <option value="Gudang Musik 1 - Lemari Besi">Gudang Musik 1 - Lemari Besi</option>
+              <option value="Gudang Musik 1 - Lemari Kayu Kiri">Gudang Musik 1 - Lemari Kayu Kiri</option>
+              <option value="Studio PRO 1">Studio PRO 1</option>
+              <option value="Studio PRO 2">Studio PRO 2</option>
+              <option value="Studio PRO 4">Studio PRO 4</option>
+              <option value="Studio Podcast">Studio Podcast</option>
+              <?php foreach ($locations as $loc): ?>
+                <?php if (!in_array($loc, ['Gudang Musik 1', 'Gudang Musik 1 - Lemari Besi', 'Gudang Musik 1 - Lemari Kayu Kiri', 'Studio PRO 1', 'Studio PRO 2', 'Studio PRO 4', 'Studio Podcast'])): ?>
+                <option value="<?= htmlspecialchars($loc, ENT_QUOTES) ?>"><?= htmlspecialchars($loc) ?></option>
+                <?php endif; ?>
+              <?php endforeach; ?>
+            </select>
           </div>
         </div>
-        <div class="form-group"><label>Jumlah (Qty)</label><input type="number" name="qty" min="1" value="1" required></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+              <option>Tersedia</option><option>Dipinjam</option><option>Rusak</option><option>Perbaikan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type / Tipe</label>
+            <input type="text" name="type" placeholder="Contoh: Wireless, Portable, Type-A, dll">
+          </div>
+        </div>
+        <div class="form-group"><label>Keterangan</label><textarea name="catatan" rows="2" placeholder="Kelengkapan, IP address, dll..."></textarea></div>
+        <input type="hidden" name="page_id" value="">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Kategori</label>
-          <select name="kategori" onchange="onCategoryChangeInForm()">
-            <option>Audio</option><option>Kamera</option><option>Komputer</option><option>Kabel</option>
-            <option>Tripod</option><option>Lighting</option><option>Video</option><option>Komunikasi</option>
-            <option>Aksesoris</option><option>Power</option><option>Jaringan</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Lokasi</label>
-          <select name="lokasi">
-            <option value="Gudang Musik 1">Gudang Musik 1</option>
-            <option value="Gudang Musik 1 - Lemari Besi">Gudang Musik 1 - Lemari Besi</option>
-            <option value="Gudang Musik 1 - Lemari Kayu Kiri">Gudang Musik 1 - Lemari Kayu Kiri</option>
-            <option value="Studio PRO 1">Studio PRO 1</option>
-            <option value="Studio PRO 2">Studio PRO 2</option>
-            <option value="Studio PRO 4">Studio PRO 4</option>
-            <option value="Studio Podcast">Studio Podcast</option>
-            <?php foreach ($locations as $loc): ?>
-              <?php if (!in_array($loc, ['Gudang Musik 1', 'Gudang Musik 1 - Lemari Besi', 'Gudang Musik 1 - Lemari Kayu Kiri', 'Studio PRO 1', 'Studio PRO 2', 'Studio PRO 4', 'Studio Podcast'])): ?>
-              <option value="<?= htmlspecialchars($loc, ENT_QUOTES) ?>"><?= htmlspecialchars($loc) ?></option>
-              <?php endif; ?>
-            <?php endforeach; ?>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Status</label>
-          <select name="status">
-            <option>Tersedia</option><option>Dipinjam</option><option>Rusak</option><option>Perbaikan</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Type / Tipe</label>
-          <input type="text" name="type" placeholder="Contoh: Wireless, Portable, Type-A, dll">
-        </div>
-      </div>
-      <div class="form-group"><label>Keterangan</label><textarea name="catatan" rows="2" placeholder="Kelengkapan, IP address, dll..."></textarea></div>
-      <input type="hidden" name="page_id" value="">
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan Alat</button>
@@ -722,34 +776,39 @@ async function handleInvForm(event) {
 
 // ===== Fungsi Delete =====
 async function deleteInvRow(id, btn) {
-  if (!confirm('Yakin mau hapus alat ini? Data akan dipindah ke Trash Notion.')) return;
-  
-  const row = btn.closest('tr');
-  const formData = new FormData();
-  formData.append('action', 'delete');
-  formData.append('page_id', id);
+  customConfirm(
+    'Hapus Inventaris',
+    'Yakin mau hapus alat ini? Data akan dipindah ke Trash Notion.',
+    async () => {
+      const row = btn.closest('tr');
+      const formData = new FormData();
+      formData.append('action', 'delete');
+      formData.append('page_id', id);
 
-  btn.disabled = true;
-  try {
-    const res = await fetch(`${BASE}/api/inventaris.php`, { method: 'POST', body: formData });
-    const data = await res.json();
-    
-    if (!res.ok || data.error) {
-      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-      console.error(data);
-      return;
-    }
-    
-    showToast('🗑️ Alat berhasil dihapus!', 'success');
-    
-    row.remove();
-    setTimeout(() => location.reload(), 1200);
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${BASE}/api/inventaris.php`, { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (!res.ok || data.error) {
+          showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+          console.error(data);
+          return;
+        }
+        
+        showToast('🗑️ Alat berhasil dihapus!', 'success');
+        
+        row.remove();
+        setTimeout(() => location.reload(), 1200);
 
-  } catch (err) {
-    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-  }
+      } catch (err) {
+        showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    },
+    'Hapus'
+  );
 }
 
 // Inisialisasi filter saat DOM siap

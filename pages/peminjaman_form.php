@@ -1,7 +1,7 @@
 <?php
- $base = '..'; 
- $pageTitle = 'Form Peminjaman'; 
- $activeMenu = 'peminjaman';
+$base = '..'; 
+$pageTitle = 'Form Peminjaman'; 
+$activeMenu = 'peminjaman';
 
 require_once __DIR__.'/../config/notion.php';
 require_once __DIR__.'/../api/peminjaman.php';
@@ -31,8 +31,8 @@ if (!function_exists('notionCurl')) {
     }
 }
 
- $isEdit = isset($_GET['id']);
- $editData = [
+$isEdit = isset($_GET['id']);
+$editData = [
     'page_id' => '', 'kegiatan' => '', 'pic' => '', 'lokasi' => '',
     'tgl_kegiatan' => '', 'tgl_pinjam' => '', 'durasi' => '', 
     'keterangan' => '', 'alat_arr' => []
@@ -50,44 +50,59 @@ if ($isEdit) {
     }
 }
 
- $picList  = ['Alfian','Alif','Saiful','Yhanuar','Yayang','Yudha','Dicky','Yoyok','Anggi','Ludfi','Shofirin','Syukur','Dedy','Deny','Dayat','Winsa','Selvy'];
- $alatList = ['Mixer', 'Mic', 'Laptop', 'Tripod', 'Kamera', 'Kabel', 'Soundcard', 'Speaker', 'HT', 'Headphone', 'Modem', 'Video Switcher', 'Video Sender', 'Converter', 'Baterai', 'Lampu', 'Overlength', 'Earpik', 'Stand Mic', 'PC Desktop', 'Monitor', 'Keyboard', 'Mouse', 'Audio Distribution', 'Lainnya'];
+$picList = ['Alfian','Alif','Saiful','Yhanuar','Yayang','Yudha','Dicky','Yoyok','Anggi','Ludfi','Shofirin','Syukur','Dedy','Deny','Dayat','Winsa','Selvy'];
 
-// Ambil stok dan opsi jenis/tipe dari Inventaris
- $stockData = [];
- $jenisOptions = []; // Array untuk menampung opsi jenis/tipe per alat
+// Fetch all available inventory items from Notion
+$inventoryCatalog = [];
 
 if (defined('DATABASE_ID_INVENTARIS')) {
-    $invQueryBody = ["page_size" => 100, "filter" => ["property" => "Status", "select" => ["equals" => "Tersedia"]]];
-    $invDbData = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', $invQueryBody);
-    if (isset($invDbData['results'])) {
-        foreach ($invDbData['results'] as $invPage) {
-            $invName = !empty($invPage['properties']['Nama Alat']['title'][0]['plain_text']) ? $invPage['properties']['Nama Alat']['title'][0]['plain_text'] : '';
-            
-            // Mengambil dari kolom Type (rich_text / select), fallback ke Keterangan jika Type kosong
-            $invType = '';
-            if (!empty($invPage['properties']['Type']['rich_text'][0]['plain_text'])) {
-                $invType = $invPage['properties']['Type']['rich_text'][0]['plain_text'];
-            } elseif (!empty($invPage['properties']['Type']['select']['name'])) {
-                $invType = $invPage['properties']['Type']['select']['name'];
-            } elseif (!empty($invPage['properties']['Keterangan']['rich_text'][0]['plain_text'])) {
-                $invType = $invPage['properties']['Keterangan']['rich_text'][0]['plain_text'];
-            }
-            
-            foreach ($alatList as $alat) {
-                if (stripos($invName, $alat) !== false) {
-                    if (!isset($stockData[$alat])) $stockData[$alat] = 0;
-                    $stockData[$alat]++;
-                    
-                    // Simpan tipe/jenis sebagai opsi dropdown
-                    if (!empty($invType)) {
-                        if (!isset($jenisOptions[$alat])) $jenisOptions[$alat] = [];
-                        if (!in_array($invType, $jenisOptions[$alat])) {
-                            $jenisOptions[$alat][] = $invType;
-                        }
-                    }
+    $has_more = true;
+    $start_cursor = null;
+    
+    while ($has_more) {
+        $queryBody = [
+            "filter" => ["property" => "Status", "select" => ["equals" => "Tersedia"]],
+            "sorts"  => [["property" => "Nama Alat", "direction" => "ascending"]]
+        ];
+        if ($start_cursor) {
+            $queryBody["start_cursor"] = $start_cursor;
+        }
+        
+        $dbData = notionCurl('POST', 'https://api.notion.com/v1/databases/' . DATABASE_ID_INVENTARIS . '/query', $queryBody);
+        
+        if (isset($dbData['results'])) {
+            foreach ($dbData['results'] as $page) {
+                $props = $page['properties'];
+                $invName = !empty($props['Nama Alat']['title'][0]['plain_text']) ? trim($props['Nama Alat']['title'][0]['plain_text']) : '';
+                if (empty($invName)) continue;
+                
+                $invKategori = !empty($props['Kategori']['select']['name']) ? trim($props['Kategori']['select']['name']) : 'Lainnya';
+                
+                $invType = '';
+                if (!empty($props['Type']['rich_text'][0]['plain_text'])) {
+                    $invType = trim($props['Type']['rich_text'][0]['plain_text']);
+                } elseif (!empty($props['Type']['select']['name'])) {
+                    $invType = trim($props['Type']['select']['name']);
+                } elseif (!empty($props['Keterangan']['rich_text'][0]['plain_text'])) {
+                    $invType = trim($props['Keterangan']['rich_text'][0]['plain_text']);
                 }
+                if (empty($invType)) $invType = 'Standar';
+                
+                $invQty = isset($props['Qty']['number']) ? (int)$props['Qty']['number'] : 1;
+                if ($invQty <= 0) $invQty = 1;
+                
+                $inventoryCatalog[] = [
+                    'id'       => $page['id'],
+                    'nama'     => $invName,
+                    'kategori' => $invKategori,
+                    'tipe'     => $invType,
+                    'qty'      => $invQty
+                ];
             }
+            $has_more = $dbData['has_more'] ?? false;
+            $start_cursor = $dbData['next_cursor'] ?? null;
+        } else {
+            $has_more = false;
         }
     }
 }
@@ -95,7 +110,7 @@ if (defined('DATABASE_ID_INVENTARIS')) {
 include __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- Dependencies untuk Select2 -->
+<!-- Dependencies Select2 -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -103,7 +118,7 @@ include __DIR__ . '/../includes/header.php';
 <div class="page-head">
   <div>
     <h2><?= $isEdit ? 'Edit Peminjaman Alat' : 'Catat Peminjaman Alat' ?></h2>
-    <p>Isi data dengan lengkap dan pastikan stok alat mencukupi.</p>
+    <p>Pilih kategori, nama perangkat, dan tipenya dengan presisi.</p>
   </div>
   <a href="peminjaman.php" class="btn btn-secondary"><i class="ri-arrow-left-line"></i> Kembali ke Daftar</a>
 </div>
@@ -165,57 +180,50 @@ include __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <!-- Baris 3: Keterangan (Lebar Penuh) -->
+      <!-- Baris 3: Keterangan -->
       <div class="form-group" style="margin-bottom:0;">
-        <label>Keterangan</label>
+        <label>Keterangan / Catatan Tambahan</label>
         <textarea id="field_keterangan" rows="2" placeholder="Catatan tambahan (bebas isi banyak karakter)..." style="width:100%; resize:vertical;"></textarea>
       </div>
     </div>
   </div>
 
-  <!-- SECTION 2: PEMILIHAN ALAT -->
+  <!-- SECTION 2: PEMILIHAN ALAT BERHIRARKI -->
   <div class="card section-card">
     <div class="section-header">
       <i class="ri-tools-line"></i>
-      <span>Alat yang Dipinjam</span>
-      <span class="section-badge" id="selectedCount">0 dipilih</span>
+      <span>Alat yang Dipinjam (Kategori &rarr; Perangkat &rarr; Tipe)</span>
+      <span class="section-badge" id="selectedCount">0 item</span>
     </div>
     <div class="section-body">
-      <!-- Toolbar -->
-      <div class="alat-toolbar">
-        <div class="search-box">
-          <i class="ri-search-line"></i>
-          <input type="text" id="searchAlat" placeholder="Cari alat...">
-        </div>
-        <div class="filter-group">
-          <button type="button" class="filter-btn active" data-filter="all">Semua</button>
-          <button type="button" class="filter-btn" data-filter="available">Tersedia</button>
-          <button type="button" class="filter-btn" data-filter="selected">Dipilih</button>
-        </div>
-      </div>
 
-      <!-- Alat Grid -->
-      <div id="alatContainer" class="alat-table-wrapper">
-        <table class="alat-table">
+      <div class="alat-table-wrapper">
+        <table class="alat-table" id="alatTable">
           <thead>
             <tr>
-              <th class="col-check"></th>
-              <th class="col-name">Nama Alat</th>
-              <th class="col-stock">Stok</th>
-              <th class="col-jenis">Jenis / Tipe</th>
-              <th class="col-qty">Qty</th>
-              <th class="col-action"></th>
+              <th style="width: 22%;">Kategori</th>
+              <th style="width: 32%;">Nama Perangkat</th>
+              <th style="width: 26%;">Tipe / Model</th>
+              <th style="width: 10%; text-align: center;">Stok</th>
+              <th style="width: 10%;">Qty</th>
+              <th style="width: 45px; text-align: center;"></th>
             </tr>
           </thead>
           <tbody id="alatTableBody">
-            <!-- Rows will be generated by JS -->
+            <!-- Rows generated by JS -->
           </tbody>
         </table>
-        <div class="empty-state" id="emptyState" style="display:none;">
-          <i class="ri-inbox-line"></i>
-          <p>Tidak ada alat ditemukan</p>
-        </div>
       </div>
+
+      <div class="table-actions" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn btn-outline-primary" onclick="addAlatRow()">
+          <i class="ri-add-line"></i> Tambah Perangkat
+        </button>
+        <small style="color: var(--text-secondary, #6b7280);">
+          <i class="ri-information-line"></i> Pilih Kategori &rarr; Perangkat &rarr; Tipe/Model untuk melihat sisa stok.
+        </small>
+      </div>
+
     </div>
   </div>
 
@@ -245,7 +253,6 @@ include __DIR__ . '/../includes/header.php';
     --gray-900: #111827;
     --radius: 10px;
     --shadow: 0 1px 3px rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
   }
 
   /* Section Cards */
@@ -258,16 +265,18 @@ include __DIR__ . '/../includes/header.php';
   /* Form Grid */
   .form-grid { display: grid; gap: 1rem; margin-bottom: 1rem; }
   .form-grid:last-child { margin-bottom: 0; }
-  .form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
   .form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
   
   .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-primary, #374151); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.03em; }
   .req { color: var(--danger); }
-  .form-group input, .form-group select { width: 100%; height: 42px; min-height: 42px; padding: 0 0.9rem; border-radius: 8px; border: 1px solid var(--border-color, #d1d5db); font-size: 0.9rem; transition: all 0.2s; box-sizing: border-box; background-color: var(--input-bg, #fff); color: var(--text-primary, #0f172a); }
+  .form-group input, .form-group select, .form-group textarea { 
+    width: 100%; height: 42px; min-height: 42px; padding: 0 0.9rem; border-radius: 8px; border: 1px solid var(--border-color, #d1d5db); 
+    font-size: 0.9rem; transition: all 0.2s; box-sizing: border-box; background-color: var(--input-bg, #fff); color: var(--text-primary, #0f172a); 
+  }
+  .form-group textarea { height: auto; min-height: 60px; padding: 0.6rem 0.9rem; }
   .form-group select {
     appearance: none;
     -webkit-appearance: none;
-    -moz-appearance: none;
     padding-right: 2.2rem;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -275,7 +284,7 @@ include __DIR__ . '/../includes/header.php';
     background-size: 1rem;
     cursor: pointer;
   }
-  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 
   /* Select2 Styling */
   .select2-container { width: 100% !important; }
@@ -284,237 +293,167 @@ include __DIR__ . '/../includes/header.php';
   .select2-container--default .select2-selection--multiple .select2-selection__choice__remove { color: #fff; margin-right: 4px; }
   .select2-container--default.select2-container--focus .select2-selection--multiple { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 
-  /* Toolbar */
-  .alat-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color, #e5e7eb); }
-  .search-box { display: flex; align-items: center; gap: 0.5rem; background: var(--input-bg, #f9fafb); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; padding: 0.5rem 0.85rem; flex: 1; max-width: 320px; }
-  .search-box i { color: var(--text-secondary, #6b7280); }
-  .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 0.9rem; color: var(--text-primary, #0f172a); }
+  /* Dynamic Table */
+  .alat-table-wrapper { border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; overflow-x: auto; background: var(--card-bg, #fff); }
+  .alat-table { width: 100%; border-collapse: collapse; min-width: 650px; }
+  .alat-table thead th { background: var(--gray-100); padding: 0.75rem 0.9rem; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary, #6b7280); border-bottom: 1px solid var(--border-color, #e5e7eb); }
+  .alat-table tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-color, #f3f4f6); vertical-align: middle; }
   
-  .filter-group { display: flex; gap: 0.25rem; background: var(--gray-100); border-radius: 8px; padding: 3px; }
-  .filter-btn { border: none; background: transparent; padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary, #6b7280); cursor: pointer; transition: all 0.2s; }
-  .filter-btn.active { background: var(--card-bg, #fff); color: var(--primary); box-shadow: var(--shadow); }
-  .filter-btn:hover:not(.active) { color: var(--text-primary, #374151); }
+  .alat-table select, .alat-table input[type="number"], .alat-table input[type="text"] {
+    width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--border-color, #d1d5db); border-radius: 6px;
+    font-size: 0.85rem; box-sizing: border-box; transition: all 0.2s; background-color: var(--input-bg, #fff); color: var(--text-primary, #0f172a);
+  }
+  .alat-table select:focus, .alat-table input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .alat-table select:disabled, .alat-table input:disabled { background: var(--gray-100); color: var(--text-secondary, #9ca3af); cursor: not-allowed; }
 
-  /* Table */
-  .alat-table-wrapper { max-height: 500px; overflow-y: auto; border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; }
-  .alat-table { width: 100%; border-collapse: collapse; }
-  .alat-table thead { position: sticky; top: 0; z-index: 2; }
-  .alat-table thead th { background: var(--gray-100); padding: 0.75rem 0.9rem; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary, #6b7280); letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color, #e5e7eb); }
-  .alat-table tbody td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border-color, #f3f4f6); vertical-align: middle; background: var(--card-bg, #fff); color: var(--text-primary, #0f172a); }
-  .alat-table tbody tr:hover td { background: var(--gray-50); }
-  .alat-table tbody tr.selected-row td { background: rgba(59,130,246,0.08); }
-  .alat-table tbody tr.out-of-stock { opacity: 0.5; }
-
-  .col-check { width: 40px; text-align: center; }
-  .col-name { min-width: 140px; }
-  .col-stock { width: 90px; text-align: center; }
-  .col-jenis { width: 200px; }
-  .col-qty { width: 100px; }
-  .col-action { width: 50px; text-align: center; }
-
-  .alat-name { font-weight: 600; color: var(--text-primary, #111827); }
-  .stock-badge { display: inline-flex; align-items: center; justify-content: center; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; min-width: 55px; }
+  .stock-badge { display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; min-width: 50px; }
   .stock-badge.available { background: #dcfce7; color: #15803d; }
   .stock-badge.low { background: #fef3c7; color: #b45309; }
   .stock-badge.out { background: #fee2e2; color: #b91c1c; }
 
-  /* Styling untuk Input & Select di dalam Tabel */
-  .alat-table input[type="text"], .alat-table input[type="number"], .alat-table select { 
-    width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--border-color, #d1d5db); border-radius: 6px; 
-    font-size: 0.85rem; box-sizing: border-box; transition: all 0.2s; background-color: var(--input-bg, #fff); color: var(--text-primary, #0f172a);
-  }
-  .alat-table input:focus, .alat-table select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
-  .alat-table input:disabled, .alat-table select:disabled { background: var(--gray-100); cursor: not-allowed; color: var(--text-secondary, #6b7280); }
+  .btn-remove-row { background: var(--danger); color: #fff; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .btn-remove-row:hover { background: #dc2626; transform: scale(1.05); }
 
-  /* Custom Checkbox */
-  .custom-cb { appearance: none; width: 20px; height: 20px; border: 2px solid var(--border-color, #d1d5db); border-radius: 5px; cursor: pointer; transition: all 0.2s; position: relative; background: var(--input-bg, #fff); }
-  .custom-cb:checked { background: var(--primary); border-color: var(--primary); }
-  .custom-cb:checked::after { content: '✓'; position: absolute; color: #fff; font-size: 14px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-  .custom-cb:disabled { cursor: not-allowed; opacity: 0.5; }
-
-  /* Add Button */
-  .btn-add-row { background: transparent; border: 1px dashed var(--border-color, #d1d5db); color: var(--text-secondary, #6b7280); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 1.1rem; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
-  .btn-add-row:hover { border-color: var(--primary); color: var(--primary); background: rgba(59,130,246,0.05); }
-  .btn-add-row:disabled { opacity: 0.4; cursor: not-allowed; }
-  
-  .btn-remove-row { background: var(--danger); color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
-  .btn-remove-row:hover { background: #dc2626; }
-
-  /* Empty State */
-  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary, #6b7280); }
-  .empty-state i { font-size: 3rem; margin-bottom: 0.5rem; display: block; opacity: 0.5; }
+  .btn-outline-primary { border: 1px dashed var(--primary); color: var(--primary); background: transparent; font-weight: 600; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; }
+  .btn-outline-primary:hover { background: rgba(59,130,246,0.08); }
 
   /* Submit Bar */
   .submit-bar { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; padding: 1rem 1.5rem; background: var(--card-bg, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: var(--radius); box-shadow: var(--shadow); }
 
-  /* ===== DARK MODE OVERRIDES KHUSUS FORM PEMINJAMAN ===== */
-  body.dark-mode .section-card { background: #161f30 !important; border-color: #2b3952 !important; box-shadow: 0 4px 20px rgba(0,0,0,0.35) !important; }
+  /* Dark Mode Overrides */
+  body.dark-mode .section-card { background: #161f30 !important; border-color: #2b3952 !important; }
   body.dark-mode .section-header { background: #1a263d !important; border-bottom: 1px solid #2b3952 !important; color: #f8fafc !important; }
   body.dark-mode .section-body { background: #161f30 !important; }
 
   body.dark-mode .form-group label { color: #f8fafc !important; }
-  body.dark-mode .form-group input,
-  body.dark-mode .form-group select,
-  body.dark-mode .alat-table input[type="text"],
-  body.dark-mode .alat-table input[type="number"],
-  body.dark-mode .alat-table select {
-    background-color: #0f172a !important;
-    color: #f8fafc !important;
-    border: 1px solid #2b3952 !important;
-    color-scheme: dark !important;
+  body.dark-mode .form-group input, body.dark-mode .form-group select, body.dark-mode .form-group textarea,
+  body.dark-mode .alat-table select, body.dark-mode .alat-table input[type="number"], body.dark-mode .alat-table input[type="text"] {
+    background-color: #0f172a !important; color: #f8fafc !important; border-color: #2b3952 !important; color-scheme: dark !important;
   }
-
-  body.dark-mode .alat-table input:disabled,
-  body.dark-mode .alat-table select:disabled {
-    background-color: #1e293b !important;
-    color: #64748b !important;
-    border-color: #334155 !important;
-  }
-
-  body.dark-mode .select2-container--default .select2-selection--multiple {
-    background-color: #0f172a !important;
-    border-color: #2b3952 !important;
-  }
-  body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background: #2563eb !important;
-    color: #ffffff !important;
-  }
-  body.dark-mode .select2-container--default .select2-search--inline .select2-search__field {
-    color: #f8fafc !important;
-  }
-
-  body.dark-mode .search-box { background: #0f172a !important; border-color: #2b3952 !important; }
-  body.dark-mode .search-box i { color: #94a3b8 !important; }
-  body.dark-mode .search-box input { color: #f8fafc !important; }
-
-  body.dark-mode .filter-group { background: #0f172a !important; border: 1px solid #2b3952 !important; }
-  body.dark-mode .filter-btn { color: #94a3b8 !important; }
-  body.dark-mode .filter-btn.active { background: #2563eb !important; color: #ffffff !important; box-shadow: 0 2px 8px rgba(37,99,235,0.4) !important; }
-
-  body.dark-mode .alat-table-wrapper { border-color: #2b3952 !important; }
+  body.dark-mode .alat-table select:disabled, body.dark-mode .alat-table input:disabled { background-color: #1e293b !important; color: #64748b !important; }
+  body.dark-mode .alat-table-wrapper { border-color: #2b3952 !important; background: #161f30 !important; }
   body.dark-mode .alat-table thead th { background: #1a263d !important; color: #94a3b8 !important; border-bottom: 1px solid #2b3952 !important; }
-  body.dark-mode .alat-table tbody td { background: #161f30 !important; color: #f8fafc !important; border-bottom: 1px solid #2b3952 !important; }
-  body.dark-mode .alat-table tbody tr:hover td { background: #1e293b !important; }
-  body.dark-mode .alat-table tbody tr.selected-row td { background: rgba(59,130,246,0.18) !important; }
-
-  body.dark-mode .alat-name { color: #f8fafc !important; }
-  body.dark-mode .custom-cb { background: #0f172a !important; border-color: #2b3952 !important; }
+  body.dark-mode .alat-table tbody td { border-bottom: 1px solid #2b3952 !important; }
   body.dark-mode .submit-bar { background: #161f30 !important; border-color: #2b3952 !important; }
 
-  /* Responsive */
   @media (max-width: 900px) {
-    .form-grid.cols-2, .form-grid.cols-3 { grid-template-columns: 1fr; }
-    .alat-toolbar { flex-direction: column; align-items: stretch; }
-    .search-box { max-width: 100%; }
-    
-    /* Table becomes card-like on mobile */
-    .alat-table thead { display: none; }
-    .alat-table, .alat-table tbody, .alat-table tr, .alat-table td { display: block; width: 100%; }
-    .alat-table tbody tr { margin-bottom: 0.75rem; padding: 0.75rem; border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; background: var(--card-bg, #fff); }
-    body.dark-mode .alat-table tbody tr { border-color: #2b3952 !important; background: #161f30 !important; }
-    .alat-table tbody td { border: none; padding: 0.3rem 0; display: flex; justify-content: space-between; align-items: center; }
-    .alat-table tbody td::before { content: attr(data-label); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary, #6b7280); text-transform: uppercase; }
-    .col-check, .col-action { justify-content: flex-end !important; }
-    .col-check::before, .col-action::before { display: none; }
-    .col-name::before { content: 'Alat'; }
-    .col-stock::before { content: 'Stok'; }
-    .col-jenis::before { content: 'Jenis'; }
-    .col-qty::before { content: 'Qty'; }
+    .form-grid.cols-3 { grid-template-columns: 1fr; }
   }
 </style>
 
 <script>
-const ALAT_LIST = <?= json_encode($alatList) ?>;
-const STOCK_DATA = <?= json_encode($stockData) ?>;
-const JENIS_OPTIONS = <?= json_encode($jenisOptions) ?>; // Data opsi keterangan dari inventaris
+const INVENTORY_CATALOG = <?= json_encode($inventoryCatalog) ?>;
 const EDIT_DATA = <?= json_encode($editData) ?>;
 const IS_EDIT = <?= $isEdit ? 'true' : 'false' ?>;
 
-// Mapping Alat Default
+// Master Kategori Standar
+const MASTER_CATEGORIES = ['Audio', 'Kamera', 'Komputer', 'Kabel', 'Tripod', 'Lighting', 'Video', 'Komunikasi', 'Aksesoris', 'Power', 'Jaringan', 'Lainnya'];
+
+// Membangun HIERARCHY: HIERARCHY[kategori][namaPerangkat][tipe] = { stock }
+const HIERARCHY = {};
+INVENTORY_CATALOG.forEach(item => {
+  const cat = item.kategori || 'Lainnya';
+  const name = item.nama;
+  const tipe = item.tipe || 'Standar';
+
+  if (!HIERARCHY[cat]) HIERARCHY[cat] = {};
+  if (!HIERARCHY[cat][name]) HIERARCHY[cat][name] = {};
+  if (!HIERARCHY[cat][name][tipe]) HIERARCHY[cat][name][tipe] = { stock: 0 };
+  
+  HIERARCHY[cat][name][tipe].stock += item.qty;
+});
+
+// Mapping Preset Per Kegiatan (Kategori -> Nama Perangkat -> Tipe -> Qty)
 const alatPerKegiatan = {
   "Upacara / Apel Pagi": [
-    { nama: "Mic", jenis: "Kabel", qty: 3 }, { nama: "Speaker", jenis: "Huper", qty: 1 },
-    { nama: "Overlength", jenis: "Putih", qty: 1 }, { nama: "Mixer", jenis: "8 chanel", qty: 1 },
-    { nama: "Stand Mic", jenis: "Mic", qty: 3 }, { nama: "Kabel", jenis: "Power", qty: 2 },
-    { nama: "Kabel", jenis: "Roll Biru", qty: 1 }, { nama: "Kabel", jenis: "Male Female", qty: 4 }
+    { kategori: "Audio", nama: "Mic", tipe: "Kabel", qty: 3 },
+    { kategori: "Audio", nama: "Speaker", tipe: "Huper", qty: 1 },
+    { kategori: "Kabel", nama: "Overlength", tipe: "Putih", qty: 1 },
+    { kategori: "Audio", nama: "Mixer", tipe: "8 chanel", qty: 1 },
+    { kategori: "Aksesoris", nama: "Stand Mic", tipe: "Mic", qty: 3 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Power", qty: 2 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Roll Biru", qty: 1 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Male Female", qty: 4 }
   ],
   "Acara Live / Dialog Luar / Tapping": [
-    { nama: "Mic", jenis: "Kabel", qty: 3 }, { nama: "Kamera", jenis: "Mirrorless", qty: 2 },
-    { nama: "Kamera", jenis: "PXW", qty: 1 }, { nama: "Tripod", jenis: "kamera", qty: 3 },
-    { nama: "Kabel", jenis: "HDMI", qty: 2 }, { nama: "Kabel", jenis: "SDI", qty: 1 },
-    { nama: "Kabel", jenis: "Male Female", qty: 3 }, { nama: "Kabel", jenis: "Roll Biru", qty: 1 },
-    { nama: "Video Switcher", jenis: "Avmatrik", qty: 1 }, { nama: "Soundcard", jenis: "Behringer", qty: 1 },
-    { nama: "Baterai", jenis: "Dummy Kingma", qty: 1 }, { nama: "Converter", jenis: "HDMI-SDI", qty: 2 },
-    { nama: "Mixer", jenis: "Digital Ashley", qty: 1 }, { nama: "Headphone", jenis: "Kabel", qty: 1 },
-    { nama: "Laptop", jenis: "TUF", qty: 1 }, { nama: "Modem", jenis: "Orbit", qty: 1 },
-    { nama: "Lampu", jenis: "Inbex", qty: 2 }, { nama: "Lampu", jenis: "Godox", qty: 1 },
-    { nama: "Overlength", jenis: "MCB", qty: 1 }, { nama: "HT", jenis: "WLN", qty: 6 },
-    { nama: "Earpik", jenis: "HT", qty: 6 }
+    { kategori: "Audio", nama: "Mic", tipe: "Kabel", qty: 3 },
+    { kategori: "Kamera", nama: "Kamera", tipe: "Mirrorless", qty: 2 },
+    { kategori: "Kamera", nama: "Kamera", tipe: "PXW", qty: 1 },
+    { kategori: "Tripod", nama: "Tripod", tipe: "kamera", qty: 3 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "HDMI", qty: 2 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "SDI", qty: 1 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Male Female", qty: 3 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Roll Biru", qty: 1 },
+    { kategori: "Video", nama: "Video Switcher", tipe: "Avmatrik", qty: 1 },
+    { kategori: "Audio", nama: "Soundcard", tipe: "Behringer", qty: 1 },
+    { kategori: "Power", nama: "Baterai", tipe: "Dummy Kingma", qty: 1 },
+    { kategori: "Video", nama: "Converter", tipe: "HDMI-SDI", qty: 2 },
+    { kategori: "Audio", nama: "Mixer", tipe: "Digital Ashley", qty: 1 },
+    { kategori: "Audio", nama: "Headphone", tipe: "Kabel", qty: 1 },
+    { kategori: "Komputer", nama: "Laptop", tipe: "TUF", qty: 1 },
+    { kategori: "Jaringan", nama: "Modem", tipe: "Orbit", qty: 1 },
+    { kategori: "Lighting", nama: "Lampu", tipe: "Inbex", qty: 2 },
+    { kategori: "Lighting", nama: "Lampu", tipe: "Godox", qty: 1 },
+    { kategori: "Kabel", nama: "Overlength", tipe: "MCB", qty: 1 },
+    { kategori: "Komunikasi", nama: "HT", tipe: "WLN", qty: 6 },
+    { kategori: "Komunikasi", nama: "Earpik", tipe: "HT", qty: 6 }
   ],
   "Podcast / Tapping": [
-    { nama: "Mic", jenis: "Saramonic Sepaket", qty: 1 }, { nama: "Kamera", jenis: "Mirrorless", qty: 2 },
-    { nama: "Kamera", jenis: "PXW", qty: 1 }, { nama: "Tripod", jenis: "kamera", qty: 3 },
-    { nama: "Kabel", jenis: "HDMI", qty: 2 }, { nama: "Kabel", jenis: "SDI", qty: 1 },
-    { nama: "Overlength", jenis: "putih", qty: 2 }, { nama: "Video Switcher", jenis: "Avmatrik", qty: 1 },
-    { nama: "Soundcard", jenis: "Behringer", qty: 1 }, { nama: "Baterai", jenis: "Dummy Kingma", qty: 1 },
-    { nama: "Laptop", jenis: "TUF", qty: 1 }, { nama: "Lampu", jenis: "Inbex", qty: 2 },
-    { nama: "Lampu", jenis: "Godox", qty: 1 }
+    { kategori: "Audio", nama: "Mic", tipe: "Saramonic Sepaket", qty: 1 },
+    { kategori: "Kamera", nama: "Kamera", tipe: "Mirrorless", qty: 2 },
+    { kategori: "Kamera", nama: "Kamera", tipe: "PXW", qty: 1 },
+    { kategori: "Tripod", nama: "Tripod", tipe: "kamera", qty: 3 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "HDMI", qty: 2 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "SDI", qty: 1 },
+    { kategori: "Kabel", nama: "Overlength", tipe: "putih", qty: 2 },
+    { kategori: "Video", nama: "Video Switcher", tipe: "Avmatrik", qty: 1 },
+    { kategori: "Audio", nama: "Soundcard", tipe: "Behringer", qty: 1 },
+    { kategori: "Power", nama: "Baterai", tipe: "Dummy Kingma", qty: 1 },
+    { kategori: "Komputer", nama: "Laptop", tipe: "TUF", qty: 1 },
+    { kategori: "Lighting", nama: "Lampu", tipe: "Inbex", qty: 2 },
+    { kategori: "Lighting", nama: "Lampu", tipe: "Godox", qty: 1 }
   ],
   "Keroncong": [
-    { nama: "Kamera", jenis: "PXW", qty: 1 }, { nama: "Tripod", jenis: "kamera", qty: 1 },
-    { nama: "Mic", jenis: "Wireless", qty: 1 }, { nama: "Mic", jenis: "Kabel", qty: 1 },
-    { nama: "HT", jenis: "WLN", qty: 2 }, { nama: "Kabel", jenis: "Male Female", qty: 6 },
-    { nama: "Kabel", jenis: "Male TS", qty: 5 }, { nama: "Overlength", jenis: "putih", qty: 1 },
-    { nama: "Headphone", jenis: "Senheizer", qty: 1 }
+    { kategori: "Kamera", nama: "Kamera", tipe: "PXW", qty: 1 },
+    { kategori: "Tripod", nama: "Tripod", tipe: "kamera", qty: 1 },
+    { kategori: "Audio", nama: "Mic", tipe: "Wireless", qty: 1 },
+    { kategori: "Audio", nama: "Mic", tipe: "Kabel", qty: 1 },
+    { kategori: "Komunikasi", nama: "HT", tipe: "WLN", qty: 2 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Male Female", qty: 6 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Male TS", qty: 5 },
+    { kategori: "Kabel", nama: "Overlength", tipe: "putih", qty: 1 },
+    { kategori: "Audio", nama: "Headphone", tipe: "Senheizer", qty: 1 }
   ],
   "Senandung Rindu": [
-    { nama: "Kamera", jenis: "MD", qty: 1 }, { nama: "Kamera", jenis: "PXW", qty: 1 },
-    { nama: "Tripod", jenis: "kamera", qty: 2 }, { nama: "Mic", jenis: "Wireless", qty: 1 },
-    { nama: "Mic", jenis: "Kabel", qty: 1 }, { nama: "HT", jenis: "WLN", qty: 2 },
-    { nama: "Kabel", jenis: "Male TS", qty: 1 }, { nama: "Overlength", jenis: "putih", qty: 2 },
-    { nama: "Kabel", jenis: "Roll Biru", qty: 1 }
+    { kategori: "Kamera", nama: "Kamera", tipe: "MD", qty: 1 },
+    { kategori: "Kamera", nama: "Kamera", tipe: "PXW", qty: 1 },
+    { kategori: "Tripod", nama: "Tripod", tipe: "kamera", qty: 2 },
+    { kategori: "Audio", nama: "Mic", tipe: "Wireless", qty: 1 },
+    { kategori: "Audio", nama: "Mic", tipe: "Kabel", qty: 1 },
+    { kategori: "Komunikasi", nama: "HT", tipe: "WLN", qty: 2 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Male TS", qty: 1 },
+    { kategori: "Kabel", nama: "Overlength", tipe: "putih", qty: 2 },
+    { kategori: "Kabel", nama: "Kabel", tipe: "Roll Biru", qty: 1 }
   ],
-  "Zoom Meeting": [ { nama: "Laptop", jenis: "MSI", qty: 1 } ],
-  "Kunjungan": [ { nama: "Laptop", jenis: "MSI", qty: 1 }, { nama: "Baterai", jenis: "Charge", qty: 4 } ]
+  "Zoom Meeting": [
+    { kategori: "Komputer", nama: "Laptop", tipe: "MSI", qty: 1 }
+  ],
+  "Kunjungan": [
+    { kategori: "Komputer", nama: "Laptop", tipe: "MSI", qty: 1 },
+    { kategori: "Power", nama: "Baterai", tipe: "Charge", qty: 4 }
+  ]
 };
 
 let rowCounter = 0;
 
-// Fungsi untuk membuat HTML Select atau Input Text jika tidak ada opsi
-function getJenisFieldHTML(alat, selectedVal = '', isDisabled = true) {
-  let options = JENIS_OPTIONS[alat] || [];
-  
-  // Jika ada selectedVal (dari default/edit) tapi tidak ada di opsi inventaris, tetap ditambahkan
-  if (selectedVal && !options.includes(selectedVal)) {
-    options.push(selectedVal);
-  }
-  
-  if (options.length > 0) {
-    let html = `<select class="alat-jenis" ${isDisabled ? 'disabled' : ''}>`;
-    html += `<option value="">Pilih Jenis...</option>`;
-    options.forEach(opt => {
-      html += `<option value="${opt}" ${opt === selectedVal ? 'selected' : ''}>${opt}</option>`;
-    });
-    html += `</select>`;
-    return html;
-  } else {
-    // Fallback ke text input jika inventaris tidak punya keterangan untuk alat ini
-    return `<input type="text" class="alat-jenis" placeholder="Jenis/Tipe" value="${selectedVal}" ${isDisabled ? 'disabled' : ''}>`;
-  }
-}
-
- $(document).ready(function() {
+$(document).ready(function() {
   $('#field_pic').select2({ placeholder: "Pilih PIC PT", allowClear: true, width: '100%', closeOnSelect: false });
   $('#field_kegiatan').select2({ placeholder: "Pilih Kegiatan", allowClear: true, width: '100%' });
 
   $('#field_kegiatan').on('change', function() {
-    if (!IS_EDIT) applyEventDefaults(this.value);
+    if (!IS_EDIT && this.value) applyEventDefaults(this.value);
   });
 
-  generateAlatTable();
-  initListeners();
-
-  // Edit mode
   if (IS_EDIT) {
     $('#field_kegiatan').val(EDIT_DATA.kegiatan).trigger('change');
     $('#field_pic').val(EDIT_DATA.pic ? EDIT_DATA.pic.split(',').map(p => p.trim()) : []).trigger('change');
@@ -523,225 +462,293 @@ function getJenisFieldHTML(alat, selectedVal = '', isDisabled = true) {
     $('#field_tgl_pinjam').val(EDIT_DATA.tgl_pinjam || '');
     $('#field_durasi').val(EDIT_DATA.durasi ?? '');
     $('#field_keterangan').val(EDIT_DATA.keterangan || '');
-    
     $('#submitBtnLabel').text('Simpan Perubahan');
 
     if (EDIT_DATA.alat_arr && EDIT_DATA.alat_arr.length > 0) {
-      EDIT_DATA.alat_arr.forEach(a => {
-        const rows = document.querySelectorAll(`tr[data-alat="${a.alat}"]:not(.dup-row)`);
-        let filled = false;
-        for (const row of rows) {
-          const cb = row.querySelector('.custom-cb');
-          if (cb && !cb.checked && !cb.disabled) {
-            cb.checked = true;
-            row.querySelector('.alat-jenis').value = a.jenis; // Ini akan men-set value select
-            row.querySelector('.alat-qty').value = a.qty;
-            enableInputs(row, true);
-            row.classList.add('selected-row');
-            filled = true;
-            break;
-          }
-        }
-        if (!filled) {
-          addDuplicateRow(a.alat, a.jenis, a.qty);
-        }
+      document.getElementById('alatTableBody').innerHTML = '';
+      EDIT_DATA.alat_arr.forEach(item => {
+        const detectedKat = detectCategory(item.alat);
+        addAlatRow(detectedKat, item.alat, item.jenis, item.qty);
       });
+    } else {
+      addAlatRow();
     }
-    updateSelectedCount();
+  } else {
+    // Tambah 1 baris kosong default jika baru
+    addAlatRow();
   }
 
-  // Search
-  $('#searchAlat').on('input', filterAlat);
-  
-  // Filter buttons
-  $('.filter-btn').on('click', function() {
-    $('.filter-btn').removeClass('active');
-    $(this).addClass('active');
-    filterAlat();
-  });
+  updateSelectedCount();
 });
 
-function generateAlatTable() {
+// Deteksi kategori otomatis dari nama alat
+function detectCategory(namaAlat) {
+  if (!namaAlat) return 'Audio';
+  const nameLower = namaAlat.toLowerCase();
+  for (const cat in HIERARCHY) {
+    for (const devName in HIERARCHY[cat]) {
+      if (devName.toLowerCase().includes(nameLower) || nameLower.includes(devName.toLowerCase())) {
+        return cat;
+      }
+    }
+  }
+  return 'Audio';
+}
+
+function getAvailableCategories() {
+  const cats = new Set(MASTER_CATEGORIES);
+  Object.keys(HIERARCHY).forEach(c => cats.add(c));
+  return Array.from(cats);
+}
+
+function getPerangkatOptions(kategori) {
+  if (!kategori || !HIERARCHY[kategori]) {
+    // Jika tidak ketemu di HIERARCHY, kumpulkan perangkat global
+    const globalNames = new Set();
+    Object.keys(HIERARCHY).forEach(c => {
+      Object.keys(HIERARCHY[c]).forEach(n => globalNames.add(n));
+    });
+    return Array.from(globalNames);
+  }
+  return Object.keys(HIERARCHY[kategori]);
+}
+
+function getTipeOptions(kategori, perangkat) {
+  if (!kategori || !perangkat || !HIERARCHY[kategori] || !HIERARCHY[kategori][perangkat]) {
+    // Fallback pencarian global jika kategori berbeda
+    for (const c in HIERARCHY) {
+      if (HIERARCHY[c][perangkat]) {
+        return HIERARCHY[c][perangkat];
+      }
+    }
+    return {};
+  }
+  return HIERARCHY[kategori][perangkat];
+}
+
+function addAlatRow(selKat = '', selNama = '', selTipe = '', selQty = 1) {
+  rowCounter++;
+  const rowId = 'row_' + rowCounter;
   const tbody = document.getElementById('alatTableBody');
-  tbody.innerHTML = '';
-  
-  ALAT_LIST.forEach(alat => {
-    const stock = STOCK_DATA[alat] || 0;
-    const isOut = stock === 0 && !IS_EDIT;
-    rowCounter++;
-    
-    const tr = document.createElement('tr');
-    tr.dataset.alat = alat;
-    tr.dataset.rowId = 'row' + rowCounter;
-    if (isOut) tr.classList.add('out-of-stock');
-    
-    const stockClass = stock === 0 ? 'out' : (stock <= 2 ? 'low' : 'available');
-    const stockText = stock === 0 ? 'Habis' : stock;
-    
-    tr.innerHTML = `
-      <td class="col-check" data-label="">
-        <input type="checkbox" class="custom-cb alat-checkbox" ${isOut ? 'disabled' : ''} data-stock="${stock}">
-      </td>
-      <td class="col-name" data-label="Alat">
-        <span class="alat-name">${alat}</span>
-      </td>
-      <td class="col-stock" data-label="Stok">
-        <span class="stock-badge ${stockClass}">${stockText}</span>
-      </td>
-      <td class="col-jenis" data-label="Jenis">
-        ${getJenisFieldHTML(alat, '', true)}
-      </td>
-      <td class="col-qty" data-label="Qty">
-        <input type="number" min="1" max="${stock}" class="alat-qty" placeholder="0" disabled>
-      </td>
-      <td class="col-action" data-label="">
-        <button type="button" class="btn-add-row" data-alat="${alat}" title="Tambah baris" ${isOut ? 'disabled' : ''}>+</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
+
+  const categories = getAvailableCategories();
+  let katOptionsHtml = `<option value="">-- Pilih Kategori --</option>`;
+  categories.forEach(c => {
+    katOptionsHtml += `<option value="${c}" ${c === selKat ? 'selected' : ''}>${c}</option>`;
   });
+
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.innerHTML = `
+    <td>
+      <select class="item-kat" onchange="onKategoriChange('${rowId}')">
+        ${katOptionsHtml}
+      </select>
+    </td>
+    <td>
+      <select class="item-nama" onchange="onPerangkatChange('${rowId}')" disabled>
+        <option value="">-- Pilih Perangkat --</option>
+      </select>
+    </td>
+    <td>
+      <select class="item-tipe" onchange="onTipeChange('${rowId}')" disabled>
+        <option value="">-- Pilih Tipe --</option>
+      </select>
+    </td>
+    <td style="text-align: center;">
+      <span class="stock-badge out">-</span>
+    </td>
+    <td>
+      <input type="number" min="1" value="${selQty}" class="item-qty" placeholder="1" disabled>
+    </td>
+    <td style="text-align: center;">
+      <button type="button" class="btn-remove-row" onclick="removeAlatRow('${rowId}')" title="Hapus baris">&times;</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+
+  if (selKat) {
+    onKategoriChange(rowId, selNama, selTipe);
+  }
+
+  updateSelectedCount();
+}
+
+function onKategoriChange(rowId, targetNama = '', targetTipe = '') {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+
+  const kat = tr.querySelector('.item-kat').value;
+  const namaSelect = tr.querySelector('.item-nama');
+  const tipeSelect = tr.querySelector('.item-tipe');
+  const qtyInput = tr.querySelector('.item-qty');
+
+  namaSelect.innerHTML = `<option value="">-- Pilih Perangkat --</option>`;
+  tipeSelect.innerHTML = `<option value="">-- Pilih Tipe --</option>`;
+  tipeSelect.disabled = true;
+  qtyInput.disabled = true;
+
+  if (!kat) {
+    namaSelect.disabled = true;
+    updateStockDisplay(rowId, 0);
+    return;
+  }
+
+  const perangkatList = getPerangkatOptions(kat);
+  let html = `<option value="">-- Pilih Perangkat --</option>`;
+  
+  if (targetNama && !perangkatList.includes(targetNama)) {
+    perangkatList.push(targetNama);
+  }
+
+  perangkatList.forEach(p => {
+    html += `<option value="${p}" ${p === targetNama ? 'selected' : ''}>${p}</option>`;
+  });
+  
+  namaSelect.innerHTML = html;
+  namaSelect.disabled = false;
+
+  if (targetNama) {
+    onPerangkatChange(rowId, targetTipe);
+  } else {
+    updateStockDisplay(rowId, 0);
+  }
+}
+
+function onPerangkatChange(rowId, targetTipe = '') {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+
+  const kat = tr.querySelector('.item-kat').value;
+  const nama = tr.querySelector('.item-nama').value;
+  const tipeSelect = tr.querySelector('.item-tipe');
+  const qtyInput = tr.querySelector('.item-qty');
+
+  tipeSelect.innerHTML = `<option value="">-- Pilih Tipe --</option>`;
+
+  if (!nama) {
+    tipeSelect.disabled = true;
+    qtyInput.disabled = true;
+    updateStockDisplay(rowId, 0);
+    return;
+  }
+
+  const tipeObj = getTipeOptions(kat, nama);
+  const tipeKeys = Object.keys(tipeObj);
+
+  let html = `<option value="">-- Pilih Tipe --</option>`;
+  if (targetTipe && !tipeKeys.includes(targetTipe)) {
+    tipeKeys.push(targetTipe);
+  }
+
+  tipeKeys.forEach(t => {
+    const stock = tipeObj[t] ? tipeObj[t].stock : (IS_EDIT ? 99 : 0);
+    const stockLabel = stock > 0 ? `(Stok: ${stock})` : `(Stok Habis)`;
+    html += `<option value="${t}" ${t === targetTipe ? 'selected' : ''}>${t} ${stockLabel}</option>`;
+  });
+
+  tipeSelect.innerHTML = html;
+  tipeSelect.disabled = false;
+
+  if (targetTipe) {
+    onTipeChange(rowId);
+  } else if (tipeKeys.length === 1) {
+    tipeSelect.value = tipeKeys[0];
+    onTipeChange(rowId);
+  } else {
+    updateStockDisplay(rowId, 0);
+  }
+}
+
+function onTipeChange(rowId) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+
+  const kat = tr.querySelector('.item-kat').value;
+  const nama = tr.querySelector('.item-nama').value;
+  const tipe = tr.querySelector('.item-tipe').value;
+  const qtyInput = tr.querySelector('.item-qty');
+
+  if (!tipe) {
+    qtyInput.disabled = true;
+    updateStockDisplay(rowId, 0);
+    return;
+  }
+
+  const tipeObj = getTipeOptions(kat, nama);
+  const stock = (tipeObj[tipe] ? tipeObj[tipe].stock : 0) || (IS_EDIT ? 99 : 0);
+
+  updateStockDisplay(rowId, stock);
+  qtyInput.disabled = false;
+  if (stock > 0) {
+    qtyInput.max = stock;
+    if (parseInt(qtyInput.value, 10) > stock && !IS_EDIT) {
+      qtyInput.value = stock;
+    }
+  }
+}
+
+function updateStockDisplay(rowId, stock) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+
+  const badge = tr.querySelector('.stock-badge');
+  if (stock === 0) {
+    badge.className = 'stock-badge out';
+    badge.textContent = IS_EDIT ? 'Edit' : 'Habis';
+  } else if (stock <= 2) {
+    badge.className = 'stock-badge low';
+    badge.textContent = stock;
+  } else {
+    badge.className = 'stock-badge available';
+    badge.textContent = stock;
+  }
+}
+
+function removeAlatRow(rowId) {
+  const tr = document.getElementById(rowId);
+  if (tr) {
+    tr.remove();
+    updateSelectedCount();
+  }
 }
 
 function applyEventDefaults(selectedEvent) {
-  document.querySelectorAll('#alatTableBody tr').forEach(row => {
-    const cb = row.querySelector('.custom-cb');
-    if (cb) {
-      cb.checked = false;
-      row.classList.remove('selected-row');
-      enableInputs(row, false);
-      row.querySelector('.alat-jenis').value = '';
-      row.querySelector('.alat-qty').value = '';
-    }
-  });
-  document.querySelectorAll('.dup-row').forEach(r => r.remove());
+  const tbody = document.getElementById('alatTableBody');
+  tbody.innerHTML = '';
 
   const defaults = alatPerKegiatan[selectedEvent] || [];
+  if (defaults.length === 0) {
+    addAlatRow();
+    return;
+  }
+
   defaults.forEach(d => {
-    const rows = document.querySelectorAll(`tr[data-alat="${d.nama}"]:not(.dup-row)`);
-    let filled = false;
-    for (const row of rows) {
-      const cb = row.querySelector('.custom-cb');
-      if (cb && !cb.checked && !cb.disabled) {
-        cb.checked = true;
-        row.querySelector('.alat-jenis').value = d.jenis;
-        row.querySelector('.alat-qty').value = d.qty;
-        enableInputs(row, true);
-        row.classList.add('selected-row');
-        filled = true;
-        break;
-      }
-    }
-    if (!filled) {
-      addDuplicateRow(d.nama, d.jenis, d.qty);
-    }
+    addAlatRow(d.kategori, d.nama, d.tipe, d.qty);
   });
   updateSelectedCount();
-}
-
-function enableInputs(row, enabled) {
-  const jenis = row.querySelector('.alat-jenis');
-  const qty = row.querySelector('.alat-qty');
-  if (jenis) jenis.disabled = !enabled;
-  if (qty) qty.disabled = !enabled;
-}
-
-function addDuplicateRow(alat, jenisVal, qtyVal) {
-  rowCounter++;
-  const stock = STOCK_DATA[alat] || 0;
-  
-  const tr = document.createElement('tr');
-  tr.dataset.alat = alat;
-  tr.dataset.rowId = 'dup' + rowCounter;
-  tr.classList.add('dup-row', 'selected-row');
-  
-  tr.innerHTML = `
-    <td class="col-check" data-label="">
-      <input type="checkbox" class="custom-cb alat-checkbox" checked data-stock="${stock}">
-    </td>
-    <td class="col-name" data-label="Alat">
-      <span class="alat-name">${alat} <small style="color:var(--gray-500);">(duplikat)</small></span>
-    </td>
-    <td class="col-stock" data-label="Stok">
-      <span class="stock-badge ${stock === 0 ? 'out' : (stock <= 2 ? 'low' : 'available')}">${stock === 0 ? 'Habis' : stock}</span>
-    </td>
-    <td class="col-jenis" data-label="Jenis">
-      ${getJenisFieldHTML(alat, jenisVal || '', false)}
-    </td>
-    <td class="col-qty" data-label="Qty">
-      <input type="number" min="1" class="alat-qty" placeholder="0" value="${qtyVal || ''}">
-    </td>
-    <td class="col-action" data-label="">
-      <button type="button" class="btn-remove-row" title="Hapus baris">×</button>
-    </td>
-  `;
-  document.getElementById('alatTableBody').appendChild(tr);
-  updateSelectedCount();
-}
-
-function initListeners() {
-  const tbody = document.getElementById('alatTableBody');
-  
-  tbody.addEventListener('change', e => {
-    if (e.target.classList.contains('alat-checkbox')) {
-      const row = e.target.closest('tr');
-      const checked = e.target.checked;
-      enableInputs(row, checked);
-      row.classList.toggle('selected-row', checked);
-      if (!checked) {
-        row.querySelector('.alat-jenis').value = '';
-        row.querySelector('.alat-qty').value = '';
-      }
-      updateSelectedCount();
-    }
-  });
-
-  tbody.addEventListener('click', e => {
-    if (e.target.classList.contains('btn-add-row')) {
-      addDuplicateRow(e.target.dataset.alat, '', '');
-    } else if (e.target.classList.contains('btn-remove-row')) {
-      e.target.closest('tr').remove();
-      updateSelectedCount();
-    }
-  });
-}
-
-function filterAlat() {
-  const query = $('#searchAlat').val().toLowerCase();
-  const filter = $('.filter-btn.active').data('filter');
-  let visibleCount = 0;
-  
-  document.querySelectorAll('#alatTableBody tr').forEach(row => {
-    const alatName = row.dataset.alat.toLowerCase();
-    const cb = row.querySelector('.custom-cb');
-    const isChecked = cb && cb.checked;
-    const isOut = row.classList.contains('out-of-stock');
-    
-    let show = true;
-    if (query && !alatName.includes(query)) show = false;
-    if (filter === 'available' && (isOut || isChecked)) show = false;
-    if (filter === 'selected' && !isChecked) show = false;
-    
-    row.style.display = show ? '' : 'none';
-    if (show) visibleCount++;
-  });
-  
-  document.getElementById('emptyState').style.display = visibleCount === 0 ? '' : 'none';
 }
 
 function updateSelectedCount() {
-  const count = document.querySelectorAll('.alat-checkbox:checked').length;
-  document.getElementById('selectedCount').textContent = count + ' dipilih';
+  const count = document.querySelectorAll('#alatTableBody tr').length;
+  document.getElementById('selectedCount').textContent = count + ' item';
 }
 
 function collectAlatRows() {
-  let rows = [];
-  document.querySelectorAll('#alatTableBody tr').forEach(row => {
-    const cb = row.querySelector('.custom-cb');
-    if (cb && cb.checked) {
+  const rows = [];
+  document.querySelectorAll('#alatTableBody tr').forEach(tr => {
+    const kat = tr.querySelector('.item-kat').value;
+    const nama = tr.querySelector('.item-nama').value;
+    const tipe = tr.querySelector('.item-tipe').value;
+    const qty = tr.querySelector('.item-qty').value;
+
+    if (nama) {
       rows.push({
-        alat: row.dataset.alat,
-        jenis: row.querySelector('.alat-jenis').value.trim(),
-        qty: row.querySelector('.alat-qty').value
+        kategori: kat,
+        alat: nama,
+        tipe: tipe,
+        jenis: tipe,
+        qty: qty || 1
       });
     }
   });
@@ -751,8 +758,9 @@ function collectAlatRows() {
 async function handleSubmit(event) {
   event.preventDefault();
   const alatRows = collectAlatRows();
+  
   if (alatRows.length === 0) {
-    alert('⚠️ Pilih minimal satu alat!');
+    showToast('⚠️ Pilih minimal satu alat dengan memilih Nama Perangkat!', 'error');
     return;
   }
 
@@ -789,14 +797,17 @@ async function handleSubmit(event) {
     const data = await res.json();
 
     if (data.success) {
-      alert(data.message);
-      window.location.href = 'peminjaman.php';
+      showToast('✅ ' + (data.message || 'Berhasil disimpan!'), 'success');
+      setTimeout(() => {
+        window.location.href = 'peminjaman.php';
+      }, 1200);
     } else {
-      alert('❌ Gagal: ' + (data.error || 'Unknown error'));
+      showToast('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+      submitBtn.disabled = false;
+      label.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
     }
   } catch (err) {
-    alert('❌ Gagal menghubungi server: ' + err.message);
-  } finally {
+    showToast('❌ Gagal menghubungi server: ' + err.message, 'error');
     submitBtn.disabled = false;
     label.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
   }
