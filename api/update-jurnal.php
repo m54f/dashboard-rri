@@ -80,3 +80,8 @@ if ($http_code === 200) {
     $err = json_decode($response, true);
     echo json_encode(['success' => false, 'error' => $err['message'] ?? 'Gagal menyimpan ke Notion']);
 }
+
+
+
+
+// <--fitur update foto tidak berjalan dengan baik--> 
