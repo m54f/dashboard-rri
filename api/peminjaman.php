@@ -63,7 +63,12 @@ function getPeminjaman()
             $props = $item['properties'];
 
             $kegiatan = $props['Nama Kegiatan']['title'][0]['plain_text'] ?? 'Tanpa Nama';
-            $pic      = $props['Nama PIC PT']['select']['name'] ?? '-';
+            $picMulti  = $props['Nama PIC PT']['multi_select'] ?? [];
+            if (!empty($picMulti)) {
+                $pic = implode(', ', array_map(fn($p) => $p['name'], $picMulti));
+            } else {
+                $pic = $props['Nama PIC PT']['select']['name'] ?? '-';
+            }
             $lokasi   = $props['Lokasi']['rich_text'][0]['plain_text'] ?? '-';
 
             $tglKegiatan = $props['Tanggal Kegiatan']['date']['start'] ?? null;

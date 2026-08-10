@@ -55,7 +55,14 @@ foreach ($oldRelations as $rel) {
 }
 
 // 2. Susun properti Peminjaman baru
- $pic = $payload['pic'] ?? '';
+ $picRaw = $payload['pic'] ?? '';
+ if (is_array($picRaw)) {
+     $picArr = array_filter(array_map('trim', $picRaw));
+ } else {
+     $picArr = array_filter(array_map('trim', explode(',', (string)$picRaw)));
+ }
+ $picMultiSelect = array_map(fn($p) => ['name' => $p], array_values($picArr));
+
  $alatPayload = $payload['alat'] ?? [];
  $detailAlatParts = [];
  $alatTags = [];
@@ -80,7 +87,7 @@ foreach ($alatPayload as $a) {
 
  $properties = [
     'Nama Kegiatan' => ['title' => [['text' => ['content' => $payload['kegiatan'] ?? '']]]],
-    'Nama PIC PT' => ['select' => ['name' => $pic]],
+    'Nama PIC PT' => ['multi_select' => $picMultiSelect],
     'Lokasi' => ['rich_text' => [['text' => ['content' => $payload['lokasi'] ?? '']]]],
     'Tanggal Kegiatan' => ['date' => ['start' => $payload['tgl_kegiatan'] ?? null]],
     'Tanggal Pinjam' => ['date' => ['start' => $payload['tgl_pinjam'] ?? null]],

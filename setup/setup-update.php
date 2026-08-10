@@ -58,7 +58,7 @@ if (isset($dbData['data']['properties'])) {
  $picOptions = ['Alfian','Alif','Saiful','Yhanuar','Yayang','Yudha','Dicky','Yoyok','Anggi','Ludfi','Shofirin','Syukur','Dedy','Deny','Dayat','Winsa','Selvy'];
  $alatOptions = ['Mixer', 'Mic', 'Laptop', 'Tripod', 'Kamera', 'Kabel', 'Soundcard', 'Speaker', 'HT', 'Headphone', 'Modem', 'Video Switcher', 'Video Sender', 'Converter', 'Baterai', 'Lampu', 'Overlength', 'Earpik', 'PC Desktop', 'Monitor', 'Keyboard', 'Mouse', 'Audio Distribution', 'Stand Mic', 'Lainnya'];
 
- $skemaPeminjaman['Nama PIC PT']         = ['select' => ['options' => buildOptions($picOptions, $colors)]];
+ $skemaPeminjaman['Nama PIC PT']         = ['multi_select' => ['options' => buildOptions($picOptions, $colors)]];
  $skemaPeminjaman['Nama PIC Pengembali'] = ['rich_text' => new stdClass()]; // <-- KOLOM BARU (PIC Pengembali)
  $skemaPeminjaman['Lokasi']              = ['rich_text' => new stdClass()];
  $skemaPeminjaman['Tanggal Kegiatan']    = ['date' => new stdClass()];

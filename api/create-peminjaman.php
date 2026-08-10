@@ -34,7 +34,14 @@ function notionCurl($method, $url, $body = []) {
 
  $payload = json_decode(file_get_contents('php://input'), true);
 
- $pic = $payload['pic'] ?? '';
+ $picRaw = $payload['pic'] ?? '';
+ if (is_array($picRaw)) {
+     $picArr = array_filter(array_map('trim', $picRaw));
+ } else {
+     $picArr = array_filter(array_map('trim', explode(',', (string)$picRaw)));
+ }
+ $picMultiSelect = array_map(fn($p) => ['name' => $p], array_values($picArr));
+
  $kegiatan = $payload['kegiatan'] ?? '';
  $tglPinjam = $payload['tgl_pinjam'] ?? date('Y-m-d');
  $status = $payload['status'] ?? 'Dipinjam';
@@ -66,7 +73,7 @@ foreach ($alatPayload as $a) {
 
  $properties = [
     'Nama Kegiatan' => ['title' => [['text' => ['content' => $kegiatan]]]],
-    'Nama PIC PT' => ['select' => ['name' => $pic]],
+    'Nama PIC PT' => ['multi_select' => $picMultiSelect],
     'Lokasi' => ['rich_text' => [['text' => ['content' => $payload['lokasi'] ?? '']]]],
     'Tanggal Kegiatan' => ['date' => ['start' => $payload['tgl_kegiatan'] ?? null]],
     'Tanggal Pinjam' => ['date' => ['start' => $tglPinjam]],

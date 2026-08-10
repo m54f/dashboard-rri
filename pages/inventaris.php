@@ -404,15 +404,15 @@ body.dark-mode .location-filter-wrap select option {
   <div class="table-wrap">
     <table class="data-table" id="invTable">
       <thead>
-        <tr><th>Nama Alat</th><th>Kode</th><th>Kategori</th><th>Tipe</th><th>Qty</th><th>Lokasi</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr>
+        <tr><th>Kode</th><th>Nama Alat</th><th>Kategori</th><th>Tipe</th><th>Qty</th><th>Lokasi</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr>
       </thead>
       <tbody>
         <?php foreach ($inventaris as $i): ?>
         <tr data-tag="<?= htmlspecialchars($i['tag'], ENT_QUOTES) ?>" 
             data-lokasi="<?= htmlspecialchars($i['lokasi'], ENT_QUOTES) ?>" 
             data-id="<?= htmlspecialchars($i['page_id'], ENT_QUOTES) ?>">
-          <td class="cell-title"><?= htmlspecialchars($i['title']) ?></td>
           <td style="font-weight:600; color:#4b5563; font-family:monospace;"><?= htmlspecialchars($i['kode']) ?: '-' ?></td>
+          <td class="cell-title"><?= htmlspecialchars($i['title']) ?></td>
           <td><span class="tag <?= $i['tone'] ?>"><?= htmlspecialchars($i['tag']) ?></span></td>
           <td><?= !empty($i['type']) && $i['type'] !== '-' ? htmlspecialchars($i['type']) : '<span style="color:#9ca3af;">—</span>' ?></td>
           <td style="text-align:center; font-weight:700;"><?= htmlspecialchars($i['qty']) ?></td>
