@@ -79,7 +79,7 @@ require_once __DIR__ . '/auth.php';
     }
   }
 
-  // Sync DOM & Icon on Load
+  // Sync DOM & Icon on Load & Handle Scroll Elevation
   window.addEventListener('DOMContentLoaded', function() {
     const isDark = localStorage.getItem('theme') === 'dark';
     if (isDark) {
@@ -87,6 +87,20 @@ require_once __DIR__ . '/auth.php';
       if (document.body) document.body.classList.add('dark-mode');
     }
     updateThemeIcons(isDark);
+
+    // Dynamic Scroll Elevation Shadow untuk Topbar Header
+    function handleTopbarScroll() {
+      const topbar = document.querySelector('.topbar');
+      if (topbar) {
+        if (window.scrollY > 10) {
+          topbar.classList.add('scrolled');
+        } else {
+          topbar.classList.remove('scrolled');
+        }
+      }
+    }
+    handleTopbarScroll();
+    window.addEventListener('scroll', handleTopbarScroll, { passive: true });
   });
 
   // Script untuk toggle sidebar

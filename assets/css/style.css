@@ -109,7 +109,7 @@ button{font-family:inherit;}
 }
 
 .content-body {
-  padding: 24px 28px 40px;
+  padding: 88px 28px 40px;
 }
 
 .topbar {
@@ -123,9 +123,12 @@ button{font-family:inherit;}
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color, #e2e8f0);
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 90;
+  right: 0;
+  left: 264px;
+  z-index: 990;
+  transition: left 0.32s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s, border-color 0.3s;
 }
 .topbar-left{display:flex;align-items:center;gap:16px;flex:1;}
 .menu-toggle{display:flex;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-primary);align-items:center;justify-content:center;}
@@ -879,6 +882,9 @@ body.preload .sidebar * {
   body.sidebar-hidden .main {
     margin-left: 72px !important;
   }
+  body.sidebar-hidden .topbar {
+    left: 72px !important;
+  }
 }
 
 /* ===== Tampilan Mobile / HP ===== */
@@ -908,13 +914,14 @@ body.preload .sidebar * {
   }
 
   .content-body {
-    padding: 16px 16px 32px !important;
+    padding: 72px 16px 32px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   .topbar {
+    left: 0 !important;
     height: 56px !important;
     padding: 0 14px !important;
     border-radius: 0 !important;

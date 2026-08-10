@@ -269,6 +269,53 @@ include __DIR__ . '/../includes/header.php';
       align-items: stretch !important;
       text-align: center;
     }
+
+    /* Optimasi Kompak Ukuran Card Petugas di Layar Mobile */
+    .staff-grid {
+      grid-template-columns: 1fr !important;
+      gap: 0.85rem !important;
+    }
+    .staff-card {
+      border-radius: 12px !important;
+    }
+    .card-body {
+      padding: 1rem 1.15rem !important;
+    }
+    .staff-role-badge {
+      font-size: 0.7rem !important;
+      padding: 0.2rem 0.65rem !important;
+      margin-bottom: 0.45rem !important;
+    }
+    .staff-name {
+      font-size: 1.1rem !important;
+      font-weight: 700 !important;
+      margin: 0 0 0.5rem 0 !important;
+      letter-spacing: -0.01em !important;
+    }
+    .detail-row {
+      font-size: 0.82rem !important;
+      gap: 0.4rem !important;
+      margin-bottom: 0.3rem !important;
+    }
+    .detail-row i {
+      font-size: 0.95rem !important;
+    }
+    .card-footer {
+      padding: 0.6rem 1.15rem !important;
+      gap: 0.4rem !important;
+    }
+    .icon-action {
+      width: 34px !important;
+      height: 34px !important;
+      font-size: 0.95rem !important;
+      border-radius: 8px !important;
+    }
+    .bg-initial {
+      font-size: 6rem !important;
+      right: -10px !important;
+      bottom: -15px !important;
+      opacity: 0.4 !important;
+    }
   }
 
   @media (max-width: 640px) {
@@ -278,6 +325,19 @@ include __DIR__ . '/../includes/header.php';
     }
     .stats-row > *:last-child:nth-child(odd) {
       grid-column: span 2;
+    }
+    .staff-grid {
+      gap: 0.75rem !important;
+    }
+    .card-body {
+      padding: 0.85rem 1rem !important;
+    }
+    .staff-name {
+      font-size: 1.05rem !important;
+      margin-bottom: 0.4rem !important;
+    }
+    .card-footer {
+      padding: 0.5rem 1rem !important;
     }
   }
 
