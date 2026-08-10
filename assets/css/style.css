@@ -79,14 +79,14 @@ button{font-family:inherit;}
 .layout{display:flex;min-height:100vh;}
 
 /* ===== Sidebar ===== */
-.sidebar{width:264px;background:var(--sidebar-bg);color:#fff;position:fixed;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;z-index:1000;}
-.sidebar-header{padding:22px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sidebar{width:264px;background:var(--sidebar-bg);color:#fff;position:fixed;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;z-index:1000;}
+.sidebar-header{padding:22px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;}
 .sidebar-header .logo-mark{width:38px;height:38px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .sidebar-header .logo-mark img{width:26px;}
 .sidebar-header h1{font-size:14.5px;font-weight:700;letter-spacing:.3px;}
 .sidebar-header span{font-size:11px;color:#94a3b8;display:block;margin-top:2px;}
 
-.sidebar-menu{padding:16px 12px;flex:1;}
+.sidebar-menu{padding:16px 12px;flex:1;overflow-y:auto;overflow-x:hidden;}
 .menu-section{margin-bottom:22px;}
 .menu-title{font-size:10px;text-transform:uppercase;color:#475569;padding:0 12px 8px;font-weight:700;letter-spacing:1px;}
 .menu-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:#cbd5e1;font-size:13.5px;font-weight:500;margin-bottom:2px;transition:.15s;}
@@ -1547,6 +1547,7 @@ body.preload .sidebar * {
 
 /* ===== Sidebar Premium Footer & PKL Badge ===== */
 .sidebar-footer {
+  flex-shrink: 0;
   margin-top: auto; /* Mendorong ke paling bawah secara otomatis */
   padding: 20px;
   padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
