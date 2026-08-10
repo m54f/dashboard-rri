@@ -288,9 +288,52 @@ include __DIR__ . '/../includes/header.php';
 
   /* Select2 Styling */
   .select2-container { width: 100% !important; }
-  .select2-container--default .select2-selection--multiple { border: 1px solid var(--border-color, #d1d5db); border-radius: 8px; min-height: 42px; padding: 4px; background-color: var(--input-bg, #fff); }
-  .select2-container--default .select2-selection--multiple .select2-selection__choice { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 2px 8px; font-size: 0.85rem; }
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove { color: #fff; margin-right: 4px; }
+  .select2-container--default .select2-selection--multiple { 
+    border: 1px solid var(--border-color, #d1d5db); 
+    border-radius: 8px; 
+    min-height: 42px; 
+    padding: 4px 6px; 
+    background-color: var(--input-bg, #fff); 
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .select2-container--default .select2-selection--multiple .select2-selection__choice { 
+    background: var(--primary, #3b82f6); 
+    color: #fff; 
+    border: none; 
+    border-radius: 6px; 
+    padding: 4px 10px 4px 8px; 
+    font-size: 0.85rem; 
+    font-weight: 500;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 2px 4px 2px 0;
+  }
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove { 
+    color: rgba(255, 255, 255, 0.85) !important; 
+    border: none !important;
+    background: transparent !important;
+    float: none !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 4px 0 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 1 !important;
+    cursor: pointer;
+    order: -1;
+    transition: color 0.15s ease;
+  }
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffffff !important;
+    background: transparent !important;
+  }
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
   .select2-container--default.select2-container--focus .select2-selection--multiple { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 
   /* Dynamic Table */
