@@ -1,28 +1,168 @@
-setup/1-setup-peminjaman.php
-setup/2-setup-inventaris-relasi.php
-setup/3-seed-inventaris.php
-setup/get-json-peminjaman.php
-setup/4-seed-peminjaman.php
-setup/5-clear-peminjaman.php
-setup/6-seed-peminjaman-full.php
-setup/7-seed-inventaris-full.php
-setup/8-clear-inventaris.php
-setup/setup_database_petugas.php
+```php
+<?php
+session_start();
+include 'koneksi.php';
 
-# Credential files - DO NOT COMMIT
-config/auth.php
-config/notion.php
-config/supabase.php
-REVIEW-INVENTARIS-PEMINJAMAN.md
+// Cek apakah pengguna sudah login dan memiliki role petugas
+if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'petugas') {
+    header("Location: login.php");
+    exit();
+}
 
-# Debug / test files - hapus sebelum commit
-test-supabase.php
-debug-supabase.php
-_explore_db.php
-_test_*.php
-cache_fix.php
+// Ambil data buku dari database
+$query = "SELECT * FROM buku";
+$result = mysqli_query($koneksi, $query);
+$buku_list = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
-# Local Cache files
-cache/*.json
-cache/
+// Ambil data peminjaman yang sedang aktif
+$peminjaman_query = "SELECT p.id_peminjaman, p.tanggal_peminjaman, p.tanggal_pengembalian, p.status, u.nama AS nama_user, b.judul AS judul_buku 
+                     FROM peminjaman p 
+                     JOIN user u ON p.id_user = u.id_user 
+                     JOIN buku b ON p.id_buku = b.id_buku 
+                     WHERE p.status = 'dipinjam'";
+$peminjaman_result = mysqli_query($koneksi, $peminjaman_query);
+$peminjaman_list = mysqli_fetch_all($peminjaman_result, MYSQLI_ASSOC);
+?>
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Petugas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90%;
+            margin: 20px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .info-user {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .btn {
+            padding: 6px 12px;
+            text-decoration: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .form-konfirmasi {
+            margin-top: 20px;
+        }
+        .form-konfirmasi input[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-konfirmasi input[type="submit"]:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard Petugas Perpustakaan</h1>
+        
+        <div class="info-user">
+            <strong>Selamat datang, <?php echo htmlspecialchars($_SESSION['username']); ?> (Petugas)</strong><br>
+            <a href="logout.php" style="color:red;">Logout</a>
+        </div>
+
+        <h2>Data Buku Tersedia</h2>
+        <table>
+            <tr>
+                <th>ID Buku</th>
+                <th>Judul</th>
+                <th>Penulis</th>
+                <th>Tahun Terbit</th>
+                <th>Kategori</th>
+            </tr>
+            <?php foreach ($buku_list as $buku): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($buku['id_buku']); ?></td>
+                <td><?php echo htmlspecialchars($buku['judul']); ?></td>
+                <td><?php echo htmlspecialchars($buku['penulis']); ?></td>
+                <td><?php echo htmlspecialchars($buku['tahun_terbit']); ?></td>
+                <td><?php echo htmlspecialchars($buku['kategori']); ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </table>
+
+        <h2>Peminjaman Aktif</h2>
+        <?php if (empty($peminjaman_list)): ?>
+            <p>Tidak ada peminjaman aktif saat ini.</p>
+        <?php else: ?>
+        <table>
+            <tr>
+                <th>ID Peminjaman</th>
+                <th>Nama Peminjam</th>
+                <th>Judul Buku</th>
+                <th>Tanggal Pinjam</th>
+                <th>Tanggal Kembali</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+            <?php foreach ($peminjaman_list as $peminjaman): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($peminjaman['id_peminjaman']); ?></td>
+                <td><?php echo htmlspecialchars($peminjaman['nama_user']); ?></td>
+                <td><?php echo htmlspecialchars($peminjaman['judul_buku']); ?></td>
+                <td><?php echo htmlspecialchars($peminjaman['tanggal_peminjaman']); ?></td>
+                <td><?php echo htmlspecialchars($peminjaman['tanggal_pengembalian']); ?></td>
+                <td><?php echo htmlspecialchars($peminjaman['status']); ?></td>
+                <td>
+                    <form method="POST" action="konfirmasi_pengembalian.php" class="form-konfirmasi" onsubmit="return confirm('Yakin ingin mengkonfirmasi pengembalian?');">
+                        <input type="hidden" name="id_peminjaman" value="<?php echo $peminjaman['id_peminjaman']; ?>">
+                        <input type="submit" value="Konfirmasi Kembali">
+                    </form>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </table>
+        <?php endif; ?>
+
+        <br>
+        <a href="tambah_buku.php" class="btn">Tambah Buku Baru</a>
+    </div>
+</body>
+</html>
+```
