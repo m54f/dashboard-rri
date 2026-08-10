@@ -250,15 +250,23 @@ function getTicketsForLaporan(string $namaInput): array
                 : '';
 
             $riwayat[] = [
-                'tanggal'  => formatTanggalSupabase($t['created_at']),
+                'id'          => (int)$t['id'],
+                'ticket_code' => $t['ticket_code'] ?? '',
+                'raw_status'  => $t['status'] ?? 'OPEN',
+                'raw_description' => $t['description'] ?? '',
+                'assignee_id' => $t['assignee_id'] ? (string)$t['assignee_id'] : '',
+                'creator_id'  => $t['creator_id'] ? (string)$t['creator_id'] : '',
+                'assignee_name' => $t['assignee_name'] ?? '',
+                'creator_name'  => $t['creator_name'] ?? '',
+                'tanggal'     => formatTanggalSupabase($t['created_at']),
                 'tanggal_raw' => tsToIsoDate($t['created_at']),  // untuk sorting
-                'kategori' => 'Tiket CakraBot',
-                'deskripsi'=> "[{$kode}] {$deskripsi}{$namaLabel}",
-                'status'   => $statusTampil,
-                'durasi'   => $durasi['text'],
-                'url'      => '#',   // CakraBot tidak punya URL publik
-                'foto'     => '',
-                'fotos'    => [],
+                'kategori'    => 'Tiket CakraBot',
+                'deskripsi'   => "[{$kode}] {$deskripsi}{$namaLabel}",
+                'status'      => $statusTampil,
+                'durasi'      => $durasi['text'],
+                'url'         => '#',   // CakraBot tidak punya URL publik
+                'foto'        => '',
+                'fotos'       => [],
             ];
 
             $totalDurasi += $durasi['menit'];
@@ -270,3 +278,30 @@ function getTicketsForLaporan(string $namaInput): array
 
     return $riwayat;
 }
+
+/**
+ * Ambil daftar anggota aktif Supabase sebagai array sederhana untuk opsi dropdown.
+ *
+ * @return array  Array of ['telegram_id' => string, 'full_name' => string, 'role' => string]
+ */
+function getSupabaseUsersList(): array
+{
+    try {
+        $rows = db_query(
+            "SELECT telegram_id, full_name, role
+             FROM users
+             WHERE is_active = true
+             ORDER BY full_name"
+        );
+        return array_map(function($r) {
+            return [
+                'telegram_id' => (string)$r['telegram_id'],
+                'full_name'   => $r['full_name'],
+                'role'        => $r['role'],
+            ];
+        }, $rows);
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+

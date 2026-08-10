@@ -534,6 +534,11 @@ include __DIR__ . '/../includes/header.php';
             <span>Sertakan Foto</span>
         </label>
       </div>
+      <?php if (getRole() === 'admin'): ?>
+      <button class="btn btn-primary" onclick="openCreateCakrabotModal()" id="btnAddCakrabot" style="display: none; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none;">
+        <i class="ri-add-line"></i> Tambah Tiket CakraBot
+      </button>
+      <?php endif; ?>
       <button class="btn btn-primary" onclick="exportToExcel()" id="btnExport" style="display: none;">
         <i class="ri-file-excel-line"></i> Export Excel
       </button>
@@ -703,9 +708,57 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<!-- Modal Form CakraBot -->
+<?php if (getRole() === 'admin'): ?>
+<div class="modal-overlay" id="cakrabotModal">
+  <div class="modal-content">
+    <div class="modal-header" style="background: linear-gradient(135deg, #f5f3ff, #e0e7ff);">
+      <h3 class="modal-title" id="cakrabotModalTitle" style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #4338ca;">🤖 Tambah Tiket CakraBot</h3>
+      <button class="modal-close" onclick="closeCakrabotModal()">&times;</button>
+    </div>
+    <form id="cakrabotForm" onsubmit="handleCakrabotSubmit(event)" style="padding: 1.5rem;">
+      <input type="hidden" id="field_cb_id" name="id" value="">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kode Tiket <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(Otomatis jika kosong)</span></label>
+          <input type="text" id="field_cb_code" name="ticket_code" placeholder="Contoh: TCK-20260810-001">
+        </div>
+        <div class="form-group">
+          <label>Status Tiket <span style="color:#ef4444">*</span></label>
+          <select id="field_cb_status" name="status" required style="width:100%; padding:0.7rem 0.9rem; border:1px solid var(--border); border-radius:10px;">
+            <option value="OPEN">Menunggu (OPEN)</option>
+            <option value="ASSIGNED">Dalam Proses (ASSIGNED)</option>
+            <option value="RESOLVED">Selesai (RESOLVED)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Petugas / Penanggung Jawab (Assignee)</label>
+        <select id="field_cb_assignee" name="assignee_id" style="width:100%; padding:0.7rem 0.9rem; border:1px solid var(--border); border-radius:10px;">
+          <option value="">-- Pilih Petugas --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Deskripsi Kendala / Laporan <span style="color:#ef4444">*</span></label>
+        <textarea id="field_cb_description" name="description" required rows="3" placeholder="Deskripsikan masalah / laporan tiket CakraBot..." style="width: 100%; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.9rem; outline: none; box-sizing: border-box; resize: vertical; font-family: inherit;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); margin-top: 0.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeCakrabotModal()">Batal</button>
+        <button type="submit" class="btn btn-primary" id="cbSubmitBtn" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none;">Simpan Tiket</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
 // ===== State Variables =====
+const IS_ADMIN = <?= getRole() === 'admin' ? 'true' : 'false' ?>;
 let currentReportData = null;
 let currentFilter = 'Semua';
 let currentTahun = 'Semua';
@@ -920,6 +973,12 @@ function renderReportTable() {
   // Cek apakah filter CakraBot aktif
   const isCakrabotFilter = currentFilter === 'Tiket CakraBot';
   
+  // Tampilkan/Sembunyikan tombol Tambah Tiket CakraBot khusus Admin
+  const btnAddCb = document.getElementById('btnAddCakrabot');
+  if (btnAddCb) {
+    btnAddCb.style.display = (isCakrabotFilter && IS_ADMIN) ? 'inline-flex' : 'none';
+  }
+  
   if (filteredData.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada pencarian/filter ini.</td></tr>';
     if(paginationWrap) paginationWrap.style.display = 'none';
@@ -944,13 +1003,39 @@ function renderReportTable() {
   pagedData.forEach(r => {
     const statusStr = (r.status || '').toString();
     let statusColor = statusStr.includes('Selesai') || statusStr.includes('Lengkap') ? '#16a34a' : '#f97316';
-    let proxyFotoUrl = r.foto ? '../api/image-proxy.php?url=' + encodeURIComponent(r.foto) + '&w=150' : '';
+    let fotosList = (r.fotos && r.fotos.length > 0) ? r.fotos : (r.foto ? [r.foto] : []);
+    let jsonFotos = encodeURIComponent(JSON.stringify(fotosList));
+    let fotoHtml = `<span style="color:#94a3b8;">-</span>`;
+    if (fotosList.length > 0) {
+      let proxyFotoUrl = '../api/image-proxy.php?url=' + encodeURIComponent(fotosList[0]) + '&w=150';
+      fotoHtml = `<div style="display:flex; align-items:center; gap:4px;">
+        <img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-color);" onclick="openLightbox(decodeURIComponent('${jsonFotos}'), 0)">
+        ${fotosList.length > 1 ? `<span style="font-size:11px; font-weight:700; color:#64748b; cursor:pointer;" onclick="openLightbox(decodeURIComponent('${jsonFotos}'), 1)">+${fotosList.length - 1}</span>` : ''}
+      </div>`;
+    }
     
-    const escapedFoto = r.foto ? r.foto.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
-    let fotoHtml = r.foto ? `<img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${escapedFoto}')">` : `<span style="color:#94a3b8;">-</span>`;
-    
-    // Sembunyikan kolom aksi jika filter CakraBot aktif
-    const aksiHtml = isCakrabotFilter ? '' : `<td style="text-align:center;"><a href="${r.url || '#'}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>`;
+    // Logic kolom aksi untuk Tiket CakraBot vs Logbook Notion
+    let aksiHtml = '';
+    if (isCakrabotFilter) {
+      if (IS_ADMIN && r.id) {
+        const editPayload = JSON.stringify({
+          id: r.id,
+          ticket_code: r.ticket_code || '',
+          raw_status: r.raw_status || 'OPEN',
+          raw_description: r.raw_description || '',
+          assignee_id: r.assignee_id || ''
+        }).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
+        aksiHtml = `<td style="text-align:center; white-space:nowrap;">
+          <button class="icon-action edit" title="Edit Tiket CakraBot" data-payload='${editPayload}' onclick="openEditCakrabotModal(this)"><i class="ri-pencil-line"></i></button>
+          <button class="icon-action delete" title="Hapus Tiket CakraBot" onclick="deleteCakrabotTicket(${r.id}, '${r.ticket_code || 'Tiket'}')"><i class="ri-delete-bin-line"></i></button>
+        </td>`;
+      } else {
+        aksiHtml = `<td style="text-align:center; color:#94a3b8;">-</td>`;
+      }
+    } else {
+      aksiHtml = `<td style="text-align:center;"><a href="${r.url || '#'}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>`;
+    }
     
     tbody.innerHTML += `
       <tr>
@@ -1067,6 +1152,137 @@ async function deletePetugas(pageId, name) {
       }
     },
     'Hapus'
+  );
+}
+
+// ===== CAKRABOT TICKETS JS HANDLERS =====
+let cachedSupabaseUsers = null;
+
+async function loadSupabaseUsers() {
+  if (cachedSupabaseUsers) return cachedSupabaseUsers;
+  try {
+    const res = await fetch('../api/get-supabase-users.php');
+    const data = await res.json();
+    if (data.success) {
+      cachedSupabaseUsers = data.data;
+      return cachedSupabaseUsers;
+    }
+  } catch (e) {
+    console.error('Gagal memuat pengguna Supabase:', e);
+  }
+  return [];
+}
+
+function openCakrabotModal() {
+  const modal = document.getElementById('cakrabotModal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeCakrabotModal() {
+  const modal = document.getElementById('cakrabotModal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function populateAssigneeDropdown(selectedId = '') {
+  const select = document.getElementById('field_cb_assignee');
+  if (!select) return;
+  
+  select.innerHTML = '<option value="">-- Pilih Petugas --</option>';
+  const users = await loadSupabaseUsers();
+  users.forEach(u => {
+    const isSelected = String(u.telegram_id) === String(selectedId) ? 'selected' : '';
+    select.innerHTML += `<option value="${u.telegram_id}" ${isSelected}>${u.full_name} (${u.role})</option>`;
+  });
+}
+
+async function openCreateCakrabotModal() {
+  const form = document.getElementById('cakrabotForm');
+  if (!form) return;
+  form.reset();
+  document.getElementById('field_cb_id').value = '';
+  document.getElementById('cakrabotModalTitle').textContent = '🤖 Tambah Tiket CakraBot';
+  document.getElementById('cbSubmitBtn').textContent = 'Simpan Tiket';
+  await populateAssigneeDropdown();
+  openCakrabotModal();
+}
+
+async function openEditCakrabotModal(btn) {
+  const data = JSON.parse(btn.dataset.payload);
+  document.getElementById('field_cb_id').value = data.id;
+  document.getElementById('field_cb_code').value = data.ticket_code || '';
+  document.getElementById('field_cb_status').value = data.raw_status || 'OPEN';
+  document.getElementById('field_cb_description').value = data.raw_description || '';
+  document.getElementById('cakrabotModalTitle').textContent = '✏️ Edit Tiket CakraBot';
+  document.getElementById('cbSubmitBtn').textContent = 'Simpan Perubahan';
+  await populateAssigneeDropdown(data.assignee_id);
+  openCakrabotModal();
+}
+
+async function handleCakrabotSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const id = form.id.value;
+  const isEdit = !!id;
+  const submitBtn = document.getElementById('cbSubmitBtn');
+
+  const payload = {
+    id: id ? parseInt(id, 10) : undefined,
+    ticket_code: form.ticket_code.value,
+    status: form.status.value,
+    assignee_id: form.assignee_id.value,
+    description: form.description.value
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Menyimpan...';
+
+  try {
+    const res = await fetch(isEdit ? '../api/update-cakrabot.php' : '../api/create-cakrabot.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ ' + (data.message || 'Tiket berhasil disimpan!'), 'success');
+      closeCakrabotModal();
+      const currentNama = document.getElementById('filterPegawai')?.value || '';
+      loadLaporan(currentNama);
+    } else {
+      showToast('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'), 'error');
+    }
+  } catch (err) {
+    showToast('❌ Error: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan Tiket';
+  }
+}
+
+async function deleteCakrabotTicket(id, ticketCode) {
+  customConfirm(
+    'Hapus Tiket CakraBot',
+    `Apakah Anda yakin ingin menghapus tiket "${ticketCode}"? Data akan dihapus secara permanen dari Supabase.`,
+    async () => {
+      try {
+        const res = await fetch('../api/delete-cakrabot.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🗑️ Tiket CakraBot berhasil dihapus!', 'success');
+          const currentNama = document.getElementById('filterPegawai')?.value || '';
+          loadLaporan(currentNama);
+        } else {
+          showToast('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Error: ' + err.message, 'error');
+      }
+    },
+    'Hapus Tiket'
   );
 }
 

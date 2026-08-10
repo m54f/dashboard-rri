@@ -83,6 +83,141 @@ function customConfirm(title, message, onConfirm, confirmLabel = 'OK') {
   overlay.onclick   = (e) => { if (e.target === overlay) close(); };
   document.addEventListener('keydown', onKey);
 }
+
+// ===== GLOBAL LIGHTBOX COMPONENT DENGAN NAVIGASI NEXT & PREVIOUS =====
+let globalLightboxImages = [];
+let globalLightboxIndex = 0;
+
+function openLightbox(urlOrUrls, index = 0) {
+  if (!urlOrUrls) return;
+  
+  if (typeof urlOrUrls === 'string') {
+    try {
+      const parsed = JSON.parse(urlOrUrls);
+      globalLightboxImages = Array.isArray(parsed) ? parsed : [urlOrUrls];
+    } catch(e) {
+      globalLightboxImages = [urlOrUrls];
+    }
+  } else if (Array.isArray(urlOrUrls)) {
+    globalLightboxImages = urlOrUrls.filter(Boolean);
+  } else {
+    globalLightboxImages = [];
+  }
+
+  if (globalLightboxImages.length === 0) return;
+
+  globalLightboxIndex = parseInt(index, 10) || 0;
+  if (globalLightboxIndex < 0) globalLightboxIndex = 0;
+  if (globalLightboxIndex >= globalLightboxImages.length) globalLightboxIndex = globalLightboxImages.length - 1;
+
+  let lb = document.getElementById('lightboxOverlay');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'lightboxOverlay';
+    lb.className = 'lightbox-overlay';
+    lb.addEventListener('click', function(e) {
+      if (e.target === lb || e.target.classList.contains('lightbox-close-btn')) {
+        closeLightbox();
+      }
+    });
+
+    lb.innerHTML = `
+      <button type="button" class="lightbox-close-btn" onclick="closeLightbox()" title="Tutup">&times;</button>
+      <button type="button" class="lightbox-nav-btn prev" id="lbPrevBtn" onclick="navigateLightbox(-1, event)" title="Foto Sebelumnya">&#10094;</button>
+      <button type="button" class="lightbox-nav-btn next" id="lbNextBtn" onclick="navigateLightbox(1, event)" title="Foto Selanjutnya">&#10095;</button>
+      <div class="lightbox-container" onclick="event.stopPropagation()">
+        <img id="lightboxImg" class="lightbox-img" src="" alt="Dokumentasi">
+        <div id="lightboxCounter" class="lightbox-counter"></div>
+      </div>
+    `;
+    document.body.appendChild(lb);
+  }
+
+  updateLightboxContent();
+  lb.classList.add('active');
+  lb.style.display = 'flex';
+
+  document.removeEventListener('keydown', handleLightboxKeydown);
+  document.addEventListener('keydown', handleLightboxKeydown);
+}
+
+function closeLightbox() {
+  const lb = document.getElementById('lightboxOverlay');
+  if (lb) {
+    lb.classList.remove('active');
+    lb.style.display = 'none';
+  }
+  document.removeEventListener('keydown', handleLightboxKeydown);
+}
+
+function updateLightboxContent() {
+  if (globalLightboxImages.length === 0) return;
+  const img = document.getElementById('lightboxImg');
+  const prevBtn = document.getElementById('lbPrevBtn');
+  const nextBtn = document.getElementById('lbNextBtn');
+  const counter = document.getElementById('lightboxCounter');
+
+  if (img) {
+    let rawUrl = globalLightboxImages[globalLightboxIndex] || '';
+    img.onerror = function() {
+      // Fallback ke direct URL jika proxy gagal atau sebaliknya
+      if (this.src.includes('image-proxy.php') && rawUrl) {
+        this.src = rawUrl;
+      }
+    };
+
+    if (rawUrl.startsWith('http') && !rawUrl.includes('image-proxy.php') && !rawUrl.startsWith('data:')) {
+      let proxyBase = (window.location.pathname.includes('/jadwal/') || window.location.pathname.includes('/pages/')) ? '../api/image-proxy.php' : 'api/image-proxy.php';
+      img.src = proxyBase + '?url=' + encodeURIComponent(rawUrl) + '&w=1200';
+    } else {
+      img.src = rawUrl;
+    }
+  }
+
+  const total = globalLightboxImages.length;
+  if (total > 1) {
+    if (prevBtn) {
+      prevBtn.style.display = 'flex';
+      prevBtn.disabled = (globalLightboxIndex === 0);
+    }
+    if (nextBtn) {
+      nextBtn.style.display = 'flex';
+      nextBtn.disabled = (globalLightboxIndex === total - 1);
+    }
+    if (counter) {
+      counter.style.display = 'block';
+      counter.textContent = `${globalLightboxIndex + 1} / ${total}`;
+    }
+  } else {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+    if (counter) counter.style.display = 'none';
+  }
+}
+
+function navigateLightbox(dir, event) {
+  if (event) event.stopPropagation();
+  const total = globalLightboxImages.length;
+  if (total <= 1) return;
+
+  const newIndex = globalLightboxIndex + dir;
+  if (newIndex >= 0 && newIndex < total) {
+    globalLightboxIndex = newIndex;
+    updateLightboxContent();
+  }
+}
+
+function handleLightboxKeydown(e) {
+  const lb = document.getElementById('lightboxOverlay');
+  if (!lb || !lb.classList.contains('active') || lb.style.display === 'none') return;
+  if (e.key === 'Escape') {
+    closeLightbox();
+  } else if (e.key === 'ArrowLeft') {
+    navigateLightbox(-1);
+  } else if (e.key === 'ArrowRight') {
+    navigateLightbox(1);
+  }
+}
 </script>
 
 </body>

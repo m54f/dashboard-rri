@@ -227,11 +227,11 @@ let existingDocs = [];
 function renderTable() {
     let temp = allEntries;
     if (currentFilter !== 'semua') {
-        temp = temp.filter(item => item.status.toLowerCase() === currentFilter.toLowerCase());
+        temp = temp.filter(item => (item.status || '').toLowerCase() === currentFilter.toLowerCase());
     }
     if (searchQuery.trim() !== '') {
         let q = searchQuery.toLowerCase();
-        temp = temp.filter(item => item.title.toLowerCase().includes(q) || item.op.toLowerCase().includes(q) || item.tag.toLowerCase().includes(q));
+        temp = temp.filter(item => (item.title || '').toLowerCase().includes(q) || (item.op || '').toLowerCase().includes(q) || (item.tag || '').toLowerCase().includes(q));
     }
     
     filteredEntries = temp;
@@ -252,13 +252,16 @@ function renderTable() {
         pageData.forEach(e => {
             let docsHtml = '';
             let limit = 1;
-            let publicUrl = e.url.replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
+            let publicUrl = (e.url || '#').replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
+            let docUrls = (e.docs || []).map(d => d.url);
+            let jsonUrls = encodeURIComponent(JSON.stringify(docUrls));
             
             for(let i=0; i < Math.min(e.docs.length, limit); i++) {
-                docsHtml += `<img src="${e.docs[i].url}" loading="lazy" class="doc-thumb" onclick="openLightbox('${e.docs[i].url}')" onerror="this.src='https://via.placeholder.com/36?text=IMG'">`;
+                let proxyThumb = '../api/image-proxy.php?url=' + encodeURIComponent(e.docs[i].url) + '&w=150';
+                docsHtml += `<img src="${proxyThumb}" loading="lazy" class="doc-thumb" onclick="openLightbox(decodeURIComponent('${jsonUrls}'), ${i})" onerror="this.src='${e.docs[i].url}'">`;
             }
             if(e.docs.length > limit) {
-                docsHtml += `<div class="doc-more" onclick="window.open('${publicUrl}', '_blank')">+${e.docs.length - limit}</div>`;
+                docsHtml += `<div class="doc-more" onclick="openLightbox(decodeURIComponent('${jsonUrls}'), ${limit})">+${e.docs.length - limit}</div>`;
             }
             if(e.docs.length === 0) docsHtml = `<span style="color:#9ca3af;font-size:12px;">-</span>`;
 
@@ -362,7 +365,6 @@ function setFilter(status, btn) {
 }
 
 function handleSearch(val) { searchQuery = val; currentPage = 1; renderTable(); }
-function openLightbox(url) { document.getElementById('lightboxImg').src = url; document.getElementById('imageLightbox').style.display = 'flex'; }
 
 function openModal(){ document.getElementById('jurnalModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
 function closeModal(){ document.getElementById('jurnalModal').classList.remove('active'); document.body.style.overflow = ''; }
