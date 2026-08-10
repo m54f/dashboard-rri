@@ -917,6 +917,9 @@ function renderReportTable() {
 
   let filteredData = getFilteredData();
   
+  // Cek apakah filter CakraBot aktif
+  const isCakrabotFilter = currentFilter === 'Tiket CakraBot';
+  
   if (filteredData.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">Tidak ada riwayat aktivitas pada pencarian/filter ini.</td></tr>';
     if(paginationWrap) paginationWrap.style.display = 'none';
@@ -946,6 +949,9 @@ function renderReportTable() {
     const escapedFoto = r.foto ? r.foto.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
     let fotoHtml = r.foto ? `<img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer;" onclick="openLightbox('${escapedFoto}')">` : `<span style="color:#94a3b8;">-</span>`;
     
+    // Sembunyikan kolom aksi jika filter CakraBot aktif
+    const aksiHtml = isCakrabotFilter ? '' : `<td style="text-align:center;"><a href="${r.url || '#'}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>`;
+    
     tbody.innerHTML += `
       <tr>
         <td style="font-weight: 600; white-space: nowrap; text-align:left;">${r.tanggal || '-'}</td>
@@ -954,7 +960,7 @@ function renderReportTable() {
         <td style="text-align: center;">${fotoHtml}</td>
         <td style="white-space: nowrap; font-weight: 600; color: var(--primary); text-align: center;">${r.durasi || '-'}</td>
         <td style="font-size: 0.85rem; color: ${statusColor}; font-weight: 600; text-align: center;">${r.status || '-'}</td>
-        <td style="text-align:center;"><a href="${r.url || '#'}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>
+        ${aksiHtml}
       </tr>
     `;
   });
