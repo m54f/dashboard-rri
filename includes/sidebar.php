@@ -6,12 +6,13 @@ $menuOperasional = [
     'checklist'   => ['Checklist Perangkat', 'ri-checkbox-circle-line',   '/pages/checklist.php'],
     'troubleshoot'=> ['Troubleshoot',        'ri-tools-line',             '/pages/troubleshoot.php'],
     'pemadaman' => ['Listrik',   'ri-flashlight-line',        '/pages/pemadaman.php'],
+    'gallery'  => ['Rekap Youtube',   'ri-play-line',        '/pages/gallery.php'],
     'peminjaman'  => ['Peminjaman Alat',     'ri-service-line',           '/pages/peminjaman.php'],
     'inventaris'  => ['Inventaris',          'ri-book-line',              '/pages/inventaris.php'],
 ];
 $menuDokumentasi = [
     'jurnal'   => ['Jurnal Kegiatan', 'ri-file-list-3-line', '/pages/jurnal.php'],
-    'gallery'  => ['Rekap Youtube',   'ri-play-line',        '/pages/gallery.php'],
+    'juknis'  => ['Juknis TMB', 'ri-book-open-line', '/pages/juknis.php'],
     'calendar' => ['Calendar Recap',  'ri-calendar-2-line',  '/pages/calendar.php'],
     'aplikasi' => ['Aplikasi RRI',  'ri-folder-line',  '/pages/aplikasi.php'],
 ];
