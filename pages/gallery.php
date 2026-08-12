@@ -3025,6 +3025,30 @@ async function simpanKeNotion(btn, id) {
         var timeInputs = row.querySelectorAll('input[type="time"]');
         var jamMulai = timeInputs[0] ? timeInputs[0].value : '';
 
+        // Validasi Sisi Klien: Cek field wajib sebelum mengirim request
+        var missingFields = [];
+        if (!namaAcara) {
+            missingFields.push('Nama Acara');
+            var btnAcara = row.querySelector('.btn-outline-primary');
+            if (btnAcara) btnAcara.style.border = '2px solid #ef4444';
+        }
+        if (!programaRaw) {
+            missingFields.push('Programa (Pro 1/2/4)');
+            if (programaSelect) programaSelect.style.border = '2px solid #ef4444';
+        }
+        if (!tanggal) {
+            missingFields.push('Tanggal');
+            if (tglInput) tglInput.style.border = '2px solid #ef4444';
+        }
+        if (!jamMulai) {
+            missingFields.push('Jam Mulai');
+            if (timeInputs[0]) timeInputs[0].style.border = '2px solid #ef4444';
+        }
+
+        if (missingFields.length > 0) {
+            throw new Error('Mohon lengkapi data berikut pada baris ini terlebih dahulu:\n• ' + missingFields.join('\n• '));
+        }
+
         var pemandu = document.getElementById('hidden_pemandu_' + id) ? document.getElementById('hidden_pemandu_' + id).value : '';
 
         var narasumberContainer = document.getElementById('narasumber_container_' + id);

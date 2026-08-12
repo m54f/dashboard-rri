@@ -66,7 +66,6 @@ if (empty($pageId)) {
 
 // Validasi field wajib
 if (empty($namaAcaraDisplay) || empty($tanggal) || empty($jamMulai) || empty($live)) {
-    http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Nama Acara, Tanggal, Jam Mulai, dan Live Dimana wajib diisi.']);
     exit;
 }

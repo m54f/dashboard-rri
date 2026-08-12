@@ -56,7 +56,6 @@ $flyerUrls        = $input['flyer_urls'] ?? []; // Mengambil manifes berkas [{id
 
 // Validasi field wajib
 if (empty($namaAcaraDisplay) || empty($tanggal) || empty($jamMulai) || empty($live)) {
-    http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Nama Acara, Tanggal, Jam Mulai, dan Live Dimana wajib diisi.']);
     exit;
 }
@@ -76,7 +75,6 @@ if (strpos($live, 'Pro 1') !== false) {
 }
 
 if ($slot === null) {
-    http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Slot program (Pro 1/2/4) tidak terdeteksi dari pilihan Live Dimana.']);
     exit;
 }

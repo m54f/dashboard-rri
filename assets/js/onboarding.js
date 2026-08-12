@@ -15,9 +15,9 @@
 
   // ─── CSS (di-inject sekali) ───────────────────────────────────────────────
   var CSS = [
-    /* Backdrop gelap */
-    '.ob-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99980;pointer-events:none;opacity:0;transition:opacity .25s ease;}',
-    '.ob-backdrop.ob-visible{opacity:1;}',
+    /* 4 panel backdrop — mengelilingi elemen target, area tengah kosong */
+    '.ob-backdrop-wrap{pointer-events:none;z-index:99980;}',
+    '.ob-bd{position:fixed;background:rgba(0,0,0,0.52);z-index:99980;pointer-events:none;transition:all .25s cubic-bezier(.4,0,.2,1);}',
 
     /* Highlight ring di sekitar elemen target */
     '.ob-highlight{position:fixed;border-radius:8px;outline:3px solid rgba(255,255,255,0.6);z-index:99981;pointer-events:none;transition:top .3s cubic-bezier(.4,0,.2,1),left .3s cubic-bezier(.4,0,.2,1),width .3s cubic-bezier(.4,0,.2,1),height .3s cubic-bezier(.4,0,.2,1);}',
@@ -101,9 +101,14 @@
   }
 
   function buildDom() {
-    // Backdrop
+    // 4 panel backdrop mengelilingi elemen target — area tengah kosong
     _elBackdrop = document.createElement('div');
-    _elBackdrop.className = 'ob-backdrop';
+    _elBackdrop.className = 'ob-backdrop-wrap';
+    _elBackdrop.innerHTML =
+      '<div class="ob-bd" id="ob-bd-top"></div>' +
+      '<div class="ob-bd" id="ob-bd-bottom"></div>' +
+      '<div class="ob-bd" id="ob-bd-left"></div>' +
+      '<div class="ob-bd" id="ob-bd-right"></div>';
     document.body.appendChild(_elBackdrop);
 
     // Highlight ring
@@ -150,7 +155,7 @@
   function destroyDom() {
     clearTimeout(_renderTimer);
     clearTimeout(_resizeTimer);
-    if (_elBackdrop)  { _elBackdrop.style.clipPath = ''; _elBackdrop.remove();  _elBackdrop  = null; }
+    if (_elBackdrop)  { _elBackdrop.remove();  _elBackdrop  = null; }
     if (_elHighlight) { _elHighlight.remove(); _elHighlight = null; }
     if (_elTipseen)   { _elTipseen.remove();   _elTipseen   = null; }
     document.removeEventListener('keydown', onKey);
@@ -215,9 +220,8 @@
 
     // ── Posisi highlight + tipseen ──
     if (!target) {
-      // Tidak ada elemen: tampilkan tipseen di tengah layar tanpa highlight
       _elHighlight.style.cssText = 'display:none;';
-      _elBackdrop.style.clipPath = '';
+      _backdropFull();
       _positionCenter();
       return;
     }
@@ -225,25 +229,8 @@
     var PAD = 6;
     var rect = target.getBoundingClientRect();
 
-    // Buat "lubang" di backdrop tepat di area elemen target
-    // sehingga elemen target tetap terlihat jelas di balik overlay
-    var x1 = rect.left   - PAD;
-    var y1 = rect.top    - PAD;
-    var x2 = rect.right  + PAD;
-    var y2 = rect.bottom + PAD;
-    var vw = window.innerWidth;
-    var vh = window.innerHeight;
-    _elBackdrop.style.clipPath = [
-      'polygon(',
-        '0 0, ' + vw + 'px 0, ' + vw + 'px ' + vh + 'px, 0 ' + vh + 'px, ',   // luar
-        '0 ' + y1 + 'px, ',                                                     // sudut kiri atas
-        x2 + 'px ' + y1 + 'px, ',                                               // sudut kanan atas
-        x2 + 'px ' + y2 + 'px, ',                                               // sudut kanan bawah
-        x1 + 'px ' + y2 + 'px, ',                                               // sudut kiri bawah
-        x1 + 'px ' + y1 + 'px, ',                                               // kembali ke kiri atas
-        '0 ' + y1 + 'px',                                                        // tutup
-      ')'
-    ].join('');
+    // Update 4-panel backdrop — area kotak target kosong/terang
+    _updateBackdrop(rect, PAD);
 
     _elHighlight.style.cssText = [
       'display:block;',
@@ -256,7 +243,45 @@
     _positionTipseen(rect, PAD);
   }
 
-  /** Posisikan tipseen di tengah layar (fallback jika tidak ada elemen) */
+  function _updateBackdrop(rect, PAD) {
+    if (!_elBackdrop) return;
+    var x1 = Math.max(0, rect.left   - PAD);
+    var y1 = Math.max(0, rect.top    - PAD);
+    var x2 = Math.min(window.innerWidth,  rect.right  + PAD);
+    var y2 = Math.min(window.innerHeight, rect.bottom + PAD);
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+
+    var top    = document.getElementById('ob-bd-top');
+    var bottom = document.getElementById('ob-bd-bottom');
+    var left   = document.getElementById('ob-bd-left');
+    var right  = document.getElementById('ob-bd-right');
+
+    if (!top) return;
+    // Atas: dari top=0 sampai y1
+    top.style.cssText    = 'position:fixed;top:0;left:0;width:' + vw + 'px;height:' + y1 + 'px;background:rgba(0,0,0,0.52);z-index:99980;pointer-events:none;';
+    // Bawah: dari y2 sampai bawah
+    bottom.style.cssText = 'position:fixed;top:' + y2 + 'px;left:0;width:' + vw + 'px;height:' + (vh - y2) + 'px;background:rgba(0,0,0,0.52);z-index:99980;pointer-events:none;';
+    // Kiri: dari y1 sampai y2, kiri dari x1
+    left.style.cssText   = 'position:fixed;top:' + y1 + 'px;left:0;width:' + x1 + 'px;height:' + (y2 - y1) + 'px;background:rgba(0,0,0,0.52);z-index:99980;pointer-events:none;';
+    // Kanan: dari y1 sampai y2, kanan dari x2
+    right.style.cssText  = 'position:fixed;top:' + y1 + 'px;left:' + x2 + 'px;width:' + (vw - x2) + 'px;height:' + (y2 - y1) + 'px;background:rgba(0,0,0,0.52);z-index:99980;pointer-events:none;';
+  }
+
+  function _backdropFull() {
+    // Tutup penuh (tidak ada target)
+    if (!_elBackdrop) return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var top    = document.getElementById('ob-bd-top');
+    var bottom = document.getElementById('ob-bd-bottom');
+    var left   = document.getElementById('ob-bd-left');
+    var right  = document.getElementById('ob-bd-right');
+    if (!top) return;
+    top.style.cssText    = 'position:fixed;top:0;left:0;width:' + vw + 'px;height:' + vh + 'px;background:rgba(0,0,0,0.52);z-index:99980;pointer-events:none;';
+    bottom.style.cssText = 'display:none;';
+    left.style.cssText   = 'display:none;';
+    right.style.cssText  = 'display:none;';
+  }
   function _positionCenter() {
     var arrow = document.getElementById('ob-arrow');
     arrow.className = 'ob-arrow';
@@ -405,9 +430,7 @@
     injectCss();
     buildDom();
 
-    // Tampilkan backdrop + tipseen dengan animasi
     requestAnimationFrame(function () {
-      if (_elBackdrop) _elBackdrop.classList.add('ob-visible');
       // Cari step valid pertama
       var firstValid = nextValidIndex(0);
       if (firstValid === -1) { endTour(false); return; }
@@ -436,9 +459,8 @@
     if (!_active) return;
     _active = false;
 
-    // Animasi fade-out
-    if (_elBackdrop)  _elBackdrop.classList.remove('ob-visible');
-    if (_elTipseen)   _elTipseen.classList.remove('ob-visible');
+    // Animasi fade-out tipseen, backdrop langsung hilang via destroyDom
+    if (_elTipseen) _elTipseen.classList.remove('ob-visible');
 
     setTimeout(function () {
       destroyDom();
