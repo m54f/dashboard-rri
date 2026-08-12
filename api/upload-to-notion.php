@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 /**
  * api/upload-to-notion.php
  * Endpoint untuk menerima file upload dari browser (multipart/form-data)
