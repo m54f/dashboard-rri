@@ -17,6 +17,7 @@
  *   - flyer_urls       (array, optional)  : Array of {name, url} untuk gambar flyer
  */
 
+@set_time_limit(120);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../includes/api-auth.php';
@@ -180,7 +181,7 @@ if (!empty($paMultiSelect)) {
     $properties['Petugas PT Produksi'] = ['multi_select' => $paMultiSelect];
 }
 
-// Map payload Flyer (Files) jika ada ID file dari Notion File Upload API
+// Map payload Flyer (Files) jika ada ID file dari Notion File Upload API atau URL Eksternal
 if (!empty($flyerUrls) && is_array($flyerUrls)) {
     $filesPayload = [];
     foreach ($flyerUrls as $doc) {
@@ -190,6 +191,14 @@ if (!empty($flyerUrls) && is_array($flyerUrls)) {
                 "type" => "file_upload",
                 "file_upload" => [
                     "id" => $doc['id']
+                ]
+            ];
+        } elseif (!empty($doc['url'])) {
+            $filesPayload[] = [
+                "name" => $doc['name'] ?? 'Thumbnail YouTube',
+                "type" => "external",
+                "external" => [
+                    "url" => $doc['url']
                 ]
             ];
         }

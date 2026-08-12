@@ -190,6 +190,14 @@ if (!empty($flyerUrls) && is_array($flyerUrls)) {
                     "id" => $doc['id']
                 ]
             ];
+        } elseif (!empty($doc['url'])) {
+            $filesPayload[] = [
+                "name" => $doc['name'] ?? 'Thumbnail YouTube',
+                "type" => "external",
+                "external" => [
+                    "url" => $doc['url']
+                ]
+            ];
         }
     }
     if (!empty($filesPayload)) {

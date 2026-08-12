@@ -6,6 +6,7 @@
  *
  * Mendukung key 'dokumentasi' (troubleshoot) dan 'eviden' (pemadaman/jurnal).
  */
+@set_time_limit(120);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../config/notion.php';
@@ -26,15 +27,15 @@ if (!empty($_FILES['eviden'])) {
 }
 
 if (empty($filesKey)) {
-    // === FALLBACK: Cek apakah ada URL eksternal yang perlu di-fetch & upload ===
+    // === FALLBACK: Fetch URL eksternal (Thumbnail YouTube) & Upload ke Notion S3 ===
     $externalUrl = trim($_POST['flyer_url'] ?? '');
     if (!empty($externalUrl) && filter_var($externalUrl, FILTER_VALIDATE_URL)) {
         try {
-            // Download file dari URL eksternal (misal thumbnail YouTube)
+            // Download thumbnail gambar dari URL (timeout 6 detik)
             $ch = curl_init($externalUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 6);
             curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             $binary = curl_exec($ch);
@@ -42,34 +43,46 @@ if (empty($filesKey)) {
             $curlErr = curl_error($ch);
             curl_close($ch);
 
-            if (empty($binary) || !empty($curlErr)) {
-                throw new Exception("Gagal mengambil gambar dari URL: " . ($curlErr ?: 'Respon kosong'));
+            if (!empty($binary) && empty($curlErr)) {
+                $tmpPath = tempnam(sys_get_temp_dir(), 'rss_flyer_');
+                file_put_contents($tmpPath, $binary);
+
+                $mimeType = trim(explode(';', $contentType)[0]) ?: 'image/jpeg';
+                $extMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                $ext = $extMap[$mimeType] ?? 'jpg';
+                $safeName = 'thumbnail_youtube.' . $ext;
+
+                // Upload file secara native ke server Notion S3
+                $fileUploadId = notionUploadSingleFile($tmpPath, $safeName, $mimeType);
+                @unlink($tmpPath);
+
+                echo json_encode([
+                    'success' => true,
+                    'files'   => [
+                        [
+                            'id'   => $fileUploadId,
+                            'name' => $safeName
+                        ]
+                    ],
+                    'error'   => ''
+                ]);
+                exit;
             }
-
-            // Tulis ke file sementara
-            $tmpPath = tempnam(sys_get_temp_dir(), 'rss_flyer_');
-            file_put_contents($tmpPath, $binary);
-
-            // Bersihkan content-type dari parameter ekstra (misal "image/jpeg; charset=...")
-            $mimeType = explode(';', $contentType)[0];
-            $mimeType = trim($mimeType) ?: 'image/jpeg';
-
-            // Tentukan ekstensi dari MIME type
-            $extMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
-            $ext = $extMap[$mimeType] ?? 'jpg';
-            $safeName = 'flyer_rss.' . $ext;
-
-            $fileUploadId = notionUploadSingleFile($tmpPath, $safeName, $mimeType);
-            @unlink($tmpPath);
-
-            echo json_encode([
-                'success' => true,
-                'files'   => [['id' => $fileUploadId, 'name' => $safeName]],
-                'error'   => ''
-            ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'files' => [], 'error' => $e->getMessage()]);
+            error_log("Upload thumbnail RSS ke Notion S3 gagal, fallback ke external URL: " . $e->getMessage());
         }
+
+        // Safety fallback jika upload S3 gagal/timeout: kirim URL eksternal
+        echo json_encode([
+            'success' => true,
+            'files'   => [
+                [
+                    'url'  => $externalUrl,
+                    'name' => 'Thumbnail YouTube',
+                    'type' => 'external'
+                ]
+            ]
+        ]);
         exit;
     }
 

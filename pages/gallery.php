@@ -3094,7 +3094,9 @@ async function simpanKeNotion(btn, id) {
             uploadFormData.append('dokumentasi[]', fileInput.files[0]);
 
             var uploadRes = await fetch('../api/upload-to-notion.php', { method: 'POST', body: uploadFormData });
-            var uploadData = await uploadRes.json();
+            var rawUploadText = await uploadRes.text();
+            var uploadData;
+            try { uploadData = JSON.parse(rawUploadText); } catch(e) { throw new Error("Gagal mengupload flyer: Respon server tidak valid."); }
 
             if (!uploadData.success) {
                 throw new Error(uploadData.error || 'Gagal mengupload flyer ke Notion');
@@ -3108,7 +3110,9 @@ async function simpanKeNotion(btn, id) {
             urlFormData.append('flyer_url', hiddenFlyerEl.value);
 
             var urlUploadRes = await fetch('../api/upload-to-notion.php', { method: 'POST', body: urlFormData });
-            var urlUploadData = await urlUploadRes.json();
+            var rawUrlText = await urlUploadRes.text();
+            var urlUploadData = {};
+            try { urlUploadData = JSON.parse(rawUrlText); } catch(e) { console.warn('Gagal parse thumbnail response:', rawUrlText); }
 
             if (!urlUploadData.success) {
                 // Jika gagal upload thumbnail RSS, lanjutkan simpan tanpa flyer (tidak fatal)
@@ -3127,7 +3131,14 @@ async function simpanKeNotion(btn, id) {
             body: JSON.stringify(plainObject)
         });
 
-        var data = await res.json();
+        var rawText = await res.text();
+        var data;
+        try {
+            data = JSON.parse(rawText);
+        } catch(e) {
+            console.error("Respon server bukan JSON valid:", rawText);
+            throw new Error("Server merespon dengan data yang tidak valid atau request mengalami timeout. Silakan coba klik Simpan sekali lagi.");
+        }
 
         if (data.success) {
             btn.textContent = 'Tersimpan';
