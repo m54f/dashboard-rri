@@ -1022,4 +1022,14 @@ async function handleAgendaForm(event){
   }
 }
 </script>
+
+<script>
+window.__tourKey   = 'tour_agenda_v1';
+window.__tourSteps = [
+  { target: '.page-head',       title: 'Daily Agenda',        body: 'Halaman ini menampilkan semua agenda kegiatan harian yang sudah dijadwalkan, diambil langsung dari Notion.' },
+  { target: '.stats-row',       title: 'Ringkasan Agenda',    body: 'Lihat berapa agenda hari ini, berapa yang sudah berlangsung, dan berapa yang masih menunggu.' },
+  { target: '.filter-tabs',     title: 'Filter Kategori',     body: 'Gunakan tab ini untuk menyaring agenda berdasarkan kategori kegiatan seperti siaran, rapat, atau event.' },
+  { target: '#agendaTable',     title: 'Tabel Agenda',        body: 'Daftar lengkap agenda beserta status, waktu, dan lokasi. Status bisa diubah langsung dari dropdown di setiap baris.' },
+];
+</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

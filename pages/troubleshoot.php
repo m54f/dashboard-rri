@@ -972,4 +972,15 @@ async function deleteTicket(pageId, title) {
 // showToast() is provided globally by /assets/css/js/sonner.js
 </script>
 
+<script>
+window.__tourKey   = 'tour_troubleshoot_v1';
+window.__tourSteps = [
+  { target: '.page-head',          title: 'Pencatatan Troubleshoot', body: 'Halaman ini untuk melaporkan dan memantau status penanganan gangguan teknis siaran.' },
+  { target: '.stats-row',          title: 'Status Penanganan',       body: 'Pantau jumlah kasus: total laporan, yang sudah selesai, sedang proses, dan belum ditangani.' },
+  { target: '.filter-tabs',        title: 'Filter Status Kasus',     body: 'Saring kasus berdasarkan status: Belum Selesai, Proses, atau Selesai.' },
+  { target: '.btn.btn-primary',    title: 'Lapor Gangguan Baru',     body: 'Klik untuk membuka form pelaporan. Isi judul kendala, bidang terkait, petugas, dan bisa sertakan foto dokumentasi.' },
+  { target: '.icon-action.view',   title: 'Lihat di Notion',         body: 'Ikon ini membuka halaman detail laporan langsung di Notion untuk melihat riwayat lengkap.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

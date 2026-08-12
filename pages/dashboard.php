@@ -613,4 +613,15 @@ include __DIR__ . '/../includes/header.php';
 
 </div>
 
+<script>
+window.__tourKey   = 'tour_dashboard_v1';
+window.__tourSteps = [
+  { target: '.dash-header',          title: 'Selamat Datang!',   body: 'Ini adalah Dashboard utama. Semua ringkasan operasional hari ini bisa Anda pantau dari sini.' },
+  { target: '.metrics-grid',         title: 'Ringkasan Angka',   body: 'Tiga kartu ini menampilkan jumlah agenda hari ini, kesiapan perangkat, dan kasus troubleshoot yang aktif.' },
+  { target: '.timeline-list',        title: 'Jadwal Hari Ini',   body: 'Daftar kegiatan yang terjadwal hari ini, diambil langsung dari Notion secara real-time.' },
+  { target: '.btn-action',           title: 'Aksi Cepat',        body: 'Tombol pintas untuk melaporkan gangguan baru atau mengisi checklist harian tanpa harus buka halaman lain dulu.' },
+  { target: '#sidebar',              title: 'Menu Navigasi',     body: 'Gunakan menu di sisi kiri ini untuk berpindah antar halaman. Setiap halaman punya panduan serupa — klik ikon ? di atas untuk membukanya.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

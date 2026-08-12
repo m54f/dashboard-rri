@@ -39,6 +39,14 @@
       <span class="role-short-text"><?= htmlspecialchars($shortRoleLabel) ?></span>
     </div>
 
+    <!-- Tombol Panduan Halaman (muncul hanya jika halaman punya tour) -->
+    <button type="button" class="topbar-btn btn-tour-hint" id="btnStartTour"
+            onclick="if(window.__tourSteps&&window.__tourKey)startTour(window.__tourSteps,window.__tourKey,true);"
+            title="Panduan Halaman Ini"
+            style="display:none;">
+      <i class="ri-question-line"></i>
+    </button>
+
     <!-- Tombol Mode Gelap/Terang -->
     <button type="button" class="topbar-btn btn-theme-toggle" onclick="toggleDarkMode()" title="Ganti Mode Terang/Gelap">
       <i class="ri-moon-line" id="themeToggleIcon"></i>
@@ -72,3 +80,12 @@
 
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.__tourSteps) {
+    var btn = document.getElementById('btnStartTour');
+    if (btn) btn.style.display = '';
+  }
+});
+</script>

@@ -738,4 +738,15 @@ async function deleteChecklist(pageId, label) {
 // showToast() is provided globally by /assets/css/js/sonner.js
 </script>
 
+<script>
+window.__tourKey   = 'tour_checklist_v1';
+window.__tourSteps = [
+  { target: '.page-head',                    title: 'Checklist Perangkat',   body: 'Halaman untuk mencatat hasil pemeriksaan perangkat siaran setiap sesi pagi dan malam.' },
+  { target: '.stats-row',                    title: 'Rekap Checklist',       body: 'Lihat total checklist, berapa yang sudah dilakukan sesi pagi, malam, dan mana yang belum lengkap.' },
+  { target: '.filter-tabs',                  title: 'Saring Berdasarkan Sesi', body: 'Filter untuk melihat checklist Pagi saja, Malam saja, atau yang masih Belum Lengkap.' },
+  { target: '.btn.btn-primary',              title: 'Isi Checklist Baru',    body: 'Klik tombol ini untuk membuka form pengisian checklist. Tandai setiap perangkat yang sudah dicek.' },
+  { target: '.icon-action.edit',             title: 'Edit Data',             body: 'Tombol ini memungkinkan admin mengoreksi data checklist yang sudah tersimpan.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

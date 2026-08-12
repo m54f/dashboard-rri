@@ -1483,4 +1483,14 @@ async function exportToExcel() {
 // showToast() is provided globally by /assets/css/js/sonner.js
 </script>
 
+<script>
+window.__tourKey   = 'tour_petugas_v1';
+window.__tourSteps = [
+  { target: '#mainView .page-head',          title: 'Manajemen Petugas',  body: 'Halaman ini menampilkan daftar seluruh anggota tim Divisi Teknologi & Media Baru beserta data jabatan mereka.' },
+  { target: '.stats-row',                    title: 'Statistik Tim',      body: 'Lihat total petugas, jumlah posisi yang tercover, dan total jabatan yang ada dalam tim.' },
+  { target: '.staff-card',                   title: 'Kartu Petugas',      body: 'Setiap kartu menampilkan foto, nama, dan jabatan petugas. Klik ikon laporan untuk melihat kinerja individu.' },
+  { target: '.card-footer .icon-action.report', title: 'Laporan Individu', body: 'Klik ikon ini untuk membuka laporan kegiatan dan kinerja petugas tersebut secara detail.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

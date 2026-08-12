@@ -815,4 +815,15 @@ async function deleteInvRow(id, btn) {
 document.addEventListener('DOMContentLoaded', applyInvFilters);
 </script>
 
+<script>
+window.__tourKey   = 'tour_inventaris_v1';
+window.__tourSteps = [
+  { target: '.page-head',             title: 'Inventaris Alat',       body: 'Daftar lengkap semua peralatan studio beserta status ketersediaannya secara real-time.' },
+  { target: '.stats-row',             title: 'Status Ketersediaan',   body: 'Lihat total alat, berapa yang tersedia, sedang dipinjam, dan yang sedang rusak atau dalam perbaikan.' },
+  { target: '#invSearchInput',        title: 'Cari Alat',             body: 'Ketik nama atau kode inventaris di sini untuk menemukan alat tertentu dengan cepat.' },
+  { target: '.filter-tabs',           title: 'Filter Kategori',       body: 'Klik tab kategori (Audio, Kamera, Komputer, dll.) untuk menyaring daftar berdasarkan jenis alat.' },
+  { target: '.location-filter-wrap',  title: 'Filter Lokasi',         body: 'Gunakan dropdown ini untuk melihat alat berdasarkan lokasi penyimpanan seperti Studio atau Gudang.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

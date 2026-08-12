@@ -907,6 +907,17 @@ function customConfirm(title, message, onConfirm, confirmLabel = 'OK') {
 }
 </script>
 
+<script>
+window.__tourKey   = 'tour_peminjaman_v1';
+window.__tourSteps = [
+  { target: '.page-head',          title: 'Peminjaman Alat',       body: 'Halaman ini untuk mencatat dan memantau semua transaksi peminjaman alat siaran.' },
+  { target: '.stats-row',          title: 'Statistik Peminjaman',  body: 'Lihat berapa alat sedang dipinjam, sudah dikembalikan, dan yang terlambat dikembalikan.' },
+  { target: '.filter-tabs',        title: 'Filter Status',         body: 'Klik tab ini untuk menyaring daftar berdasarkan status: Dipinjam, Terlambat, atau Dikembalikan.' },
+  { target: 'a[href*="peminjaman_form"]', title: 'Catat Peminjaman Baru', body: 'Klik tombol ini untuk membuka form pencatatan peminjaman alat baru.' },
+  { target: '.icon-action.return', title: 'Tandai Dikembalikan',   body: 'Tombol hijau ini muncul pada alat yang sedang dipinjam. Klik untuk membuka form pengembalian dan mengisi nama PIC yang mengembalikan.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>
 
 <!-- ===== MODAL PENGEMBALIAN ===== -->

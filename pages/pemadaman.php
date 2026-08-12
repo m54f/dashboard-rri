@@ -804,4 +804,14 @@ function openLightbox(url) {
 }
 </script>
 
+<script>
+window.__tourKey   = 'tour_pemadaman_v1';
+window.__tourSteps = [
+  { target: '.page-head',     title: 'Logbook Aktivitas Listrik', body: 'Halaman ini untuk mencatat dan memantau semua aktivitas kelistrikan: pemadaman PLN, panel, dan maintenance genset.' },
+  { target: '.stats-row',     title: 'Ringkasan Aktivitas',       body: 'Lihat total log, jumlah pemadaman PLN, aktivitas panel auditorium, dan maintenance genset yang tercatat.' },
+  { target: '.filter-tabs',   title: 'Filter Kategori',           body: 'Saring log berdasarkan jenis pemancar atau kategori aktivitas kelistrikan yang ingin ditampilkan.' },
+  { target: '.btn.btn-primary', title: 'Catat Aktivitas Baru',   body: 'Klik tombol ini untuk membuka form pencatatan aktivitas kelistrikan baru — pemadaman, panel, atau genset.' },
+];
+</script>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

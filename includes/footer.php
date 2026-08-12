@@ -2,6 +2,16 @@
   </main>
 </div>
 
+<!-- ===== ONBOARDING TOUR ENGINE ===== -->
+<script src="<?= $base ?>/assets/js/onboarding.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.__tourSteps && window.__tourKey) {
+    startTourIfNew(window.__tourSteps, window.__tourKey);
+  }
+});
+</script>
+
 <!-- ===== TIPSEEN CONFIRM DIALOG (Global) ===== -->
 <style>
 [hidden]{display:none!important}

@@ -3487,4 +3487,14 @@ document.addEventListener('click', function(e) {
 });
 
 </script>
+
+<script>
+window.__tourKey   = 'tour_gallery_v1';
+window.__tourSteps = [
+  { target: '#galleryMainView .page-head',   title: 'Rekap Youtube',       body: 'Halaman ini menyimpan koleksi video siaran yang sudah tayang di channel YouTube RRI Malang.' },
+  { target: '#videoTable',                   title: 'Daftar Video',        body: 'Tabel ini menampilkan semua video beserta thumbnail, program, tanggal, penyiar, dan narasumber.' },
+  { target: '.gallery-filter-group',         title: 'Filter Video',        body: 'Gunakan filter ini untuk menyaring video berdasarkan Host, Petugas PT, atau Programa siaran.' },
+  { target: '.page-head-actions .btn-primary', title: 'Tambah Video',      body: 'Klik tombol ini untuk masuk ke halaman tambah video. Data bisa ditarik otomatis dari RSS feed YouTube.' },
+];
+</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
