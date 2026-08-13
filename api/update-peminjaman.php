@@ -189,28 +189,34 @@ if (mb_strlen($detailAlat) > 1990) {
 $alatTags = array_values(array_unique($alatTags));
 
 $properties = [
-    'Nama Kegiatan'    => ['title'        => [['text' => ['content' => $payload['kegiatan'] ?? '']]]],
-    'Nama PIC PT'      => ['multi_select' => $picMultiSelect],
-    'Lokasi'           => ['rich_text'    => [['text' => ['content' => $payload['lokasi'] ?? '']]]],
-    'Tanggal Kegiatan' => !empty($payload['tgl_kegiatan'])
-        ? ['date' => ['start' => $payload['tgl_kegiatan']]]
-        : ['date' => null],
-    'Tanggal Pinjam'   => ['date'         => ['start' => $payload['tgl_pinjam'] ?? null]],
-    'Alat Dipinjam'    => ['multi_select' => array_values(array_map(fn($t) => ['name' => $t], $alatTags))],
-    'Detail Alat'      => ['rich_text'    => [['text' => ['content' => $detailAlat]]]],
-    'Durasi (jam)'     => ['number'       => floatval($payload['durasi'] ?? 0)],
-    'Keterangan'       => ['rich_text'    => [['text' => ['content' => $payload['keterangan'] ?? '']]]],
-    'Status'           => ['select'       => ['name' => $payload['status'] ?? 'Dipinjam']],
+    'Nama Kegiatan' => ['title'        => [['text' => ['content' => $payload['kegiatan'] ?? '']]]],
+    'Nama PIC PT'   => ['multi_select' => $picMultiSelect],
+    'Lokasi'        => ['rich_text'    => [['text' => ['content' => $payload['lokasi'] ?? '']]]],
+    'Alat Dipinjam' => ['multi_select' => array_values(array_map(fn($t) => ['name' => $t], $alatTags))],
+    'Detail Alat'   => ['rich_text'    => [['text' => ['content' => $detailAlat]]]],
+    'Durasi (jam)'  => ['number'       => floatval($payload['durasi'] ?? 0)],
+    'Keterangan'    => ['rich_text'    => [['text' => ['content' => $payload['keterangan'] ?? '']]]],
 ];
-$properties = array_filter($properties, fn($v) => $v !== null);
+
+if (!empty($payload['tgl_kegiatan'])) {
+    $properties['Tanggal Kegiatan'] = ['date' => ['start' => $payload['tgl_kegiatan']]];
+}
+if (!empty($payload['tgl_pinjam'])) {
+    $properties['Tanggal Pinjam'] = ['date' => ['start' => $payload['tgl_pinjam']]];
+}
+if (!empty($payload['status'])) {
+    $properties['Status'] = ['select' => ['name' => $payload['status']]];
+}
+
 $properties['Inventaris Terkait'] = ['relation' => []]; // Kosongkan relasi lama
 
 logInfo('update-peminjaman', "PATCH properti peminjaman page_id={$pageId}");
 $res = notionCurl('PATCH', 'https://api.notion.com/v1/pages/' . $pageId, ['properties' => $properties]);
 logNotionResponse('update-peminjaman', $res, "PATCH /pages/{$pageId}");
 
+$targetStatus = $payload['status'] ?? 'Dipinjam';
 if ($res['code'] === 200) {
-    if (($payload['status'] ?? 'Dipinjam') === 'Dipinjam') {
+    if ($targetStatus === 'Dipinjam') {
         $relationIds = [];
 
         foreach ($alatPayload as $idx => $alatItem) {

@@ -20,29 +20,34 @@ if (empty($input['pemancar']) || empty($input['tanggal']) || empty($input['start
     exit;
 }
 
-// Aman dari Undefined Index
- $startDate = $input['tanggal'] . 'T' . $input['start_time'] . ':00+07:00';
- $endDate   = $input['tanggal'] . 'T' . $input['end_time'] . ':00+07:00';
+$startTime = !empty($input['start_time']) ? trim($input['start_time']) : '00:00';
+$endTime   = !empty($input['end_time'])   ? trim($input['end_time'])   : $startTime;
 
- $pemancarSelect = [['name' => $input['pemancar']]];
+if (strlen($startTime) === 5) $startTime .= ':00';
+if (strlen($endTime) === 5) $endTime .= ':00';
 
-// Pastikan petugas adalah array
- $petugasInput = $input['petugas'] ?? [];
+$startDate = $input['tanggal'] . 'T' . $startTime . '+07:00';
+$endDate   = $input['tanggal'] . 'T' . $endTime . '+07:00';
+
+$pemancarSelect = [['name' => $input['pemancar']]];
+
+$petugasInput = $input['petugas'] ?? [];
 if (!is_array($petugasInput)) $petugasInput = [];
- $petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
+$petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
 
-// Get admin name for tracking
- $createdBy = getApiAdminName() ?? 'Open Mode';
+$createdBy = getApiAdminName() ?? 'Open Mode';
 
- $body = [
+$datePayload = ['start' => $startDate];
+if ($endDate > $startDate) {
+    $datePayload['end'] = $endDate;
+}
+
+$body = [
     'parent' => ['database_id' => $databaseId],
     'properties' => [
         'Pemancar' => ['multi_select' => $pemancarSelect],
         'Date' => [
-            'date' => [
-                'start' => $startDate,
-                'end'   => $endDate
-            ]
+            'date' => $datePayload
         ],
         'Petugas' => ['multi_select' => $petugasSelect]
     ]

@@ -20,27 +20,31 @@ if (empty($input['page_id']) || empty($input['pemancar']) || empty($input['tangg
     exit;
 }
 
-// Menggunakan null coalescing operator untuk mencegah error undefined index
- $startTime = $input['start_time'] ?? '00:00';
- $endTime = $input['end_time'] ?? '00:00';
+$startTime = !empty($input['start_time']) ? trim($input['start_time']) : '00:00';
+$endTime   = !empty($input['end_time'])   ? trim($input['end_time'])   : $startTime;
 
- $startDate = $input['tanggal'] . 'T' . $startTime . ':00+07:00';
- $endDate   = $input['tanggal'] . 'T' . $endTime . ':00+07:00';
+if (strlen($startTime) === 5) $startTime .= ':00';
+if (strlen($endTime) === 5) $endTime .= ':00';
 
- $pemancarSelect = [['name' => $input['pemancar']]];
+$startDate = $input['tanggal'] . 'T' . $startTime . '+07:00';
+$endDate   = $input['tanggal'] . 'T' . $endTime . '+07:00';
 
- $petugasInput = $input['petugas'] ?? [];
+$pemancarSelect = [['name' => $input['pemancar']]];
+
+$petugasInput = $input['petugas'] ?? [];
 if (!is_array($petugasInput)) $petugasInput = [];
- $petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
+$petugasSelect = array_map(fn($nama) => ['name' => trim($nama)], $petugasInput);
 
- $body = [
+$datePayload = ['start' => $startDate];
+if ($endDate > $startDate) {
+    $datePayload['end'] = $endDate;
+}
+
+$body = [
     'properties' => [
         'Pemancar' => ['multi_select' => $pemancarSelect],
         'Date' => [
-            'date' => [
-                'start' => $startDate,
-                'end'   => $endDate
-            ]
+            'date' => $datePayload
         ],
         'Petugas' => ['multi_select' => $petugasSelect]
     ]

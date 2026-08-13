@@ -50,7 +50,8 @@ $ch = curl_init($url);
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_TIMEOUT        => 15,
+    CURLOPT_CONNECTTIMEOUT => 3,
+    CURLOPT_TIMEOUT        => 6,
     CURLOPT_SSL_VERIFYPEER => false,
     CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) LogbookRRI/1.0'
 ]);

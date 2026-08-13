@@ -319,6 +319,8 @@ include __DIR__ . '/../includes/header.php';
                 'page_id'      => $p['page_id'],
                 'pemancar'     => $p['pemancar'],
                 'tanggal_raw'  => $p['tanggal_raw'],
+                'start_time'   => $p['start_time'] ?? '',
+                'end_time'     => $p['end_time'] ?? '',
                 'petugas'      => $p['petugas_arr'],
                 'files'        => $p['files'] ?? [],
             ]), ENT_QUOTES, 'UTF-8');
@@ -563,7 +565,16 @@ function openEditModal(btn){
   
   if (data.tanggal_raw) {
     const dateObj = new Date(data.tanggal_raw);
-    document.getElementById('field_tanggal').value = dateObj.toISOString().split('T')[0];
+    if (!isNaN(dateObj.getTime())) {
+      document.getElementById('field_tanggal').value = dateObj.toISOString().split('T')[0];
+    }
+  }
+
+  if (data.start_time && data.start_time !== '-') {
+    document.getElementById('field_start_time').value = data.start_time;
+  }
+  if (data.end_time && data.end_time !== '-') {
+    document.getElementById('field_end_time').value = data.end_time;
   }
   
   const radio = form.querySelector(`input[name="pemancar"][value="${CSS.escape(data.pemancar)}"]`);

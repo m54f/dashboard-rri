@@ -827,7 +827,12 @@ async function handleSubmit(event) {
     keterangan: document.getElementById('field_keterangan').value.trim(),
     alat: alatRows
   };
-  if (isEdit) payload.page_id = pageId;
+  if (isEdit) {
+    payload.page_id = pageId;
+    if (typeof EDIT_DATA !== 'undefined' && EDIT_DATA && EDIT_DATA.status) {
+      payload.status = EDIT_DATA.status;
+    }
+  }
 
   const endpoint = isEdit ? '../api/update-peminjaman.php' : '../api/create-peminjaman.php';
 

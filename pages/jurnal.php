@@ -252,20 +252,40 @@ function renderTable() {
         pageData.forEach(e => {
             let docsHtml = '';
             let limit = 1;
-            let publicUrl = (e.url || '#').replace('https://www.notion.so/', 'https://tmbrrimlg.notion.site/').replace('https://app.notion.com/', 'https://tmbrrimlg.notion.site/');
-            let docUrls = (e.docs || []).map(d => d.url);
-            let jsonUrls = encodeURIComponent(JSON.stringify(docUrls));
+            let publicUrl = e.url || '#';
             
-            for(let i=0; i < Math.min(e.docs.length, limit); i++) {
-                let proxyThumb = '../api/image-proxy.php?url=' + encodeURIComponent(e.docs[i].url) + '&w=150';
-                docsHtml += `<img src="${proxyThumb}" loading="lazy" class="doc-thumb" onclick="openLightbox(decodeURIComponent('${jsonUrls}'), ${i})" onerror="this.src='${e.docs[i].url}'">`;
-            }
-            if(e.docs.length > limit) {
-                docsHtml += `<div class="doc-more" onclick="openLightbox(decodeURIComponent('${jsonUrls}'), ${limit})">+${e.docs.length - limit}</div>`;
-            }
-            if(e.docs.length === 0) docsHtml = `<span style="color:#9ca3af;font-size:12px;">-</span>`;
+            let imageDocs = (e.docs || []).filter(d => {
+                const urlLower = (d.url || '').toLowerCase();
+                const nameLower = (d.name || '').toLowerCase();
+                return urlLower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) ||
+                       nameLower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
+                       (!nameLower.match(/\.(pdf|docx?|xlsx?|zip|rar|txt|csv)$/i) && !urlLower.match(/\.(pdf|docx?|xlsx?|zip|rar|txt|csv)(\?.*)?$/i));
+            });
+            let nonImageDocs = (e.docs || []).filter(d => !imageDocs.includes(d));
 
-            let linkHtml = e.eviden_3 ? `<a href="${e.eviden_3}" target="_blank" style="color:#2563eb; text-decoration:none; font-weight:600;"><i class="ri-link"></i> Buka</a>` : `<span style="color:#9ca3af;font-size:12px;">-</span>`;
+            let docImagesUrls = imageDocs.map(d => d.url);
+            let jsonImageUrls = encodeURIComponent(JSON.stringify(docImagesUrls));
+            
+            for (let i = 0; i < Math.min(imageDocs.length, limit); i++) {
+                let proxyThumb = '../api/image-proxy.php?url=' + encodeURIComponent(imageDocs[i].url) + '&w=150';
+                docsHtml += `<img src="${proxyThumb}" loading="lazy" class="doc-thumb" title="${imageDocs[i].name || 'Foto'}" onclick="openLightbox(decodeURIComponent('${jsonImageUrls}'), ${i})" onerror="this.src='${imageDocs[i].url}'">`;
+            }
+            if (imageDocs.length > limit) {
+                docsHtml += `<div class="doc-more" onclick="openLightbox(decodeURIComponent('${jsonImageUrls}'), ${limit})">+${imageDocs.length - limit}</div>`;
+            }
+
+            nonImageDocs.forEach(doc => {
+                let ext = (doc.name || 'DOC').split('.').pop().toUpperCase();
+                docsHtml += `<a href="${doc.url}" target="_blank" class="doc-more" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:11px; text-decoration:none;" title="${doc.name || 'Dokumen'}"><i class="ri-file-text-line"></i> ${ext}</a>`;
+            });
+
+            if (e.docs.length === 0) docsHtml = `<span style="color:#9ca3af;font-size:12px;">-</span>`;
+
+            let rawEviden = (e.eviden_3 || '').trim();
+            if (rawEviden && !rawEviden.match(/^https?:\/\//i)) {
+                rawEviden = 'https://' + rawEviden;
+            }
+            let linkHtml = rawEviden ? `<a href="${rawEviden}" target="_blank" style="color:#2563eb; text-decoration:none; font-weight:600;"><i class="ri-link"></i> Buka</a>` : `<span style="color:#9ca3af;font-size:12px;">-</span>`;
 
             let editPayload = encodeURIComponent(JSON.stringify({
                 page_id: e.full_id, nama: e.title, tanggal: e.date_raw, eviden_3: e.eviden_3,

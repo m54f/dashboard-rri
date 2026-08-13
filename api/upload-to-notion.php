@@ -20,20 +20,28 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// === DETEKSI OTOMATIS NAMA KEY ===
+// === DETEKSI OTOMATIS NAMA KEY DARI $_FILES ===
 $filesKey = '';
 if (!empty($_FILES['eviden'])) {
     $filesKey = 'eviden';
 } elseif (!empty($_FILES['dokumentasi'])) {
     $filesKey = 'dokumentasi';
+} elseif (!empty($_FILES['files'])) {
+    $filesKey = 'files';
+} elseif (!empty($_FILES['file'])) {
+    $filesKey = 'file';
+} else {
+    $keys = array_keys($_FILES);
+    if (!empty($keys)) {
+        $filesKey = $keys[0];
+    }
 }
 
-if (empty($filesKey)) {
+if (empty($filesKey) || empty($_FILES[$filesKey]['name'])) {
     // === FALLBACK: Fetch URL eksternal (Thumbnail YouTube) & Upload ke Notion S3 ===
     $externalUrl = trim($_POST['flyer_url'] ?? '');
     if (!empty($externalUrl) && filter_var($externalUrl, FILTER_VALIDATE_URL)) {
         try {
-            // Download thumbnail gambar dari URL (timeout 6 detik)
             $ch = curl_init($externalUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -54,7 +62,6 @@ if (empty($filesKey)) {
                 $ext = $extMap[$mimeType] ?? 'jpg';
                 $safeName = 'thumbnail_youtube.' . $ext;
 
-                // Upload file secara native ke server Notion S3
                 $fileUploadId = notionUploadSingleFile($tmpPath, $safeName, $mimeType);
                 @unlink($tmpPath);
 
@@ -71,10 +78,9 @@ if (empty($filesKey)) {
                 exit;
             }
         } catch (Exception $e) {
-            error_log("Upload thumbnail RSS ke Notion S3 gagal, fallback ke external URL: " . $e->getMessage());
+            error_log("Upload thumbnail RSS ke Notion S3 gagal: " . $e->getMessage());
         }
 
-        // Safety fallback jika upload S3 gagal/timeout: kirim URL eksternal
         echo json_encode([
             'success' => true,
             'files'   => [
@@ -92,26 +98,53 @@ if (empty($filesKey)) {
     exit;
 }
 
+// Normalize $_FILES item structure into consistent list
+$fileList = [];
+$rawObj = $_FILES[$filesKey];
+
+if (is_array($rawObj['name'])) {
+    foreach ($rawObj['name'] as $i => $name) {
+        $fileList[] = [
+            'name'     => $name,
+            'tmp_name' => $rawObj['tmp_name'][$i] ?? '',
+            'type'     => $rawObj['type'][$i] ?? '',
+            'error'    => $rawObj['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+            'size'     => $rawObj['size'][$i] ?? 0
+        ];
+    }
+} else {
+    $fileList[] = [
+        'name'     => $rawObj['name'],
+        'tmp_name' => $rawObj['tmp_name'],
+        'type'     => $rawObj['type'],
+        'error'    => $rawObj['error'],
+        'size'     => $rawObj['size']
+    ];
+}
+
 $uploadedFiles = [];
 $errors = [];
 
-foreach ($_FILES[$filesKey]['name'] as $idx => $name) {
-    if ($_FILES[$filesKey]['error'][$idx] !== UPLOAD_ERR_OK) {
-        $errors[] = "Server gagal menerima $name";
+foreach ($fileList as $item) {
+    if ($item['error'] !== UPLOAD_ERR_OK || empty($item['tmp_name']) || !is_uploaded_file($item['tmp_name'])) {
+        $errors[] = "Gagal menerima file " . htmlspecialchars($item['name']);
         continue;
     }
 
-    $tmpName  = $_FILES[$filesKey]['tmp_name'][$idx];
-    $mimeType = $_FILES[$filesKey]['type'][$idx] ?: 'application/octet-stream';
+    // Limit size 10MB
+    if ($item['size'] > 10 * 1024 * 1024) {
+        $errors[] = "Ukuran file " . htmlspecialchars($item['name']) . " melebihi batas 10MB.";
+        continue;
+    }
 
-    // Sanitasi nama file (hapus spasi & karakter aneh)
+    $tmpName  = $item['tmp_name'];
+    $mimeType = $item['type'] ?: mime_content_type($tmpName) ?: 'application/octet-stream';
+    $name     = $item['name'];
+
     $safeName = str_replace(' ', '_', $name);
     $safeName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $safeName);
 
     try {
-        // Gunakan helper 2-tahap yang sudah teruji:
-        // Tahap 1: POST JSON ke /v1/file_uploads → dapat file_upload ID
-        // Tahap 2: POST multipart ke /v1/file_uploads/{id}/send → status "uploaded"
         $fileUploadId = notionUploadSingleFile($tmpName, $safeName, $mimeType);
 
         $uploadedFiles[] = [
