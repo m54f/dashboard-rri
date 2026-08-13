@@ -50,11 +50,55 @@ $body = [
     ]
 ];
 
- $pageId = $input['page_id'];
- $url = "https://api.notion.com/v1/pages/{$pageId}";
- $headers = [
+require_once __DIR__ . '/notion-file-helpers.php';
+
+$filesInput = $input['files'] ?? $input['dokumentasi_file_ids'] ?? [];
+$existingFiles = $input['existing_files'] ?? [];
+
+$filesProperty = [];
+
+// 1. Preservasi / Upload Ulang foto lama yang dipertahankan
+if (is_array($existingFiles)) {
+    foreach ($existingFiles as $doc) {
+        if (empty($doc['url'])) continue;
+        try {
+            $id = notionReuploadFromUrl($doc['url'], $doc['name'] ?? 'bukti_foto.jpg');
+            $filesProperty[] = [
+                'type' => 'file_upload',
+                'file_upload' => ['id' => $id],
+                'name' => $doc['name'] ?? 'bukti_foto.jpg'
+            ];
+        } catch (Exception $e) {
+            error_log('Gagal reupload foto lama pemadaman: ' . $e->getMessage());
+        }
+    }
+}
+
+// 2. Tambahkan foto baru yang diupload
+if (is_array($filesInput)) {
+    foreach ($filesInput as $f) {
+        if (!empty($f['id'])) {
+            $filesProperty[] = [
+                'type' => 'file_upload',
+                'file_upload' => ['id' => $f['id']],
+                'name' => $f['name'] ?? 'bukti_foto.jpg'
+            ];
+        } elseif (!empty($f['url'])) {
+            $filesProperty[] = ['name' => $f['name'] ?? 'Foto', 'type' => 'external', 'external' => ['url' => $f['url']]];
+        }
+    }
+}
+
+if (isset($input['files']) || isset($input['existing_files'])) {
+    $body['properties']['Files & media'] = ['files' => $filesProperty];
+}
+
+$pageId = $input['page_id'];
+$notionVersion = defined('NOTION_VERSION_FILE_UPLOAD') ? NOTION_VERSION_FILE_UPLOAD : (defined('NOTION_VERSION') ? NOTION_VERSION : '2026-03-11');
+$url = "https://api.notion.com/v1/pages/{$pageId}";
+$headers = [
     "Authorization: Bearer {$notionToken}",
-    "Notion-Version: 2022-06-28",
+    "Notion-Version: {$notionVersion}",
     "Content-Type: application/json"
 ];
 

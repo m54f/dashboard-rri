@@ -207,12 +207,6 @@ include __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- Lightbox -->
-<div id="imageLightbox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(5px);" onclick="this.style.display='none'">
-    <span style="position:absolute; top:20px; right:40px; font-size:40px; color:white; cursor:pointer;">&times;</span>
-    <img id="lightboxImg" src="" style="max-width:90%; max-height:80vh; border-radius:8px; object-fit:contain;">
-</div>
-
 <script>
 const allEntries = <?= json_encode($jurnalData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 const userRole = '<?= getRole() ?>'; // Get current user role
@@ -223,6 +217,16 @@ let currentFilter = 'semua';
 let searchQuery = '';
 let selectedFiles = [];
 let existingDocs = [];
+
+function htmlEscape(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 function renderTable() {
     let temp = allEntries;
@@ -251,7 +255,7 @@ function renderTable() {
     } else {
         pageData.forEach(e => {
             let docsHtml = '';
-            let limit = 1;
+            let limit = 3;
             let publicUrl = e.url || '#';
             
             let imageDocs = (e.docs || []).filter(d => {
@@ -263,21 +267,29 @@ function renderTable() {
             });
             let nonImageDocs = (e.docs || []).filter(d => !imageDocs.includes(d));
 
-            let docImagesUrls = imageDocs.map(d => d.url);
-            let jsonImageUrls = encodeURIComponent(JSON.stringify(docImagesUrls));
-            
-            for (let i = 0; i < Math.min(imageDocs.length, limit); i++) {
-                let proxyThumb = '../api/image-proxy.php?url=' + encodeURIComponent(imageDocs[i].url) + '&w=150';
-                docsHtml += `<img src="${proxyThumb}" loading="lazy" class="doc-thumb" title="${imageDocs[i].name || 'Foto'}" onclick="openLightbox(decodeURIComponent('${jsonImageUrls}'), ${i})" onerror="this.src='${imageDocs[i].url}'">`;
-            }
-            if (imageDocs.length > limit) {
-                docsHtml += `<div class="doc-more" onclick="openLightbox(decodeURIComponent('${jsonImageUrls}'), ${limit})">+${imageDocs.length - limit}</div>`;
+            if (imageDocs.length > 0) {
+                let docImagesUrls = imageDocs.map(d => d.url);
+                let jsonImageUrls = htmlEscape(JSON.stringify(docImagesUrls));
+                
+                docsHtml += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">`;
+                for (let i = 0; i < Math.min(imageDocs.length, limit); i++) {
+                    let proxyThumb = '../api/image-proxy.php?url=' + encodeURIComponent(imageDocs[i].url) + '&w=150';
+                    docsHtml += `<img src="${proxyThumb}" loading="lazy" class="doc-thumb" title="${htmlEscape(imageDocs[i].name || 'Foto')}" onclick='openLightbox(${jsonImageUrls}, ${i})' onerror="this.src='${imageDocs[i].url}'" style="width:40px; height:40px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid var(--border-color, #e2e8f0); transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">`;
+                }
+                if (imageDocs.length > limit) {
+                    docsHtml += `<span style="font-size:12px; font-weight:700; color:var(--text-secondary, #475569); cursor:pointer; align-self:center;" onclick='openLightbox(${jsonImageUrls}, ${limit})'>+${imageDocs.length - limit}</span>`;
+                }
+                docsHtml += `</div>`;
             }
 
-            nonImageDocs.forEach(doc => {
-                let ext = (doc.name || 'DOC').split('.').pop().toUpperCase();
-                docsHtml += `<a href="${doc.url}" target="_blank" class="doc-more" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:11px; text-decoration:none;" title="${doc.name || 'Dokumen'}"><i class="ri-file-text-line"></i> ${ext}</a>`;
-            });
+            if (nonImageDocs.length > 0) {
+                docsHtml += `<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:${imageDocs.length > 0 ? '4px' : '0'};">`;
+                nonImageDocs.forEach(doc => {
+                    let ext = (doc.name || 'DOC').split('.').pop().toUpperCase();
+                    docsHtml += `<a href="${doc.url}" target="_blank" class="doc-more" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:11px; text-decoration:none; padding:3px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;" title="${htmlEscape(doc.name || 'Dokumen')}"><i class="ri-file-text-line"></i> ${ext}</a>`;
+                });
+                docsHtml += `</div>`;
+            }
 
             if (e.docs.length === 0) docsHtml = `<span style="color:#9ca3af;font-size:12px;">-</span>`;
 

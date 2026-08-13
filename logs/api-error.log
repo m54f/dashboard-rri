@@ -39,3 +39,13 @@
 [2026-08-11 09:19:17] [INFO] [create-peminjaman/batchPatch] user=Administrator | Semua 16 inventory berhasil di-PATCH
 [2026-08-11 09:19:20] [INFO] [create-peminjaman] user=Administrator | OK PATCH relasi inventaris code=200
 [2026-08-11 09:19:20] [INFO] [create-peminjaman] user=Administrator | === SELESAI (sukses) ===
+[2026-08-13 04:54:12] [INFO] [create-peminjaman] user=guest | {"kegiatan":"Zoom Meeting","tgl_pinjam":"2026-08-13","jumlah_alat":1,"pic":"Selvy"}
+[2026-08-13 04:54:12] [INFO] [create-peminjaman] user=Administrator | Mengirim POST ke Notion /pages (peminjaman baru)
+[2026-08-13 04:54:13] [INFO] [create-peminjaman] user=Administrator | OK POST /pages peminjaman code=200
+[2026-08-13 04:54:13] [INFO] [create-peminjaman] user=Administrator | Peminjaman berhasil dibuat: page_id=3bb1ca61-57e1-8162-924c-fe909d60165c
+[2026-08-13 04:54:13] [INFO] [create-peminjaman] user=Administrator | Query inventory #0: name=Laptop tipe=MSI kat=Komputer qty=1
+[2026-08-13 04:54:14] [INFO] [create-peminjaman] user=Administrator | Inventory query #0 → matched=0 code=200
+[2026-08-13 04:54:14] [WARN] [create-peminjaman] user=Administrator | Fallback query tanpa kategori untuk: Laptop
+[2026-08-13 04:54:15] [INFO] [create-peminjaman] user=Administrator | Fallback #0 → matched=0
+[2026-08-13 04:54:15] [INFO] [create-peminjaman] user=Administrator | Total inventory ditemukan untuk direlasikan: 0
+[2026-08-13 04:54:15] [INFO] [create-peminjaman] user=Administrator | === SELESAI (sukses) ===

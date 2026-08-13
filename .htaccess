@@ -1,26 +1,14 @@
 # ==============================================================================
-# LOGBOOK RRI — InfinityFree Shared Hosting Apache Configuration
+# LOGBOOK RRI — InfinityFree Shared Hosting Safe Apache Configuration
 # ==============================================================================
 
-# 1. OPTIMASI KEAMANAN & PENGATURAN PHP
-<IfModule mod_php7.c>
-    php_flag display_errors Off
-    php_value log_errors On
-    php_value max_execution_time 30
-    php_value post_max_size 16M
-    php_value upload_max_filesize 10M
-    php_value default_charset "UTF-8"
-</IfModule>
-<IfModule mod_php.c>
-    php_flag display_errors Off
-    php_value log_errors On
-    php_value max_execution_time 30
-    php_value post_max_size 16M
-    php_value upload_max_filesize 10M
-    php_value default_charset "UTF-8"
-</IfModule>
+# 1. DISABLE DIRECTORY BROWSING
+Options -Indexes
 
-# 2. PROTEKSI DIREKTORI SENSITIF
+# 2. DEFAULT CHARSET
+AddDefaultCharset UTF-8
+
+# 3. PROTEKSI FILE SENSITIF
 <FilesMatch "^\.">
     Order allow,deny
     Deny from all
@@ -31,22 +19,18 @@
     Deny from all
 </FilesMatch>
 
-# 3. AKTIFKAN REWRITE ENGINE & HTTPS PROXY COMPATIBILITY
+# 4. REWRITE ENGINE & HTTPS PROXY COMPATIBILITY
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-    
-    # Paksa HTTPS jika didukung oleh InfinityFree SSL / Cloudflare
-    RewriteCond %{HTTP:X-Forwarded-Proto} =http
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 </IfModule>
 
-# 4. GZIP / DEFLATE COMPRESSION (MEMPERCEPAT LOADING ON INFINITYFREE)
+# 5. GZIP / DEFLATE COMPRESSION (MEMPERCEPAT LOADING ON INFINITYFREE)
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/json application/javascript text/javascript
 </IfModule>
 
-# 5. EXPIRES & CACHE-CONTROL HEADERS
+# 6. EXPIRES & CACHE-CONTROL HEADERS
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresDefault "access plus 1 month"

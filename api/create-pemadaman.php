@@ -53,13 +53,30 @@ $body = [
     ]
 ];
 
-// Add Created By tracking (optional - uncomment after adding property to Notion)
-// $body['properties']['Created By'] = ['rich_text' => [['text' => ['content' => $createdBy]]]];
+$filesInput = $input['files'] ?? $input['dokumentasi_file_ids'] ?? [];
+if (!empty($filesInput) && is_array($filesInput)) {
+    $filesProperty = [];
+    foreach ($filesInput as $f) {
+        if (!empty($f['id'])) {
+            $filesProperty[] = [
+                'type' => 'file_upload',
+                'file_upload' => ['id' => $f['id']],
+                'name' => $f['name'] ?? 'bukti_foto.jpg'
+            ];
+        } elseif (!empty($f['url'])) {
+            $filesProperty[] = ['name' => $f['name'] ?? 'Foto', 'type' => 'external', 'external' => ['url' => $f['url']]];
+        }
+    }
+    if (!empty($filesProperty)) {
+        $body['properties']['Files & media'] = ['files' => $filesProperty];
+    }
+}
 
- $url = "https://api.notion.com/v1/pages";
- $headers = [
+$notionVersion = defined('NOTION_VERSION_FILE_UPLOAD') ? NOTION_VERSION_FILE_UPLOAD : (defined('NOTION_VERSION') ? NOTION_VERSION : '2026-03-11');
+$url = "https://api.notion.com/v1/pages";
+$headers = [
     "Authorization: Bearer {$notionToken}",
-    "Notion-Version: 2022-06-28",
+    "Notion-Version: {$notionVersion}",
     "Content-Type: application/json"
 ];
 

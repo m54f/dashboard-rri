@@ -353,33 +353,25 @@ include __DIR__ . '/../includes/header.php';
             <td><span class="mini-badge orange"><?= $durasi ?></span></td>
             <td><?= htmlspecialchars($p['petugas']) ?></td>
             <td>
-              <?php if (!empty($p['files'])): ?>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <?php foreach (array_slice($p['files'], 0, 3) as $file): ?>
-                    <div style="position:relative; width:48px; height:48px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; background:#f8fafc; cursor:pointer; transition:transform 0.2s;" 
-                         onclick="openLightbox('<?= htmlspecialchars($file['url']) ?>')"
-                         onmouseover="this.style.transform='scale(1.05)'" 
+              <?php if (!empty($p['files'])): 
+                $fileUrls = array_map(function($f) { return $f['url']; }, $p['files']);
+                $jsonUrls = htmlspecialchars(json_encode($fileUrls), ENT_QUOTES, 'UTF-8');
+              ?>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                  <?php foreach (array_slice($p['files'], 0, 3) as $idx => $file): ?>
+                    <img src="<?= htmlspecialchars($file['url']) ?>" 
+                         loading="lazy" 
+                         alt="<?= htmlspecialchars($file['name']) ?>" 
+                         title="<?= htmlspecialchars($file['name']) ?>"
+                         class="doc-thumb"
+                         onclick='openLightbox(<?= $jsonUrls ?>, <?= $idx ?>)'
+                         style="width:40px; height:40px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid var(--border-color, #e2e8f0); transition:transform 0.2s;"
+                         onmouseover="this.style.transform='scale(1.08)'" 
                          onmouseout="this.style.transform='scale(1)'">
-                      
-                      <!-- Gambar Thumbnail -->
-                      <img src="<?= htmlspecialchars($file['url']) ?>" 
-                           loading="lazy" 
-                           alt="<?= htmlspecialchars($file['name']) ?>" 
-                           style="width:100%; height:100%; object-fit:cover;"
-                           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                      
-                      <!-- Fallback Icon (Muncul jika URL Notion expired/rusak) -->
-                      <div style="position:absolute; inset:0; display:none; align-items:center; justify-content:center; color:#94a3b8;">
-                        <i class="ri-image-line" style="font-size:20px;"></i>
-                      </div>
-                    </div>
                   <?php endforeach; ?>
                   
-                  <!-- Badge Jumlah Sisa Gambar -->
                   <?php if (count($p['files']) > 3): ?>
-                    <div style="width:48px; height:48px; border-radius:8px; background:#f1f5f9; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569;">
-                      +<?= count($p['files']) - 3 ?>
-                    </div>
+                    <span style="font-size:12px; font-weight:700; color:var(--text-secondary, #475569); cursor:pointer; align-self:center;" onclick='openLightbox(<?= $jsonUrls ?>, 3)'>+<?= count($p['files']) - 3 ?></span>
                   <?php endif; ?>
                 </div>
               <?php else: ?>
@@ -517,32 +509,63 @@ document.getElementById('pemadamanModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-// ===== FILE UPLOAD PREVIEW =====
-document.getElementById('field_files').addEventListener('change', function() {
+// ===== FILE UPLOAD & PREVIEW LOGIC =====
+let editExistingFiles = [];
+
+function renderFilePreview() {
   const preview = document.getElementById('filePreview');
-  if (this.files.length > 0) {
-    const fileNames = Array.from(this.files).map(f => f.name).join(', ');
-    preview.textContent = `📎 ${this.files.length} file dipilih: ${fileNames}`;
-    preview.style.display = 'block';
+  const fileInput = document.getElementById('field_files');
+  let html = '';
+
+  if (editExistingFiles.length > 0) {
+    html += `<div style="font-size:11px; font-weight:700; color:var(--text-secondary, #475569); margin-bottom:6px;">Foto Terpasang (${editExistingFiles.length}):</div>`;
+    html += `<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">`;
+    editExistingFiles.forEach((file, index) => {
+      html += `
+        <div style="position:relative; width:48px; height:48px; border-radius:6px; overflow:hidden; border:1px solid #cbd5e1;">
+          <img src="${file.url}" style="width:100%; height:100%; object-fit:cover;">
+          <button type="button" onclick="removeExistingFile(${index})" style="position:absolute; top:2px; right:2px; background:rgba(220, 38, 38, 0.9); color:#fff; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;" title="Hapus foto ini">×</button>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    const fileNames = Array.from(fileInput.files).map(f => f.name).join(', ');
+    html += `<div style="font-size:12px; font-weight:600; color:#2563eb;">📎 ${fileInput.files.length} foto baru dipilih: ${fileNames}</div>`;
     document.getElementById('uploadZone').style.borderColor = '#2563eb';
     document.getElementById('uploadZone').style.background = '#eff6ff';
   } else {
-    preview.style.display = 'none';
     document.getElementById('uploadZone').style.borderColor = '#cbd5e1';
     document.getElementById('uploadZone').style.background = '#f8fafc';
   }
-});
+
+  if (html) {
+    preview.innerHTML = html;
+    preview.style.display = 'block';
+  } else {
+    preview.innerHTML = '';
+    preview.style.display = 'none';
+  }
+}
+
+function removeExistingFile(index) {
+  editExistingFiles.splice(index, 1);
+  renderFilePreview();
+}
+
+document.getElementById('field_files').addEventListener('change', renderFilePreview);
 
 // ===== MODE CREATE =====
 function openCreateModal(){
   const form = document.getElementById('pemadamanForm');
   form.reset();
+  editExistingFiles = [];
   document.getElementById('field_page_id').value = '';
   document.getElementById('modalTitle').textContent = 'Catat Aktivitas';
   document.getElementById('submitBtnLabel').textContent = 'Kirim Data';
-  document.getElementById('filePreview').style.display = 'none';
-  document.getElementById('uploadZone').style.borderColor = '#cbd5e1';
-  document.getElementById('uploadZone').style.background = '#f8fafc';
+  renderFilePreview();
   
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('field_tanggal').value = today;
@@ -559,7 +582,7 @@ function openEditModal(btn){
   const data = JSON.parse(btn.dataset.payload);
   const form = document.getElementById('pemadamanForm');
   form.reset();
-  document.getElementById('filePreview').style.display = 'none';
+  editExistingFiles = Array.isArray(data.files) ? [...data.files] : [];
 
   document.getElementById('field_page_id').value = data.page_id;
   
@@ -587,6 +610,7 @@ function openEditModal(btn){
 
   document.getElementById('modalTitle').textContent = 'Edit Data Aktivitas';
   document.getElementById('submitBtnLabel').textContent = 'Simpan Perubahan';
+  renderFilePreview();
   openModal();
 }
 
@@ -730,12 +754,32 @@ async function handlePemadamanSubmit(event) {
   const isEdit = !!pageId;
 
   try {
+    let uploadedFiles = [];
+    const fileInput = document.getElementById('field_files');
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      submitBtnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Mengunggah Foto...';
+      const formData = new FormData();
+      for (const file of fileInput.files) {
+        formData.append('files[]', file);
+      }
+      const uploadRes = await fetch('../api/upload-to-notion.php', {
+        method: 'POST',
+        body: formData
+      });
+      const uploadData = await uploadRes.json();
+      if (uploadData.success && Array.isArray(uploadData.files)) {
+        uploadedFiles = uploadData.files;
+      }
+    }
+
     const payload = {
       pemancar: pemancar,
       tanggal: form.tanggal.value,
       start_time: form.start_time.value,
       end_time: form.end_time.value,
       petugas: petugasChecked,
+      files: uploadedFiles,
+      existing_files: editExistingFiles
     };
     if (isEdit) payload.page_id = pageId;
 
@@ -790,29 +834,7 @@ async function deletePemadaman(pageId, label) {
   );
 }
 
-// showToast() is provided globally by /assets/css/js/sonner.js
-
-
-// ===== Lightbox Modern untuk Preview Foto =====
-function openLightbox(url) {
-  let lb = document.getElementById('lightboxOverlay');
-  if (!lb) {
-    lb = document.createElement('div');
-    lb.id = 'lightboxOverlay';
-    lb.style.cssText = 'position:fixed; inset:0; background:rgba(15, 23, 42, 0.85); z-index:9999; display:none; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(4px);';
-    lb.onclick = () => { lb.style.display = 'none'; };
-    lb.innerHTML = '<img id="lightboxImg" src="" alt="Preview" style="max-width:90vw; max-height:90vh; border-radius:12px; object-fit:contain; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); transition:transform 0.2s;" onclick="event.stopPropagation()">';
-    document.body.appendChild(lb);
-  }
-  
-  const img = document.getElementById('lightboxImg');
-  img.style.transform = 'scale(0.95)';
-  img.src = url;
-  
-  lb.style.display = 'flex';
-  // Animasi masuk halus
-  setTimeout(() => { img.style.transform = 'scale(1)'; }, 50);
-}
+// showToast() and openLightbox() are provided globally by /includes/footer.php and /assets/css/js/sonner.js
 </script>
 
 <script>

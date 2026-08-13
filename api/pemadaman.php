@@ -55,20 +55,22 @@ function getPemadaman() {
         }
 
         $filesArr = [];
-        if (isset($props['Files & media']['files']) && is_array($props['Files & media']['files'])) {
-            foreach ($props['Files & media']['files'] as $f) {
-                $fileUrl = '';
-                if (isset($f['external']['url'])) {
-                    $fileUrl = $f['external']['url'];
-                } elseif (isset($f['file']['url'])) {
-                    $fileUrl = $f['file']['url'];
-                }
-                
-                if (!empty($fileUrl)) {
-                    $filesArr[] = [
-                        'name' => $f['name'] ?? 'file',
-                        'url'  => $fileUrl
-                    ];
+        foreach ($props as $propName => $propVal) {
+            if (is_array($propVal) && (
+                ($propVal['type'] ?? '') === 'files' ||
+                in_array(strtolower($propName), ['files & media', 'dokumentasi', 'files', 'bukti foto', 'media', 'eviden'])
+            )) {
+                $filesList = $propVal['files'] ?? [];
+                if (is_array($filesList)) {
+                    foreach ($filesList as $f) {
+                        $fileUrl = $f['external']['url'] ?? $f['file']['url'] ?? '';
+                        if (!empty($fileUrl)) {
+                            $filesArr[] = [
+                                'name' => $f['name'] ?? 'file',
+                                'url'  => $fileUrl
+                            ];
+                        }
+                    }
                 }
             }
         }
