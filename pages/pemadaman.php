@@ -326,11 +326,30 @@ include __DIR__ . '/../includes/header.php';
             ]), ENT_QUOTES, 'UTF-8');
             
             $durasi = '-';
-            if (!empty($p['start_time']) && !empty($p['end_time'])) {
-                $start = new DateTime($p['start_time']);
-                $end = new DateTime($p['end_time']);
-                $diff = $start->diff($end);
-                $durasi = ($diff->h > 0 ? $diff->h . 'j ' : '') . $diff->i . 'm';
+            $startTime = $p['start_time'] ?? '';
+            $endTime   = $p['end_time']   ?? '';
+
+            // Validasi: hanya proses bila format-nya terlihat seperti waktu (mengandung ":")
+            // dan bukan placeholder "-" kosong dari Notion
+            if ($startTime !== '' && $startTime !== '-' 
+            && $endTime   !== '' && $endTime   !== '-' 
+            && strpos($startTime, ':') !== false 
+            && strpos($endTime,   ':') !== false) {
+                try {
+                    $start = new DateTime($startTime);
+                    $end   = new DateTime($endTime);
+                    
+                    // Jika end < start, asumsikan lewat tengah malam
+                    if ($end < $start) {
+                        $end->modify('+1 day');
+                    }
+                    
+                    $diff   = $start->diff($end);
+                    $durasi = ($diff->h > 0 ? $diff->h . 'j ' : '') . $diff->i . 'm';
+                } catch (Exception $e) {
+                    // Fallback bila format tidak terduga
+                    $durasi = '-';
+                }
             }
 
             $tagColor = 'blue';
