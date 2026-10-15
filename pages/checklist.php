@@ -232,6 +232,7 @@ include __DIR__ . '/../includes/header.php';
           <th>Petugas DP</th>
           <th>Keterangan</th>
           <th>Waktu Submit</th>
+          <th>Dokumen</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -273,6 +274,42 @@ include __DIR__ . '/../includes/header.php';
             <td><?= htmlspecialchars($c['petugas']) ?></td>
             <td class="cell-sub" style="max-width:220px;"><?= htmlspecialchars(mb_strimwidth($c['keterangan'], 0, 60, '...')) ?></td>
             <td class="cell-sub"><?= htmlspecialchars($c['submission']) ?></td>
+<?php
+echo '<script>';
+echo 'console.log("=== CHECKLIST TABLE ROW ===");';
+echo 'console.log(' .
+    json_encode(
+        $c,
+        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+    ) .
+    ');';
+echo 'console.log("PDF:", ' .
+    json_encode($c['pdf'] ?? null) .
+    ');';
+echo 'console.log("PDF FILES:", ' .
+    json_encode($c['pdf_files'] ?? null) .
+    ');';
+echo '</script>';
+?>
+<!-- TAMBAHAN DOKUMEN PDF -->
+<td>
+  <?php if (!empty($c['pdf_files'])): ?>
+    <?php foreach ($c['pdf_files'] as $pdf): ?>
+      <a
+        href="<?= htmlspecialchars($pdf['url']) ?>"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="<?= htmlspecialchars($pdf['name']) ?>"
+        style="display:inline-flex;align-items:center;gap:5px;color:#dc2626;text-decoration:none;"
+      >
+        <i class="ri-file-pdf-2-line"></i>
+        <?= htmlspecialchars(mb_strimwidth($pdf['name'], 0, 25, '...')) ?>
+      </a>
+    <?php endforeach; ?>
+  <?php else: ?>
+    <span style="color:var(--text-secondary);font-size:12px;">-</span>
+  <?php endif; ?>
+</td>
             <td class="cell-actions">
               <a href="<?= htmlspecialchars($c['url']) ?>" target="_blank" class="icon-action view" title="Buka di Notion">
                 <i class="ri-external-link-line"></i>
@@ -399,7 +436,7 @@ include __DIR__ . '/../includes/header.php';
               
               <span class="petugas-name"><?= htmlspecialchars($nama) ?></span>
             </span>
-          </label>
+          </label>          
           <?php endforeach; ?>
         </div>
       </div>
@@ -409,7 +446,60 @@ include __DIR__ . '/../includes/header.php';
           <label>Keterangan Checklist</label>
           <textarea id="field_keterangan" name="keterangan" rows="3" placeholder="Catatan tambahan bila ada kendala..."></textarea>
         </div>
+          
+         <!-- LAMPIRAN -->
+<div class="form-group">
+  <label class="form-label">Upload Dokumen PDF Logger</label>
+
+  <div class="upload-zone" id="dropzone">
+
+    <input
+      type="file"
+      id="field_eviden"
+      name="eviden[]"
+      multiple
+      accept="application/pdf,.pdf"
+    >
+
+    <div style="
+      font-size: 2rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    ">
+      <i class="ri-file-pdf-line"></i>
+    </div>
+
+    <div style="
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      font-weight: 600;
+    ">
+      Klik atau seret PDF ke sini
+    </div>
+
+    <div style="
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.35rem;
+    ">
+      Format yang diperbolehkan: PDF
+    </div>
+
+  </div>
+
+  <!-- Preview PDF -->
+  <div
+    id="filePreview"
+    style="
+      display:none;
+      margin-top:12px;
+    "
+  ></div>
+</div>
+          
       </div>
+          
+        
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
@@ -427,7 +517,7 @@ function closeModal(){ document.getElementById('checklistModal').classList.remov
 document.getElementById('checklistModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
-
+ 
 // ===== Fungsi Toggle Kartu Ceklis =====
 function toggleCheckItem(el) {
   const inputId = el.getAttribute('data-target');
@@ -525,6 +615,166 @@ function toggleAllPetugas(){
   boxes.forEach(b => { b.checked = !allChecked; });
   updatePetugasCount();
 }
+    
+// HANDLE PDF
+let selectedPdfFiles = [];
+
+const fileInput = document.getElementById('field_eviden');
+const filePreview = document.getElementById('filePreview');
+const dropzone = document.getElementById('dropzone');
+
+fileInput.addEventListener('change', function () {
+  addPdfFiles([...this.files]);
+});
+
+function addPdfFiles(files) {
+  files.forEach(file => {
+    const isPDF =
+      file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isPDF) {
+      showToast(`❌ File "${file.name}" bukan PDF.`, 'error');
+      return;
+    }
+
+    // Hindari file duplikat
+    const exists = selectedPdfFiles.some(
+      f => f.name === file.name && f.size === file.size
+    );
+
+    if (!exists) {
+      selectedPdfFiles.push(file);
+    }
+  });
+
+  renderPdfPreview();
+}
+
+function renderPdfPreview() {
+  filePreview.innerHTML = '';
+
+  if (selectedPdfFiles.length === 0) {
+    filePreview.style.display = 'none';
+    return;
+  }
+
+  filePreview.style.display = 'block';
+
+  selectedPdfFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+
+    item.style.cssText = `
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      margin-bottom:8px;
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:8px;
+    `;
+
+    item.innerHTML = `
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+      ">
+        <i class="ri-file-pdf-line"
+           style="font-size:24px;color:#dc2626;"></i>
+
+        <div style="min-width:0;">
+          <div style="
+            font-size:13px;
+            font-weight:600;
+            color:#334155;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+          ">
+            ${escapeHtml(file.name)}
+          </div>
+
+          <div style="
+            font-size:11px;
+            color:#64748b;
+            margin-top:2px;
+          ">
+            ${formatFileSize(file.size)}
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onclick="removePdfFile(${index})"
+        style="
+          border:none;
+          background:#fee2e2;
+          color:#dc2626;
+          width:30px;
+          height:30px;
+          border-radius:6px;
+          cursor:pointer;
+          flex-shrink:0;
+        "
+        title="Hapus file"
+      >
+        <i class="ri-close-line"></i>
+      </button>
+    `;
+
+    filePreview.appendChild(item);
+  });
+}
+
+function removePdfFile(index) {
+  selectedPdfFiles.splice(index, 1);
+  renderPdfPreview();
+
+  // Reset input agar file yang sama bisa dipilih lagi
+  fileInput.value = '';
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) {
+    return (bytes / 1024).toFixed(1) + ' KB';
+  }
+
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+
+// ===============================
+// DRAG & DROP
+// ===============================
+
+dropzone.addEventListener('dragover', function (e) {
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+});
+
+dropzone.addEventListener('dragleave', function () {
+  dropzone.classList.remove('dragover');
+});
+
+dropzone.addEventListener('drop', function (e) {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+
+  addPdfFiles([...e.dataTransfer.files]);
+});
+
 
 // ===== STATE PAGINATION & FILTER =====
 let currentPage = 1;
@@ -645,69 +895,365 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePetugasCount();
 });
 
+
 // ===== Submit (Create/Update) =====
+// ======================================================
+// SUBMIT CREATE / UPDATE CHECKLIST
+// ======================================================
+
 async function handleChecklistSubmit(event) {
+
   event.preventDefault();
+
   const form = event.target;
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const submitBtnLabel = document.getElementById('submitBtnLabel');
-  const originalLabel = submitBtnLabel.textContent;
 
-  const petugasChecked = [...form.querySelectorAll('input[name="petugas[]"]:checked')].map(cb => cb.value);
-  if (petugasChecked.length === 0) { showToast('⚠️ Pilih minimal satu Petugas DP!', 'error'); return; }
+  const submitBtn =
+    form.querySelector('button[type="submit"]');
 
-  const checklistType = form.querySelector('input[name="checklist"]:checked')?.value;
-  if (!checklistType) { showToast('⚠️ Pilih Pagi atau Malam!', 'error'); return; }
+  const submitBtnLabel =
+    document.getElementById('submitBtnLabel');
+
+  const originalLabel =
+    submitBtnLabel.textContent;
+
+
+  // ====================================================
+  // VALIDASI PETUGAS
+  // ====================================================
+
+  const petugasChecked = [
+    ...form.querySelectorAll(
+      'input[name="petugas[]"]:checked'
+    )
+  ].map(cb => cb.value);
+
+
+  if (petugasChecked.length === 0) {
+
+    showToast(
+      '⚠️ Pilih minimal satu Petugas DP!',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  // ====================================================
+  // VALIDASI SESI
+  // ====================================================
+
+  const checklistType =
+    form.querySelector(
+      'input[name="checklist"]:checked'
+    )?.value;
+
+
+  if (!checklistType) {
+
+    showToast(
+      '⚠️ Pilih Pagi atau Malam!',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  // ====================================================
+  // VALIDASI PDF
+  // ====================================================
+
+  for (const file of selectedPdfFiles) {
+
+    const isPDF =
+      file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
+
+
+    if (!isPDF) {
+
+      showToast(
+        `❌ File "${file.name}" bukan PDF.`,
+        'error'
+      );
+
+      return;
+
+    }
+
+  }
+
 
   submitBtn.disabled = true;
+
   submitBtnLabel.textContent = 'Menyimpan...';
 
-  const pageId = form.page_id.value;
-  const isEdit = !!pageId;
+
+  const pageId =
+    form.page_id.value;
+
+  const isEdit =
+    !!pageId;
+
 
   try {
-    const payload = {
-      checklist: checklistType,
-      tanggal: form.tanggal.value,
-      pro1: form.pro1.checked,
-      pro2: form.pro2.checked,
-      pro4: form.pro4.checked,
-      tetrack: form.tetrack.checked,
-      mcr: form.mcr.checked,
-      petugas: petugasChecked,
-      keterangan: form.keterangan.value.trim(),
-    };
-    if (isEdit) payload.page_id = pageId;
 
-    const endpoint = isEdit ? '../api/update-checklist.php' : '../api/create-checklist.php';
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    // ==================================================
+    // FORMDATA
+    // ==================================================
+
+    const formData = new FormData();
+
+
+    // ==================================================
+    // DATA CHECKLIST
+    // ==================================================
+
+    formData.append(
+      'checklist',
+      checklistType
+    );
+
+
+    formData.append(
+      'tanggal',
+      form.tanggal.value
+    );
+
+
+    formData.append(
+      'pro1',
+      form.pro1.checked ? 'true' : 'false'
+    );
+
+
+    formData.append(
+      'pro2',
+      form.pro2.checked ? 'true' : 'false'
+    );
+
+
+    formData.append(
+      'pro4',
+      form.pro4.checked ? 'true' : 'false'
+    );
+
+
+    formData.append(
+      'tetrack',
+      form.tetrack.checked ? 'true' : 'false'
+    );
+
+
+    formData.append(
+      'mcr',
+      form.mcr.checked ? 'true' : 'false'
+    );
+
+
+    formData.append(
+      'keterangan',
+      form.keterangan.value.trim()
+    );
+
+
+    // ==================================================
+    // PETUGAS
+    // ==================================================
+
+    petugasChecked.forEach(nama => {
+
+      formData.append(
+        'petugas[]',
+        nama
+      );
+
     });
 
-    const data = await res.json();
-    if (data.success) {
-      showToast('✅ ' + data.message, 'success');
-      closeModal();
-      form.reset();
-      setTimeout(() => location.reload(), 1200);
-    } else {
-      let errMsg = data.error || 'Unknown error';
-      if (data.details) {
-          errMsg += '\nDetails: ' + (typeof data.details === 'string' ? data.details : JSON.stringify(data.details));
-      }
-      showToast('❌ Gagal: ' + errMsg, 'error');
-      console.error('Notion Error Details:', data);
+
+    // ==================================================
+    // PAGE ID UNTUK EDIT
+    // ==================================================
+
+    if (isEdit) {
+
+      formData.append(
+        'page_id',
+        pageId
+      );
+
     }
+
+
+    // ==================================================
+    // PDF
+    // ==================================================
+
+    selectedPdfFiles.forEach(file => {
+
+      formData.append(
+        'eviden[]',
+        file,
+        file.name
+      );
+
+    });
+
+
+    // ==================================================
+    // ENDPOINT
+    // ==================================================
+
+    const endpoint =
+      isEdit
+        ? '../api/update-checklist.php'
+        : '../api/create-checklist.php';
+
+
+    // ==================================================
+    // KIRIM KE SERVER
+    // ==================================================
+
+    const res = await fetch(
+      endpoint,
+      {
+        method: 'POST',
+
+        // JANGAN tambahkan Content-Type.
+        // Browser akan otomatis membuat multipart/form-data.
+
+        body: formData
+      }
+    );
+
+
+    const text =
+      await res.text();
+
+
+    let data;
+
+
+    try {
+
+      data =
+        JSON.parse(text);
+
+    } catch (e) {
+
+      console.error(
+        'Response server bukan JSON:',
+        text
+      );
+
+      throw new Error(
+        'Server mengembalikan response yang tidak valid.'
+      );
+
+    }
+
+
+    // ==================================================
+    // BERHASIL
+    // ==================================================
+
+    if (data.success) {
+
+      showToast(
+        '✅ ' +
+        (data.message ||
+        'Checklist berhasil disimpan'),
+        'success'
+      );
+
+
+      closeModal();
+
+
+      form.reset();
+
+
+      // Bersihkan PDF
+      selectedPdfFiles = [];
+
+      renderPdfPreview();
+
+
+      setTimeout(() => {
+
+        location.reload();
+
+      }, 1200);
+
+
+    }
+
+    // ==================================================
+    // GAGAL
+    // ==================================================
+
+    else {
+
+      let errMsg =
+        data.error ||
+        'Unknown error';
+
+
+      if (data.details) {
+
+        errMsg +=
+          '\nDetails: ' +
+          (
+            typeof data.details === 'string'
+              ? data.details
+              : JSON.stringify(data.details)
+          );
+
+      }
+
+
+      showToast(
+        '❌ Gagal: ' + errMsg,
+        'error'
+      );
+
+
+      console.error(
+        'Notion Error Details:',
+        data
+      );
+
+    }
+
+
   } catch (err) {
-    console.error('Error:', err);
-    showToast('❌ ' + err.message, 'error');
+
+    console.error(
+      'Error:',
+      err
+    );
+
+
+    showToast(
+      '❌ ' + err.message,
+      'error'
+    );
+
+
   } finally {
+
     submitBtn.disabled = false;
-    submitBtnLabel.textContent = originalLabel;
+
+    submitBtnLabel.textContent =
+      originalLabel;
+
   }
+
 }
+
 
 async function deleteChecklist(pageId, label) {
   customConfirm(

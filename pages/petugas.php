@@ -614,7 +614,7 @@ include __DIR__ . '/../includes/header.php';
             <th>Tanggal</th>
             <th>Kategori</th>
             <th>Deskripsi Aktivitas</th>
-            <th style="text-align:center;">Foto</th>
+            <th id="mediaColumnHeader" style="text-align:center;">Foto</th>
             <th>Durasi</th>
             <th>Status</th>
             <th style="text-align:center;">Aksi</th>
@@ -792,6 +792,7 @@ function openGlobalReport() {
   document.getElementById('reportSearch').value = ''; 
   loadLaporan(''); 
 }
+    
 
 function loadLaporan(nama) {
   document.getElementById('mainView').style.display = 'none';
@@ -811,6 +812,16 @@ function loadLaporan(nama) {
       if (data.error) { showToast('❌ ' + data.error, 'error'); closeReportView(); return; }
       
       currentReportData = data;
+      
+      currentReportData = data;
+
+
+
+const checklistRows = (data.riwayat || [])
+  .filter(r => r.kategori === 'Checklist');
+
+
+
       
       // Reset State
       currentFilter = 'Semua'; 
@@ -880,6 +891,14 @@ function filterReport(kategori, el) {
   reportCurrentPage = 1;
   document.querySelectorAll('#reportFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+ // Ubah judul kolom
+  const mediaHeader = document.getElementById('mediaColumnHeader');
+
+    if (kategori === 'Checklist') {
+        mediaHeader.textContent = 'Dokumen';
+    } else {
+        mediaHeader.textContent = 'Foto';
+    }
   renderReportTable();
 }
 
@@ -965,6 +984,7 @@ function renderReportTable() {
   const paginationWrap = document.getElementById('reportPaginationWrap');
   const paginationInfo = document.getElementById('reportPaginationInfo');
   const paginationButtons = document.getElementById('reportPaginationButtons');
+   
 
   if (!currentReportData) return;
 
@@ -1001,54 +1021,341 @@ function renderReportTable() {
   // Render Tabel
   tbody.innerHTML = '';
   pagedData.forEach(r => {
-    const statusStr = (r.status || '').toString();
-    let statusColor = statusStr.includes('Selesai') || statusStr.includes('Lengkap') ? '#16a34a' : '#f97316';
-    let fotosList = (r.fotos && r.fotos.length > 0) ? r.fotos : (r.foto ? [r.foto] : []);
-    let jsonFotos = encodeURIComponent(JSON.stringify(fotosList));
-    let fotoHtml = `<span style="color:#94a3b8;">-</span>`;
-    if (fotosList.length > 0) {
-      let proxyFotoUrl = '../api/image-proxy.php?url=' + encodeURIComponent(fotosList[0]) + '&w=150';
-      fotoHtml = `<div style="display:flex; align-items:center; gap:4px;">
-        <img src="${proxyFotoUrl}" loading="lazy" alt="Foto" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-color);" onclick="openLightbox(decodeURIComponent('${jsonFotos}'), 0)">
-        ${fotosList.length > 1 ? `<span style="font-size:11px; font-weight:700; color:#64748b; cursor:pointer;" onclick="openLightbox(decodeURIComponent('${jsonFotos}'), 1)">+${fotosList.length - 1}</span>` : ''}
-      </div>`;
-    }
-    
-    // Logic kolom aksi untuk Tiket CakraBot vs Logbook Notion
-    let aksiHtml = '';
-    if (isCakrabotFilter) {
-      if (IS_ADMIN && r.id) {
-        const editPayload = JSON.stringify({
-          id: r.id,
-          ticket_code: r.ticket_code || '',
-          raw_status: r.raw_status || 'OPEN',
-          raw_description: r.raw_description || '',
-          assignee_id: r.assignee_id || ''
-        }).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
-        aksiHtml = `<td style="text-align:center; white-space:nowrap;">
-          <button class="icon-action edit" title="Edit Tiket CakraBot" data-payload='${editPayload}' onclick="openEditCakrabotModal(this)"><i class="ri-pencil-line"></i></button>
-          <button class="icon-action delete" title="Hapus Tiket CakraBot" onclick="deleteCakrabotTicket(${r.id}, '${r.ticket_code || 'Tiket'}')"><i class="ri-delete-bin-line"></i></button>
-        </td>`;
-      } else {
-        aksiHtml = `<td style="text-align:center; color:#94a3b8;">-</td>`;
+
+  const statusStr = (r.status || '').toString();
+
+  let statusColor =
+    statusStr.includes('Selesai') || statusStr.includes('Lengkap')
+      ? '#16a34a'
+      : '#f97316';
+
+
+  // ===================================================
+  // MEDIA / FOTO / PDF
+  // ===================================================
+
+  let mediaHtml = `<span style="color:#94a3b8;">-</span>`;
+
+
+  // ===================================================
+  // CHECKLIST → TAMPILKAN PDF
+  // ===================================================
+
+ if (r.kategori === 'Checklist') {
+
+  const pdfList = [];
+
+  // Prioritas utama: pdf_files karena berisi name + url
+  if (Array.isArray(r.pdf_files)) {
+
+    r.pdf_files.forEach(pdf => {
+
+      if (typeof pdf === 'string') {
+
+        if (pdf) {
+          pdfList.push({
+            url: pdf,
+            name: pdf.split('/').pop().split('?')[0] || 'Dokumen PDF'
+          });
+        }
+
+      } else if (pdf && pdf.url) {
+
+        pdfList.push({
+          url: pdf.url,
+          name: pdf.name || 'Dokumen PDF'
+        });
+
       }
-    } else {
-      aksiHtml = `<td style="text-align:center;"><a href="${r.url || '#'}" target="_blank" class="icon-action report" style="display:inline-flex; width:32px; height:32px;" title="Buka di Notion"><i class="ri-external-link-line"></i></a></td>`;
+
+    });
+  }
+
+  // Fallback kalau pdf_files kosong
+  if (pdfList.length === 0 && r.pdf) {
+
+    pdfList.push({
+      url: r.pdf,
+      name: 'Dokumen PDF'
+    });
+
+  }
+
+  if (pdfList.length > 0) {
+
+    mediaHtml = pdfList.map(pdf => {
+
+      const safeName = pdf.name || 'Dokumen PDF';
+
+      return `
+        <a
+          href="${pdf.url}"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="${safeName}"
+          style="
+            display:inline-flex;
+            align-items:center;
+            gap:5px;
+            color:#dc2626;
+            text-decoration:none;
+            font-size:12px;
+            max-width:240px;
+          "
+        >
+          <i class="ri-file-pdf-2-line"></i>
+          <span style="
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+          ">
+            ${safeName}
+          </span>
+        </a>
+      `;
+
+    }).join('<br>');
+
+  }
+}
+
+
+  // ===================================================
+  // KATEGORI LAIN → TAMPILKAN FOTO
+  // ===================================================
+
+  else {
+
+    let fotosList =
+      (r.fotos && r.fotos.length > 0)
+        ? r.fotos
+        : (r.foto ? [r.foto] : []);
+
+
+    let jsonFotos =
+      encodeURIComponent(JSON.stringify(fotosList));
+
+
+    if (fotosList.length > 0) {
+
+      let proxyFotoUrl =
+        '../api/image-proxy.php?url=' +
+        encodeURIComponent(fotosList[0]) +
+        '&w=150';
+
+
+      mediaHtml = `
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:4px;
+        ">
+
+          <img
+            src="${proxyFotoUrl}"
+            loading="lazy"
+            alt="Foto"
+            style="
+              width:44px;
+              height:44px;
+              object-fit:cover;
+              border-radius:6px;
+              cursor:pointer;
+              border:1px solid var(--border-color);
+            "
+            onclick="openLightbox(
+              decodeURIComponent('${jsonFotos}'),
+              0
+            )"
+          >
+
+          ${
+            fotosList.length > 1
+              ? `
+                <span
+                  style="
+                    font-size:11px;
+                    font-weight:700;
+                    color:#64748b;
+                    cursor:pointer;
+                  "
+                  onclick="openLightbox(
+                    decodeURIComponent('${jsonFotos}'),
+                    1
+                  )"
+                >
+                  +${fotosList.length - 1}
+                </span>
+              `
+              : ''
+          }
+
+        </div>
+      `;
+
     }
-    
-    tbody.innerHTML += `
-      <tr>
-        <td style="font-weight: 600; white-space: nowrap; text-align:left;">${r.tanggal || '-'}</td>
-        <td style="text-align:left;"><span style="padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569;">${r.kategori || '-'}</span></td>
-        <td style="max-width: 300px; line-height: 1.4; text-align:left;">${r.deskripsi || '-'}</td>
-        <td style="text-align: center;">${fotoHtml}</td>
-        <td style="white-space: nowrap; font-weight: 600; color: var(--primary); text-align: center;">${r.durasi || '-'}</td>
-        <td style="font-size: 0.85rem; color: ${statusColor}; font-weight: 600; text-align: center;">${r.status || '-'}</td>
-        ${aksiHtml}
-      </tr>
+
+  }
+
+
+  // ===================================================
+  // AKSI
+  // ===================================================
+
+  let aksiHtml = '';
+
+  if (isCakrabotFilter) {
+
+    if (IS_ADMIN && r.id) {
+
+      const editPayload = JSON.stringify({
+        id: r.id,
+        ticket_code: r.ticket_code || '',
+        raw_status: r.raw_status || 'OPEN',
+        raw_description: r.raw_description || '',
+        assignee_id: r.assignee_id || ''
+      })
+      .replace(/'/g, "&apos;")
+      .replace(/"/g, "&quot;");
+
+
+      aksiHtml = `
+        <td style="text-align:center; white-space:nowrap;">
+
+          <button
+            class="icon-action edit"
+            title="Edit Tiket CakraBot"
+            data-payload='${editPayload}'
+            onclick="openEditCakrabotModal(this)"
+          >
+            <i class="ri-pencil-line"></i>
+          </button>
+
+          <button
+            class="icon-action delete"
+            title="Hapus Tiket CakraBot"
+            onclick="deleteCakrabotTicket(
+              ${r.id},
+              '${r.ticket_code || 'Tiket'}'
+            )"
+          >
+            <i class="ri-delete-bin-line"></i>
+          </button>
+
+        </td>
+      `;
+
+    } else {
+
+      aksiHtml = `
+        <td style="text-align:center; color:#94a3b8;">
+          -
+        </td>
+      `;
+
+    }
+
+  } else {
+
+    aksiHtml = `
+      <td style="text-align:center;">
+
+        <a
+          href="${r.url || '#'}"
+          target="_blank"
+          class="icon-action report"
+          style="
+            display:inline-flex;
+            width:32px;
+            height:32px;
+          "
+          title="Buka di Notion"
+        >
+          <i class="ri-external-link-line"></i>
+        </a>
+
+      </td>
     `;
-  });
+
+  }
+
+
+  // ===================================================
+  // ROW
+  // ===================================================
+
+  tbody.innerHTML += `
+    <tr>
+
+      <td style="
+        font-weight:600;
+        white-space:nowrap;
+        text-align:left;
+      ">
+        ${r.tanggal || '-'}
+      </td>
+
+
+      <td style="text-align:left;">
+
+        <span style="
+          padding:0.25rem 0.6rem;
+          border-radius:6px;
+          font-size:0.75rem;
+          font-weight:600;
+          background:#f1f5f9;
+          color:#475569;
+        ">
+          ${r.kategori || '-'}
+        </span>
+
+      </td>
+
+
+      <td style="
+        max-width:300px;
+        line-height:1.4;
+        text-align:left;
+      ">
+        ${r.deskripsi || '-'}
+      </td>
+
+
+      <!-- FOTO / DOKUMEN -->
+      <td style="
+        text-align:center;
+        vertical-align:middle;
+      ">
+        ${mediaHtml}
+      </td>
+
+
+      <td style="
+        white-space:nowrap;
+        font-weight:600;
+        color:var(--primary);
+        text-align:center;
+      ">
+        ${r.durasi || '-'}
+      </td>
+
+
+      <td style="
+        font-size:0.85rem;
+        color:${statusColor};
+        font-weight:600;
+        text-align:center;
+      ">
+        ${r.status || '-'}
+      </td>
+
+
+      ${aksiHtml}
+
+    </tr>
+  `;
+});
 
   // Render UI Paging
   paginationWrap.style.display = 'flex';
@@ -1339,146 +1646,1012 @@ function hideExportLoader() {
 }
 
 async function exportToExcel() {
-  let dataToExport = getFilteredData();
-  if (dataToExport.length === 0) { showToast("⚠️ Tidak ada data pada filter ini!", "error"); return; }
 
-  const btnExport = document.getElementById('btnExport');
-  const originalText = btnExport.innerHTML;
+  let dataToExport = getFilteredData();
+
+  if (dataToExport.length === 0) {
+    showToast(
+      "⚠️ Tidak ada data pada filter ini!",
+      "error"
+    );
+    return;
+  }
+
+
+  // =========================================================
+  // BUTTON & LOADER
+  // =========================================================
+
+  const btnExport =
+    document.getElementById('btnExport');
+
+  const originalText =
+    btnExport.innerHTML;
+
   btnExport.disabled = true;
+
   showExportLoader();
 
+
   try {
-    const includeFoto = document.getElementById('exportFoto')?.checked ?? false;
-    const photoBuffers = new Array(dataToExport.length).fill(null);
+
+    // =======================================================
+    // PENGATURAN FOTO
+    // =======================================================
+
+    const includeFoto =
+      document
+        .getElementById('exportFoto')
+        ?.checked ?? false;
+
+
+    /*
+     * Buffer foto untuk laporan selain Checklist.
+     *
+     * Checklist TIDAK menggunakan buffer foto.
+     * Checklist menggunakan URL PDF langsung.
+     */
+    const photoBuffers =
+      new Array(dataToExport.length).fill(null);
+
+
+    // =======================================================
+    // DOWNLOAD FOTO
+    // =======================================================
 
     if (includeFoto) {
-        updateExportLoaderProgress(0, 'Menyiapkan unduhan foto...');
-        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> 0%...';
-        
-        const indexWithPhoto = [];
-        dataToExport.forEach((r, idx) => { if (r.foto) indexWithPhoto.push(idx); });
-        
-        if (indexWithPhoto.length > 0) {
-            const fotoUrls = indexWithPhoto.map(idx => dataToExport[idx].foto);
-            const fetchedPhotos = await parallelFetch(fotoUrls, 10, (done, total) => {
-                const progress = Math.round((done / total) * 85);
-                updateExportLoaderProgress(progress, `Mengunduh foto (${done}/${total})...`);
-                btnExport.innerHTML = `<i class="ri-loader-4-line ri-spin"></i> ${progress}%...`;
-            }); // 10 concurrent
-            
-            fetchedPhotos.forEach((img, i) => {
-                if (img) photoBuffers[indexWithPhoto[i]] = img;
-            });
+
+      updateExportLoaderProgress(
+        0,
+        'Menyiapkan unduhan foto...'
+      );
+
+      btnExport.innerHTML =
+        '<i class="ri-loader-4-line ri-spin"></i> 0%...';
+
+
+      const indexWithPhoto = [];
+
+
+      dataToExport.forEach((r, idx) => {
+
+        /*
+         * Checklist tidak mempunyai foto.
+         * Jadi jangan masukkan Checklist ke daftar download foto.
+         */
+        if (
+          r.kategori !== 'Checklist' &&
+          r.foto
+        ) {
+          indexWithPhoto.push(idx);
         }
-        
-        updateExportLoaderProgress(90, 'Menyusun file Excel...');
-        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+
+      });
+
+
+      if (indexWithPhoto.length > 0) {
+
+        const fotoUrls =
+          indexWithPhoto.map(
+            idx => dataToExport[idx].foto
+          );
+
+
+        const fetchedPhotos =
+          await parallelFetch(
+            fotoUrls,
+            10,
+            (done, total) => {
+
+              const progress =
+                Math.round(
+                  (done / total) * 85
+                );
+
+
+              updateExportLoaderProgress(
+                progress,
+                `Mengunduh foto (${done}/${total})...`
+              );
+
+
+              btnExport.innerHTML =
+                `<i class="ri-loader-4-line ri-spin"></i> ${progress}%...`;
+            }
+          );
+
+
+        fetchedPhotos.forEach((img, i) => {
+
+          if (img) {
+
+            photoBuffers[
+              indexWithPhoto[i]
+            ] = img;
+
+          }
+
+        });
+
+      }
+
+
+      updateExportLoaderProgress(
+        90,
+        'Menyusun file Excel...'
+      );
+
+
+      btnExport.innerHTML =
+        '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+
+
     } else {
-        updateExportLoaderProgress(50, 'Menyusun file Excel...');
-        btnExport.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+
+      updateExportLoaderProgress(
+        50,
+        'Menyusun file Excel...'
+      );
+
+
+      btnExport.innerHTML =
+        '<i class="ri-loader-4-line ri-spin"></i> Menyusun Excel...';
+
     }
 
-    const nama = currentReportData.nama ? currentReportData.nama : 'Semua Pegawai';
-    const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
-    let filterDesc = [];
-    if (currentFilter !== 'Semua') filterDesc.push(currentFilter);
-    if (currentTahun !== 'Semua') filterDesc.push("Tahun " + currentTahun);
-    if (currentTriwulan !== 'Semua') filterDesc.push("TW " + currentTriwulan);
-    if (currentSearchQuery) filterDesc.push("Cari: " + currentSearchQuery);
-    let filterText = filterDesc.length > 0 ? filterDesc.join(' - ') : 'Semua Data';
 
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Logbook RRI';
-    const sheet = workbook.addWorksheet('Laporan');
+    // =======================================================
+    // INFORMASI LAPORAN
+    // =======================================================
+
+    const nama =
+      currentReportData.nama
+        ? currentReportData.nama
+        : 'Semua Pegawai';
+
+
+    const tanggalCetak =
+      new Date().toLocaleDateString(
+        'id-ID',
+        {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        }
+      );
+
+
+    let filterDesc = [];
+
+
+    if (currentFilter !== 'Semua') {
+      filterDesc.push(currentFilter);
+    }
+
+
+    if (currentTahun !== 'Semua') {
+      filterDesc.push(
+        "Tahun " + currentTahun
+      );
+    }
+
+
+    if (currentTriwulan !== 'Semua') {
+      filterDesc.push(
+        "TW " + currentTriwulan
+      );
+    }
+
+
+    if (currentSearchQuery) {
+      filterDesc.push(
+        "Cari: " + currentSearchQuery
+      );
+    }
+
+
+    let filterText =
+      filterDesc.length > 0
+        ? filterDesc.join(' - ')
+        : 'Semua Data';
+
+
+    // =======================================================
+    // BUAT WORKBOOK
+    // =======================================================
+
+    const workbook =
+      new ExcelJS.Workbook();
+
+
+    workbook.creator =
+      'Logbook RRI';
+
+
+    const sheet =
+      workbook.addWorksheet(
+        'Laporan'
+      );
+
+
+    // =======================================================
+    // LEBAR KOLOM
+    // =======================================================
 
     sheet.columns = [
-      { width: 5 },   
-      { width: 14 },  
-      { width: 16 },  
-      { width: 45 },  
-      { width: 13 },  
-      { width: 10 },  
-      { width: 14 },  
+
+      { width: 5 },   // A No
+      { width: 14 },  // B Tanggal
+      { width: 16 },  // C Kategori
+      { width: 45 },  // D Deskripsi
+      { width: 35 },  // E Foto / PDF
+      { width: 10 },  // F Durasi
+      { width: 14 },  // G Status
+
     ];
 
-    sheet.mergeCells('A1:G1');
-    sheet.getCell('A1').value = 'Laporan Kinerja Petugas';
-    sheet.getCell('A1').font = { size: 14, bold: true };
 
-    sheet.mergeCells('A2:G2');
-    sheet.getCell('A2').value = `Nama: ${nama}   |   Tanggal: ${tanggalCetak}`;
-    sheet.getCell('A2').font = { size: 10, color: { argb: 'FF64748B' } };
+    // =======================================================
+    // JUDUL
+    // =======================================================
 
-    sheet.mergeCells('A3:G3');
-    sheet.getCell('A3').value = `Filter: ${filterText}   |   Total: ${dataToExport.length} tugas`;
-    sheet.getCell('A3').font = { size: 10, color: { argb: 'FF64748B' } };
+    sheet.mergeCells(
+      'A1:G1'
+    );
+
+
+    sheet.getCell(
+      'A1'
+    ).value =
+      'Laporan Kinerja Petugas';
+
+
+    sheet.getCell(
+      'A1'
+    ).font = {
+
+      size: 14,
+      bold: true
+
+    };
+
+
+    // =======================================================
+    // NAMA & TANGGAL
+    // =======================================================
+
+    sheet.mergeCells(
+      'A2:G2'
+    );
+
+
+    sheet.getCell(
+      'A2'
+    ).value =
+      `Nama: ${nama}   |   Tanggal: ${tanggalCetak}`;
+
+
+    sheet.getCell(
+      'A2'
+    ).font = {
+
+      size: 10,
+
+      color: {
+        argb: 'FF64748B'
+      }
+
+    };
+
+
+    // =======================================================
+    // FILTER
+    // =======================================================
+
+    sheet.mergeCells(
+      'A3:G3'
+    );
+
+
+    sheet.getCell(
+      'A3'
+    ).value =
+      `Filter: ${filterText}   |   Total: ${dataToExport.length} tugas`;
+
+
+    sheet.getCell(
+      'A3'
+    ).font = {
+
+      size: 10,
+
+      color: {
+        argb: 'FF64748B'
+      }
+
+    };
+
 
     sheet.addRow([]);
 
-    const headerRow = sheet.addRow(['No', 'Tanggal', 'Kategori', 'Deskripsi', 'Foto', 'Durasi', 'Status']);
-    headerRow.eachCell(cell => {
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-    });
 
-    dataToExport.forEach((r, idx) => {
-      if (!includeFoto) {
-        // Skip foto, isi kolom dengan '-'
-        const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, '-', r.durasi, r.status]);
-        row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
-        row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
-        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
-      } else {
-        const img = photoBuffers[idx];
-        const row = sheet.addRow([idx + 1, r.tanggal, r.kategori, r.deskripsi, img ? '' : '-', r.durasi, r.status]);
-        row.height = 58; 
-        row.eachCell(cell => { cell.alignment = { vertical: 'middle', wrapText: true }; });
-        row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-        row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
-        row.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+    // =======================================================
+    // HEADER
+    // =======================================================
 
-        if (img) {
-          const imageId = workbook.addImage({ buffer: img.buffer, extension: img.extension });
-          sheet.addImage(imageId, {
-            tl: { col: 4.15, row: row.number - 1 + 0.1 },
-            ext: { width: 62, height: 62 },
-            editAs: 'oneCell'
-          });
-        }
+    const headerRow =
+      sheet.addRow([
+        'No',
+        'Tanggal',
+        'Kategori',
+        'Deskripsi',
+        dataToExport.some(r => r.kategori === 'Checklist')
+    ? 'URL'
+    : 'Foto',
+        'Durasi',
+        'Status'
+      ]);
+
+
+    headerRow.eachCell(
+      cell => {
+
+        cell.font = {
+
+          bold: true,
+
+          color: {
+            argb: 'FFFFFFFF'
+          }
+
+        };
+
+
+        cell.fill = {
+
+          type: 'pattern',
+
+          pattern: 'solid',
+
+          fgColor: {
+            argb: 'FF4F46E5'
+          }
+
+        };
+
+
+        cell.alignment = {
+
+          vertical: 'middle',
+
+          horizontal: 'center'
+
+        };
+
       }
-    });
+    );
 
-    updateExportLoaderProgress(98, 'Membuat file Excel...');
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    let fileName = `Laporan_${nama.replace(/\s+/g, '_')}`;
-    if (currentTahun !== 'Semua') fileName += `_${currentTahun}`;
-    if (currentTriwulan !== 'Semua') fileName += `_TW${currentTriwulan}`;
-    if (currentFilter !== 'Semua') fileName += `_${currentFilter.replace(/\s+/g, '_')}`;
-    link.download = fileName + '.xlsx';
-    document.body.appendChild(link);
-    
-    updateExportLoaderProgress(100, 'Ekstraksi selesai!');
-    await new Promise(resolve => setTimeout(resolve, 350));
-    
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 
-    showToast('✅ Excel berhasil diekspor!', 'success');
-  } catch (err) {
-    showToast('❌ Gagal export: ' + err.message, 'error');
-  } finally {
-    hideExportLoader();
-    btnExport.disabled = false;
-    btnExport.innerHTML = originalText;
+    // =======================================================
+    // DATA LAPORAN
+    // =======================================================
+
+    dataToExport.forEach(
+      (r, idx) => {
+
+
+      
+
+if (r.kategori === 'Checklist') {
+
+  /*
+   * Checklist tidak menggunakan foto.
+   *
+   * Ambil URL PDF dari pdf_files.
+   *
+   * pdf_files bisa:
+   * - undefined / null
+   * - array of object
+   * - satu object
+   * - array berisi string URL
+   */
+
+  let pdfFiles = [];
+
+  if (Array.isArray(r.pdf_files)) {
+    pdfFiles = r.pdf_files;
+  } else if (r.pdf_files) {
+    pdfFiles = [r.pdf_files];
   }
+
+
+  /*
+   * Ambil URL PDF.
+   *
+   * Mendukung format:
+   *
+   * [
+   *   {
+   *     name: "Logger Pagi.pdf",
+   *     url: "https://..."
+   *   }
+   * ]
+   *
+   * atau:
+   *
+   * [
+   *   "https://..."
+   * ]
+   */
+
+  const pdfUrls = pdfFiles
+    .map(pdf => {
+      if (typeof pdf === 'string') {
+        return pdf;
+      }
+
+      return pdf?.url;
+    })
+    .filter(Boolean);
+
+
+  /*
+   * Gabungkan URL jika terdapat beberapa PDF.
+   */
+
+  const pdfText =
+    pdfUrls.length > 0
+      ? pdfUrls.join('\n')
+      : '-';
+
+
+  /*
+   * Buat row Excel.
+   */
+
+  const row = sheet.addRow([
+
+    idx + 1,
+
+    r.tanggal ?? '-',
+
+    r.kategori ?? '-',
+
+    r.deskripsi ?? '-',
+
+    pdfText,
+
+    r.durasi ?? '-',
+
+    r.status ?? '-'
+
+  ]);
+
+
+  /*
+   * Tinggi row.
+   */
+
+  row.height = 40;
+
+
+  /*
+   * Alignment semua cell.
+   */
+
+  row.eachCell(cell => {
+
+    cell.alignment = {
+      vertical: 'middle',
+      wrapText: true
+    };
+
+  });
+
+
+  /*
+   * Kolom No.
+   */
+
+  row.getCell(1).alignment = {
+    vertical: 'middle',
+    horizontal: 'center'
+  };
+
+
+  /*
+   * Kolom Dokumen PDF.
+   */
+
+  row.getCell(5).alignment = {
+    vertical: 'middle',
+    horizontal: 'left',
+    wrapText: true
+  };
+
+
+  /*
+   * Kolom Durasi.
+   */
+
+  row.getCell(6).alignment = {
+    vertical: 'middle',
+    horizontal: 'center'
+  };
+
+
+  /*
+   * Jika hanya ada 1 PDF,
+   * jadikan sebagai hyperlink Excel.
+   */
+
+  if (pdfUrls.length === 1) {
+
+    row.getCell(5).value = {
+      text: pdfUrls[0],
+      hyperlink: pdfUrls[0]
+    };
+
+    row.getCell(5).font = {
+      color: {
+        argb: 'FF2563EB'
+      },
+      underline: true
+    };
+
+  }
+
+
+  /*
+   * Jika ada beberapa PDF,
+   * tampilkan semuanya sebagai teks
+   * dalam satu cell.
+   */
+
+  else if (pdfUrls.length > 1) {
+
+    row.getCell(5).value =
+      pdfUrls.join('\n');
+
+    row.getCell(5).font = {
+      color: {
+        argb: 'FF2563EB'
+      }
+    };
+
+  }
+
+
+  /*
+   * Jika tidak ada PDF,
+   * tampilkan "-".
+   */
+
+  else {
+
+    row.getCell(5).value = '-';
+
+  }
+
+
+  /*
+   * Jangan lanjut ke proses foto.
+   */
+
+  return;
 }
+
+
+        // ===================================================
+        // DATA SELAIN CHECKLIST
+        // ===================================================
+
+        if (!includeFoto) {
+
+
+          /*
+           * Jika user tidak mencentang
+           * export foto.
+           */
+
+          const row =
+            sheet.addRow([
+
+              idx + 1,
+
+              r.tanggal,
+
+              r.kategori,
+
+              r.deskripsi,
+
+              '-',
+
+              r.durasi,
+
+              r.status
+
+            ]);
+
+
+          row.eachCell(
+            cell => {
+
+              cell.alignment = {
+
+                vertical:
+                  'middle',
+
+                wrapText:
+                  true
+
+              };
+
+            }
+          );
+
+
+          row.getCell(
+            1
+          ).alignment = {
+
+            vertical:
+              'middle',
+
+            horizontal:
+              'center'
+
+          };
+
+
+          row.getCell(
+            5
+          ).alignment = {
+
+            vertical:
+              'middle',
+
+            horizontal:
+              'center'
+
+          };
+
+
+          row.getCell(
+            6
+          ).alignment = {
+
+            vertical:
+              'middle',
+
+            horizontal:
+              'center'
+
+          };
+
+
+        } else {
+
+
+          // ===============================================
+          // FOTO BIASA
+          // ===============================================
+
+          const img =
+            photoBuffers[idx];
+
+
+          const row =
+            sheet.addRow([
+
+              idx + 1,
+
+              r.tanggal,
+
+              r.kategori,
+
+              r.deskripsi,
+
+              img
+                ? ''
+                : '-',
+
+              r.durasi,
+
+              r.status
+
+            ]);
+
+
+          row.height =
+            58;
+
+
+          row.eachCell(
+            cell => {
+
+              cell.alignment = {
+
+                vertical:
+                  'middle',
+
+                wrapText:
+                  true
+
+              };
+
+            }
+          );
+
+
+          row.getCell(
+            1
+          ).alignment = {
+
+            vertical:
+              'middle',
+
+            horizontal:
+              'center'
+
+          };
+
+
+          row.getCell(
+            5
+          ).alignment = {
+
+            vertical:
+              'middle',
+
+            horizontal:
+              'center'
+
+          };
+
+
+          row.getCell(
+            6
+          ).alignment = {
+
+            vertical:
+              'middle',
+
+            horizontal:
+              'center'
+
+          };
+
+
+          // ===============================================
+          // MASUKKAN GAMBAR
+          // ===============================================
+
+          if (img) {
+
+
+            const imageId =
+              workbook.addImage({
+
+                buffer:
+                  img.buffer,
+
+                extension:
+                  img.extension
+
+              });
+
+
+            sheet.addImage(
+
+              imageId,
+
+              {
+
+                tl: {
+
+                  col:
+                    4.15,
+
+                  row:
+                    row.number - 1 + 0.1
+
+                },
+
+                ext: {
+
+                  width:
+                    62,
+
+                  height:
+                    62
+
+                },
+
+                editAs:
+                  'oneCell'
+
+              }
+
+            );
+
+          }
+
+        }
+
+      }
+    );
+
+
+    // =======================================================
+    // BUAT FILE EXCEL
+    // =======================================================
+
+    updateExportLoaderProgress(
+      98,
+      'Membuat file Excel...'
+    );
+
+
+    const buffer =
+      await workbook.xlsx.writeBuffer();
+
+
+    const blob =
+      new Blob(
+
+        [buffer],
+
+        {
+
+          type:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        }
+
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const link =
+      document.createElement(
+        'a'
+      );
+
+
+    link.href =
+      url;
+
+
+    // =======================================================
+    // NAMA FILE
+    // =======================================================
+
+    let fileName =
+      `Laporan_${nama.replace(
+        /\s+/g,
+        '_'
+      )}`;
+
+
+    if (
+      currentTahun !== 'Semua'
+    ) {
+
+      fileName +=
+        `_${currentTahun}`;
+
+    }
+
+
+    if (
+      currentTriwulan !== 'Semua'
+    ) {
+
+      fileName +=
+        `_TW${currentTriwulan}`;
+
+    }
+
+
+    if (
+      currentFilter !== 'Semua'
+    ) {
+
+      fileName +=
+        `_${currentFilter.replace(
+          /\s+/g,
+          '_'
+        )}`;
+
+    }
+
+
+    link.download =
+      fileName + '.xlsx';
+
+
+    document.body.appendChild(
+      link
+    );
+
+
+    // =======================================================
+    // SELESAI
+    // =======================================================
+
+    updateExportLoaderProgress(
+      100,
+      'Ekstraksi selesai!'
+    );
+
+
+    await new Promise(
+      resolve =>
+        setTimeout(
+          resolve,
+          350
+        )
+    );
+
+
+    link.click();
+
+
+    document.body.removeChild(
+      link
+    );
+
+
+    URL.revokeObjectURL(
+      url
+    );
+
+
+    showToast(
+      '✅ Excel berhasil diekspor!',
+      'success'
+    );
+
+
+  } catch (err) {
+
+
+    console.error(
+      'Export Excel Error:',
+      err
+    );
+
+
+    showToast(
+      '❌ Gagal export: ' +
+      err.message,
+      'error'
+    );
+
+
+  } finally {
+
+
+    hideExportLoader();
+
+
+    btnExport.disabled =
+      false;
+
+
+    btnExport.innerHTML =
+      originalText;
+
+  }
+
+}
+
 
 // showToast() is provided globally by /assets/css/js/sonner.js
 </script>
